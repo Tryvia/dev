@@ -1,0 +1,3008 @@
+
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+<link rel="icon" type="image/png" href="tryvia.png" />
+ <link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const setorUsuario = sessionStorage.getItem('setor');
+const RELEASE_SUPABASE_URL = 'https://mzjdmhgkrroajmsfwryu.supabase.co';
+const RELEASE_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODIzMzAzNSwiZXhwIjoyMDYzODA5MDM1fQ.CVXkKh9yul_Mv2YMhPsDo4CmkQevxpkeI1CtitORpJ0';
+const releaseClient = supabase.createClient(RELEASE_SUPABASE_URL, RELEASE_SUPABASE_KEY);
+const SUPABASE_URL = 'https://mzjdmhgkrroajmsfwryu.supabase.co'; 
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMzMwMzUsImV4cCI6MjA2MzgwOTAzNX0.tQCwUfFCV7sD-IexQviU0XEPcbn9j5uK9NSUbH-OeBc';
+
+// Função para mostrar/ocultar abas
+function showTab(tabId) {
+    // Oculta todas as seções de conteúdo
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.style.display = 'none';
+        section.classList.remove('active');
+    });
+
+    // Mostra a seção selecionada
+    const selectedTab = document.getElementById(tabId);
+    if (selectedTab) {
+        selectedTab.style.display = 'block';
+        selectedTab.classList.add('active');
+    }
+
+    // Remove a classe active de todos os botões
+    document.querySelectorAll('.nav-item button').forEach(button => {
+        button.parentElement.classList.remove('active');
+    });
+
+    // Adiciona a classe active ao botão selecionado
+    const selectedButton = document.querySelector(`button[onclick*="showTab('${tabId}')"]`);
+    if (selectedButton) {
+        selectedButton.parentElement.classList.add('active');
+    }
+}
+</script>
+<meta charset="utf-8"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Portal</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script type="text/javascript">
+  
+</script>
+<div class="modal-overlay" id="customModal">
+<div class="modal-content">
+<h3 id="modalTitle"></h3>
+<p id="modalMessage"></p>
+<div class="modal-buttons" id="modalButtons">
+</div>
+</div>
+</div>
+
+<!-- Modal para Envio por E-mail -->
+<div class="modal-overlay" id="emailModal">
+<div class="modal-content" style="max-width: 500px;">
+<h3 style="color: #4fc3f7; margin-bottom: 20px;">
+<i class="fas fa-envelope" style="margin-right: 10px;"></i>
+Enviar Relatório por E-mail
+</h3>
+<div class="form-group">
+<label for="emailRecipients">E-mails dos Destinatários</label>
+<textarea id="emailRecipients" placeholder="Digite os e-mails separados por vírgula ou quebra de linha&#10;exemplo@empresa.com, outro@empresa.com" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical;"></textarea>
+<small style="color: #666; font-size: 0.9em;">Separe múltiplos e-mails por vírgula ou quebra de linha</small>
+</div>
+<div class="form-group">
+<label for="emailSubject">Assunto</label>
+<input type="text" id="emailSubject" placeholder="Assunto do e-mail" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+</div>
+<div class="form-group">
+<label for="emailMessage">Mensagem (opcional)</label>
+<textarea id="emailMessage" placeholder="Digite uma mensagem personalizada..." rows="3" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical;"></textarea>
+</div>
+<div class="modal-buttons">
+<button class="modal-button cancel" onclick="closeEmailModal()">Cancelar</button>
+<button class="modal-button confirm" onclick="enviarRelatorioPorEmail()">
+<i class="fas fa-paper-plane" style="margin-right: 8px;"></i>
+Enviar
+</button>
+</div>
+</div>
+</div>
+
+<!-- Modal para Envio por WhatsApp -->
+<div class="modal-overlay" id="whatsappModal">
+<div class="modal-content" style="max-width: 500px;">
+<h3 style="color: #25d366; margin-bottom: 20px;">
+<i class="fab fa-whatsapp" style="margin-right: 10px;"></i>
+Enviar Relatório por WhatsApp
+</h3>
+<div class="form-group">
+<label for="whatsappNumber">Número do WhatsApp</label>
+<input type="tel" id="whatsappNumber" placeholder="(11) 99999-9999 ou +5511999999999" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+<small style="color: #666; font-size: 0.9em;">Digite o número com DDD. Ex: (11) 99999-9999</small>
+</div>
+<div class="form-group">
+<label for="whatsappMessage">Mensagem</label>
+<textarea id="whatsappMessage" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical;"></textarea>
+</div>
+<div style="background: #f0f8ff; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #25d366;">
+<p style="margin: 0; font-size: 0.9em; color: #333;">
+<i class="fas fa-info-circle" style="color: #25d366; margin-right: 8px;"></i>
+<strong>Importante:</strong> O WhatsApp será aberto com a mensagem pré-preenchida. Você precisará anexar o PDF manualmente após o envio da mensagem.
+</p>
+</div>
+<div class="modal-buttons">
+<button class="modal-button cancel" onclick="closeWhatsappModal()">Cancelar</button>
+<button class="modal-button confirm" style="background-color: #25d366;" onclick="enviarRelatorioPorWhatsapp()">
+<i class="fab fa-whatsapp" style="margin-right: 8px;"></i>
+Abrir WhatsApp
+</button>
+</div>
+</div>
+</div>
+
+<!-- Modal para Editar Reunião -->
+<div class="modal-overlay" id="modalEditarReuniao">
+<div class="modal-content" style="max-width: 600px;">
+<h3 style="color: #4fc3f7; margin-bottom: 20px;">
+<i class="fas fa-edit" style="margin-right: 10px;"></i>
+Editar Reunião
+</h3>
+<form id="formEditarReuniao">
+<div class="form-row">
+<div class="form-group">
+<label for="editReuniaoCliente">Cliente</label>
+<select id="editReuniaoCliente">
+<option value="">Selecione um cliente...</option>
+</select>
+</div>
+<div class="form-group">
+<label for="editReuniaoData">Data</label>
+<input type="date" id="editReuniaoData" class="input-padrao">
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label for="editReuniaoHorario">Horário</label>
+<input type="time" id="editReuniaoHorario" class="input-padrao">
+</div>
+<div class="form-group">
+<label for="editReuniaoTipo">Tipo</label>
+<input type="text" id="editReuniaoTipo">
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label for="editReuniaoResponsavel">Responsável pela Reunião</label>
+<select id="editReuniaoResponsavel">
+<option value="">Selecione um responsável...</option>
+</select>
+</div>
+<div class="form-group">
+<label for="editReuniaoParticipantes">Participantes</label>
+<input type="text" id="editReuniaoParticipantes">
+</div>
+</div>
+<div class="form-group">
+<label for="editReuniaoFile">📎 Anexar Nova Ata (opcional)</label>
+<input type="file" id="editReuniaoFile" class="input-padrao">
+<small style="color: #666;">Deixe em branco para manter a ata atual</small>
+</div>
+<div class="modal-buttons">
+<button type="button" class="modal-button cancel" onclick="fecharModalEditarReuniao()">Cancelar</button>
+<button type="submit" class="modal-button confirm">
+<i class="fas fa-save" style="margin-right: 8px;"></i>
+Salvar Alterações
+</button>
+</div>
+</form>
+</div>
+</div>
+
+<!-- Modal para Editar Homologação -->
+<div class="modal-overlay" id="modalEditarHomologacao">
+<div class="modal-content" style="max-width: 600px;">
+<h3 style="color: #4fc3f7; margin-bottom: 20px;">
+<i class="fas fa-edit" style="margin-right: 10px;"></i>
+Editar Homologação
+</h3>
+<form id="formEditarHomologacao">
+<div class="form-row">
+<div class="form-group">
+<label for="editHomologacaoVersao">Versão</label>
+<input type="text" id="editHomologacaoVersao" class="input-padrao">
+</div>
+<div class="form-group">
+<label for="editHomologacaoEspecialista">Especialista</label>
+<input type="text" id="editHomologacaoEspecialista" class="input-padrao">
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label for="editHomologacaoSistema">Sistema</label>
+<input type="text" id="editHomologacaoSistema" class="input-padrao">
+</div>
+<div class="form-group">
+<label for="editHomologacaoDataLiberacao">Data de Liberação</label>
+<input type="date" id="editHomologacaoDataLiberacao" class="input-padrao">
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label for="editHomologacaoDataHomologacao">Data de Homologação</label>
+<input type="date" id="editHomologacaoDataHomologacao" class="input-padrao">
+</div>
+</div>
+<div class="form-group">
+<label for="editHomologacaoObservacao">Observação</label>
+<textarea id="editHomologacaoObservacao" rows="3" class="input-padrao"></textarea>
+</div>
+<div class="form-group">
+<label for="editHomologacaoFiles">📎 Adicionar Documentos (opcional)</label>
+<input type="file" id="editHomologacaoFiles" class="input-padrao" multiple>
+<small style="color: #666;">Selecione um ou mais arquivos para adicionar à homologação</small>
+</div>
+<div class="modal-buttons">
+<button type="button" class="modal-button cancel" onclick="fecharModalEditarHomologacao()">Cancelar</button>
+<button type="submit" class="modal-button confirm">
+<i class="fas fa-save" style="margin-right: 8px;"></i>
+Salvar Alterações
+</button>
+</div>
+</form>
+</div>
+</div>
+<div class="sidebar">
+<div class="logo-container">
+<img alt="Sua Logo" class="your-custom-logo" src="logo1.png"/>
+</div>
+<ul class="nav-list">
+<li class="nav-item">
+<button onclick="showTab('inicio')"data-permissao="inicio"><i class="fas fa-home"></i> Início</button>
+</li>
+<li class="nav-item">
+<button onclick="showTab('painel-setor')"data-permissao="painel-setor"><i class="fas fa-chart-pie"></i> Painel do Setor</button>
+</li>
+<li class="nav-item">
+<button onclick="showTab('dashboard')"data-permissao="dashboard"><i class="fas fa-chart-line"></i> Dashboards</button>
+</li>
+<li class="nav-item">
+<button onclick="showTab('clients')"data-permissao="clients"><i class="fas fa-users"></i> Clientes</button>
+</li>
+<li class="nav-item">
+<button onclick="showTab('painel-tickets')"data-permissao="painel-tickets"><i class="fas fa-ticket-alt"></i> Painel de Tickets</button>
+</li>
+<li class="nav-item">
+<button onclick="window.location.href='https://tryvia.github.io/TryviaBI/mapa_visitas.html'"data-permissao="https://tryvia.github.io/TryviaBI/mapa_visitas.html"><i class="fas fa-calendar-check"></i> Visitas</button>
+</li>
+<li class="nav-item">
+<button onclick="showTab('relatorioVisita')"data-permissao="relatorioVisita">
+<i class="fas fa-file-signature"></i> Relatório de Visita
+  </button>
+<li class="nav-item"><button onclick="showTab('homologacao')"data-permissao="homologacao"><i class="fas fa-clipboard-check"></i> Homologação</button></li>
+<li class="nav-item">
+  <button onclick="showTab('release')"data-permissao="release"><i class="fas fa-rocket"></i> Release</button>
+</li>
+<li class="nav-item">
+  <button onclick="showTab('reunioes')"data-permissao="reunioes"><i class="fas fa-users"></i> Reuniões</button>
+</li>
+<li class="nav-item">
+  <button onclick="showTab('documents')"data-permissao="documents"><i class="fas fa-file-alt"></i> Time de Implantação</button>
+</li>
+<li class="nav-item">
+  <button onclick="showTab('treinamento')"data-permissao="treinamento"><i class="fas fa-graduation-cap"></i> Treinamento</button>
+</li>
+<li class="nav-item">
+<button onclick="showTab('evaluations')"data-permissao="evaluations"><i class="fas fa-star"></i> Avaliações</button>
+</li>
+<li class="nav-item">
+<button onclick="showTab('cs')"data-permissao="cs"><i class="fas fa-headset"></i> CS</button>
+</li>
+<li class="nav-item">
+<button onclick="window.location.href='https://tryvia.github.io/TryviaBI/calendario.html'"data-permissao="https://tryvia.github.io/TryviaBI/calendario.html"><i class="fas fa-calendar"></i> Calendário</button>
+</li>
+<li class="nav-item">
+<button onclick="window.location.href='https://tryvia.github.io/TryviaBI/linha%20do%20tempo.html'"data-permissao="https://tryvia.github.io/TryviaBI/linha%20do%20tempo.html"><i class="fas fa-clock"></i> MVP</button>
+</li>
+<li class="nav-item">
+<button onclick="window.location.href='https://tryvia.github.io/TryviaBI/implanta%C3%A7%C3%A3o.html'"data-permissao="https://tryvia.github.io/TryviaBI/implanta%C3%A7%C3%A3o.html"><i class="fas fa-cogs"></i> Implantações</button>
+</li>
+<li class="nav-item">
+<button onclick="showTab('gestao')"data-permissao="gestao"><i class="fas fa-users-cog"></i> Gestão</button>
+</li>
+<li class="nav-item">
+<button onclick="showTab('gerenciar-logins')"data-permissao="gerenciar-logins"><i class="fas fa-user-shield"></i> Gerenciar Logins</button>
+</li>
+<li class="nav-item">
+<a href="#"><i class="fas fa-cog"></i> Configurações</a>
+</li>
+<li class="nav-item">
+<a href="#" onclick="logoutTryvia()"><i class="fas fa-sign-out-alt"></i> Sair</a><li class="nav-item">
+</li>
+</li></li><li class="nav-item">
+</li></ul>
+</div>
+<div class="main-content">
+<header class="header">
+
+<h1>Portal - Tryvia</h1>
+<div class="profile-info">
+<img alt="Profile Picture" src="tryvia.png"/>
+<span><span id="nomeUsuario">Usuário</span></span>
+</div>
+</header>
+
+<!-- Aba Início -->
+<div class="content-section active" id="inicio">
+    <!-- Cabeçalho de Boas-vindas -->
+    <div class="welcome-header" style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%); padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: white; box-shadow: 0 8px 25px rgba(41, 182, 246, 0.3);">
+        <h2 style="margin: 0; font-size: 2.5em; margin-bottom: 10px;">
+            <i class="fas fa-home" style="margin-right: 15px;"></i>
+            Bem-vindo ao Portal Tryvia
+        </h2>
+        <p style="margin: 0; font-size: 1.2em; opacity: 0.9;" id="welcomeMessage">
+            Hoje é <span id="currentDate"></span> | Última atualização: <span id="lastUpdate"></span>
+        </p>
+    </div>
+
+    <!-- Métricas Principais -->
+    <div class="metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin-bottom: 40px;">
+        <div class="metric-card" style="background: linear-gradient(135deg, #b3e5fc 0%, #78c5e9 100%); border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="showTab('clients')">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                        <h3 style="margin: 0; color: #000; font-size: 1.1em; margin-bottom: 8px;">Clientes Ativos</h3>
+                        <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #0277bd;" id="activeClientsCount">-</p>
+                </div>
+                <div style="font-size: 3em; color: #0277bd; opacity: 0.7;">👥</div>
+            </div>
+        </div>
+
+            <div class="metric-card" style="background: linear-gradient(135deg, #ffcdd2 0%, #e4c1a0 100%); border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(229, 115, 115, 0.3); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="showTab('clients')">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <h3 style="margin: 0; color: #000; font-size: 1.1em; margin-bottom: 8px;">Clientes Inativos</h3>
+                        <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #c62828;" id="inactiveClientsCount">-</p>
+                    </div>
+                    <div style="font-size: 3em; color: #c62828; opacity: 0.7;">🚫</div>
+                </div>
+            </div>
+
+        <div class="metric-card" style="background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%); border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="showTab('homologacao')">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h3 style="margin: 0; color: #000; font-size: 1.1em; margin-bottom: 8px;">Homologações</h3>
+                    <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #2e7d32;" id="totalHomologacoes">-</p>
+                </div>
+                <div style="font-size: 3em; color: #2e7d32; opacity: 0.7;">✅</div>
+            </div>
+        </div>
+
+        <div class="metric-card" style="background: linear-gradient(135deg, #ffcc80 0%, #ffb74d 100%); border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="showTab('release')">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h3 style="margin: 0; color: #000; font-size: 1.1em; margin-bottom: 8px;">Releases</h3>
+                    <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #ef6c00;" id="totalReleases">-</p>
+                </div>
+                <div style="font-size: 3em; color: #ef6c00; opacity: 0.7;">🚀</div>
+            </div>
+        </div>
+
+        <div class="metric-card" style="background: linear-gradient(135deg, #d1c4e9 0%, #b39ddb 100%); border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="showTab('reunioes')">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h3 style="margin: 0; color: #000; font-size: 1.1em; margin-bottom: 8px;">Reuniões</h3>
+                    <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #7b1fa2;" id="totalReunioes">-</p>
+                </div>
+                <div style="font-size: 3em; color: #7b1fa2; opacity: 0.7;">📅</div>
+            </div>
+        </div>
+
+        <div class="metric-card" style="background: linear-gradient(135deg, var(--primary-color) 0%, rgb(78 212 208) 100%); border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(3, 169, 244, 0.3); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="showTab('https://tryvia.github.io/TryviaBI/mapa_visitas.html')">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h3 style="margin: 0; color: #000; font-size: 1.1em; margin-bottom: 8px;">Total de Visitas</h3>
+                    <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #0277bd;" id="totalVisitas">-</p>
+                </div>
+                <div style="font-size: 3em; color: #0277bd; opacity: 0.7;">🗺️</div>
+            </div>
+        </div>
+
+        <div class="metric-card" style="background:linear-gradient(135deg, rgb(183, 177, 177) 0%, rgb(181, 176, 180) 100%); border-radius: 12px; padding: 24px; box-shadow:rgba(41, 182, 246, 0.3) 0px 4px 15px; transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="showTab('evaluations')">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h3 style="margin: 0; color: #000; font-size: 1.1em; margin-bottom: 8px;">Avaliação Média</h3>
+                    <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #a65b0b;" id="averageRatingHome">-</p>
+                </div>
+                <div style="font-size: 3em; color: #f57c00; opacity: 0.7;">⭐</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seções de Acesso Rápido e Notificações -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 30px;">
+        <!-- Acesso Rápido -->
+        <div class="quick-access" style="background: rgba(179, 229, 252, 0.95); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2);">
+            <h3 style="margin: 0 0 20px 0; color: #000; font-size: 1.4em;">
+                <i class="fas fa-bolt" style="margin-right: 10px; color: #ff9800;"></i>
+                Acesso Rápido
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                <button onclick="showTab('clients')" style="background: #4fc3f7; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; transition: background 0.3s ease; font-size: 0.9em;">
+                    <i class="fas fa-user-plus" style="display: block; font-size: 1.5em; margin-bottom: 5px;"></i>
+                    Novo Cliente
+                </button>
+                <button onclick="showTab('homologacao')" style="background: #66bb6a; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; transition: background 0.3s ease; font-size: 0.9em;">
+                    <i class="fas fa-clipboard-check" style="display: block; font-size: 1.5em; margin-bottom: 5px;"></i>
+                    Homologação
+                </button>
+                <button onclick="showTab('release')" style="background: #ff7043; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; transition: background 0.3s ease; font-size: 0.9em;">
+                    <i class="fas fa-rocket" style="display: block; font-size: 1.5em; margin-bottom: 5px;"></i>
+                    Novo Release
+                </button>
+                <button onclick="showTab('reunioes')" style="background: #ab47bc; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; transition: background 0.3s ease; font-size: 0.9em;">
+                    <i class="fas fa-users" style="display: block; font-size: 1.5em; margin-bottom: 5px;"></i>
+                    Nova Reunião
+                </button>
+                <button onclick="showTab('documents')" style="background: #5c6bc0; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; transition: background 0.3s ease; font-size: 0.9em;">
+                    <i class="fas fa-file-alt" style="display: block; font-size: 1.5em; margin-bottom: 5px;"></i>
+                    Documentos
+                </button>
+                <button onclick="showTab('relatorioVisita')" style="background: #26a69a; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; transition: background 0.3s ease; font-size: 0.9em;">
+                    <i class="fas fa-file-signature" style="display: block; font-size: 1.5em; margin-bottom: 5px;"></i>
+                    Relatório
+                </button>
+            </div>
+        </div>
+
+        <!-- Notificações -->
+        <div class="notifications" style="background: rgba(179, 229, 252, 0.95); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2);">
+            <h3 style="margin: 0 0 20px 0; color: #000; font-size: 1.4em;">
+                <i class="fas fa-bell" style="margin-right: 10px; color: #f44336;"></i>
+                Notificações
+            </h3>
+            <div id="notificationsList">
+                <div style="text-align: center; padding: 20px; color: #666;">
+                    <i class="fas fa-check-circle" style="font-size: 2em; margin-bottom: 10px; color: #4caf50;"></i>
+                    <p style="margin: 0;">Atualização 20/08/2025!</p>
+                    <p style="margin: 5px 0 0 0; font-size: 0.9em;">As melhorias solicitadas nos tickets #4883, #4882 e #4881 foram aplicadas e já estão disponíveis em produção.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="main-layout" style="display: block; margin-bottom: 40px;">
+        
+        <!-- Atividades Recentes e Clientes em Destaque -->
+        <div>
+            <!-- Atividades Recentes -->
+            <div class="activities-section" style="background: rgba(179, 229, 252, 0.95); border-radius: 12px; padding: 25px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0; color: #000; font-size: 1.4em;">
+                        <i class="fas fa-clock" style="margin-right: 10px; color: #29b6f6;"></i>
+                        Atividades Recentes
+                    </h3>
+                    <button onclick="refreshActivities()" style="background: #29b6f6; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div id="activitiesList" style="max-height: 400px; overflow-y: auto;">
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2em; margin-bottom: 15px;"></i>
+                        <p>Carregando atividades...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clientes em Destaque -->
+            <div class="clients-highlight" style="background: rgba(179, 229, 252, 0.95); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2);">
+                <h3 style="margin: 0 0 20px 0; color: #000; font-size: 1.4em;">
+                    <i class="fas fa-star" style="margin-right: 10px; color: #ffc107;"></i>
+                    Clientes em Destaque
+                </h3>
+                <div id="clientsCarousel" style="display: flex; overflow-x: auto; gap: 20px; padding: 10px 0; scroll-behavior: smooth;">
+                    <div style="text-align: center; padding: 40px; color: #666; min-width: 100%;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2em; margin-bottom: 15px;"></i>
+                        <p>Carregando clientes...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo -->
+    <div class="charts-section" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 40px;">
+        <div style="background: rgba(179, 229, 252, 0.95); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2);">
+            <h3 style="margin: 0 0 20px 0; color: #000; font-size: 1.4em;">
+                <i class="fas fa-chart-bar" style="margin-right: 10px; color: #29b6f6;"></i>
+                Homologações por Mês
+            </h3>
+            <canvas id="homologacoesChart" width="400" height="200"></canvas>
+        </div>
+        
+        <div style="background: rgba(179, 229, 252, 0.95); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2);">
+            <h3 style="margin: 0 0 20px 0; color: #000; font-size: 1.4em;">
+                <i class="fas fa-chart-pie" style="margin-right: 10px; color: #29b6f6;"></i>
+                Releases por Tipo
+            </h3>
+            <canvas id="releasesChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="content-section" id="gestao">
+<div class="form-container">
+<h3 style="margin-bottom: 20px;">Adicionar Funcionário</h3>
+<div class="form-row">
+<div class="form-group">
+<label for="funcionarioNome">Nome</label>
+<input id="funcionarioNome" placeholder="Nome completo do funcionário..." type="text"/>
+</div>
+<div class="form-group">
+<label for="funcionarioCargo">Cargo</label>
+<input id="funcionarioCargo" placeholder="Cargo/Função do funcionário..." type="text"/>
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label for="funcionarioLink">Link</label>
+<input id="funcionarioLink" placeholder="https://..." type="url"/>
+</div>
+<div class="form-group" style="flex: 1;">
+<label for="funcionarioFoto">Foto</label>
+<div class="upload-area" onclick="document.getElementById('funcionarioFoto').click()">
+<div class="upload-icon">📷</div>
+<p>Arraste e solte ou clique para selecionar uma foto</p>
+<input id="funcionarioFoto" style="display: none;" type="file" accept="image/*"/>
+</div>
+</div>
+</div>
+<button class="btn-primary" onclick="adicionarFuncionario()">Adicionar Funcionário</button>
+</div>
+<h3 style="margin-top: 40px; margin-bottom: 20px;">Funcionários</h3>
+<div class="documents-grid" id="funcionariosList">
+<div class="empty-state">
+<div class="empty-state-icon">👥</div>
+<p>Nenhum funcionário encontrado</p>
+<p>Adicione funcionários para começar</p>
+</div>
+</div>
+</div>
+<div class="content-section" id="documents">
+<button class="btn-nova-implantacao" onclick="showTab('nova-implantacao')">
+    <i class="fas fa-plus" style="margin-right: 8px;"></i>
+    Novo Resumo
+</button>
+<div class="form-container">
+<h3 style="margin-bottom: 20px;">Adicionar Novo Documento de Implantação</h3>
+<div class="form-row">
+<div class="form-group">
+<label for="documentTitle">Título</label>
+<input id="documentTitle" placeholder="Título do documento..." type="text"/>
+</div>
+                <div class="form-group">
+                <label for="documentAuthor">Autor</label>
+                <select id="documentAuthor">
+                    <option value="">Selecione o autor</option>
+                     <option value="Julyana">Julyana</option>
+                    <option value="Marlos">Marlos</option>
+                    <option value="Renata">Renata</option>
+                    <option value="Larissa">Larissa</option>
+                </select>
+                </div>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label for="documentType">Tipo</label>
+<select id="documentType">
+<option value="">Selecione o tipo</option>
+<option value="manual">Manual</option>
+<option value="guia">Guia</option>
+<option value="checklist">Checklist</option>
+<option value="template">Template</option>
+<option value="outro">Outro</option>
+</select>
+</div>
+<div class="form-group" style="flex: 1;">
+<label for="documentFile">Arquivo</label>
+<div class="upload-area" onclick="document.getElementById('documentFile').click()">
+<div class="upload-icon">📄</div>
+<p>Arraste e solte ou clique para selecionar um arquivo</p>
+<input id="documentFile" style="display: none;" type="file"/>
+</div>
+</div>
+</div>
+<button class="btn-primary" onclick="addDocument()">Adicionar Documento</button>
+</div>
+<h3 style="margin-top: 40px; margin-bottom: 20px;">Documentos Existentes</h3>
+<div class="documents-grid" id="documentsList">
+<div class="empty-state">
+<div class="empty-state-icon">📁</div>
+<p>Nenhum documento encontrado</p>
+<p>Adicione documentos para começar</p>
+</div>
+</div>
+</div>
+
+<!-- Modal de Nova Implantação -->
+<div id="implantacaoModal" class="implantacao-modal">
+    <div class="implantacao-modal-content">
+        <div class="implantacao-modal-header">
+            <h2><i class="fas fa-cogs" style="margin-right: 10px;"></i>Nova Implantação</h2>
+            <span class="implantacao-modal-close" onclick="fecharModalImplantacao()">&times;</span>
+        </div>
+        
+        <form id="implantacaoForm">
+            <div class="implantacao-form-row">
+                <div class="implantacao-form-group">
+                    <label for="implantacaoEspecialista">Especialista</label>
+                    <input type="text" id="implantacaoEspecialista" placeholder="Nome do especialista" required>
+                </div>
+                <div class="implantacao-form-group">
+                    <label for="implantacaoData">Data</label>
+                    <input type="date" id="implantacaoData" required>
+                </div>
+            </div>
+            
+            <div class="implantacao-form-row">
+                <div class="implantacao-form-group">
+                    <label for="implantacaoCliente">Cliente</label>
+                    <input type="text" id="implantacaoCliente" placeholder="Nome do cliente" required>
+                </div>
+                <div class="implantacao-form-group">
+                    <label for="implantacaoProjeto">Projeto</label>
+                    <input type="text" id="implantacaoProjeto" placeholder="Nome do projeto" required>
+                </div>
+            </div>
+            
+            <div class="implantacao-form-row">
+                <div class="implantacao-form-group">
+                    <label for="implantacaoTipo">Tipo</label>
+                    <select id="implantacaoTipo" required>
+                        <option value="">Selecione o tipo</option>
+                        <option value="Implantação Inicial">Implantação Inicial</option>
+                        <option value="Migração">Migração</option>
+                        <option value="Atualização">Atualização</option>
+                        <option value="Manutenção">Manutenção</option>
+                        <option value="Treinamento">Treinamento</option>
+                        <option value="Suporte">Suporte</option>
+                    </select>
+                </div>
+                <div class="implantacao-form-group">
+                    <label for="implantacaoTickets">Tickets Pendentes</label>
+                    <input type="number" id="implantacaoTickets" placeholder="Número de tickets" min="0" value="0">
+                </div>
+            </div>
+            
+            <div class="implantacao-form-group">
+                <label for="implantacaoResumo">Resumo</label>
+                <textarea id="implantacaoResumo" placeholder="Descreva os detalhes da implantação..." required></textarea>
+            </div>
+            
+            <button type="submit" class="btn-salvar-implantacao">
+                <i class="fas fa-save" style="margin-right: 8px;"></i>
+                Salvar Implantação
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Nova Seção: Nova Implantação -->
+<div class="content-section" id="nova-implantacao">
+    <div style="background: linear-gradient(135deg, #29b6f6 0%, #29b6f6 100%); padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: white; box-shadow: 0 8px 25px #b3e5fc(156, 39, 176, 0.3);">
+        <h2 style="margin: 0; font-size: 2.5em; margin-bottom: 10px;">
+            <i class="fas fa-cogs" style="margin-right: 15px;"></i>
+            Projetos
+        </h2>
+        <p style="margin: 0; font-size: 1.2em; opacity: 0.9;">
+            Resumo de projetos em andamento
+        </p>
+    </div>
+
+    <div class="form-container" style="max-width: 800px; margin: 0 auto;">
+        <form id="novaImplantacaoForm">
+            <div class="implantacao-form-row">
+                <div class="implantacao-form-group">
+                    <label for="novaImplantacaoEspecialista">Especialista</label>
+                    <input type="text" id="novaImplantacaoEspecialista" placeholder="Nome do especialista" required>
+                </div>
+                <div class="implantacao-form-group">
+                    <label for="novaImplantacaoData">Data de Atualização</label>
+                    <input type="date" id="novaImplantacaoData" required>
+                    </div>
+                    <div class="implantacao-form-group">
+                        <label for="novaImplantacaoInicio">Data de Início</label>
+                        <input type="date" id="novaImplantacaoInicio" required>
+                    </div>
+                    <div class="implantacao-form-group">
+                        <label for="novaImplantacaoTermino">Data de Término</label>
+                        <input type="date" id="novaImplantacaoTermino" required>
+                </div>
+            </div>
+            
+            <div class="implantacao-form-row">
+                <div class="implantacao-form-group">
+                    <label for="novaImplantacaoCliente">Cliente</label>
+                    <select id="novaImplantacaoCliente" required>
+                        <option value="">Selecione um cliente...</option>
+                    </select>
+                </div>
+                <div class="implantacao-form-group">
+                    <label for="novaImplantacaoProjeto">Projeto</label>
+                    <input type="text" id="novaImplantacaoProjeto" placeholder="Nome do projeto" required>
+                </div>
+            </div>
+            
+            <div class="implantacao-form-row">
+                <div class="implantacao-form-group">
+                    <label for="novaImplantacaoTipo">Tipo</label>
+                    <select id="novaImplantacaoTipo" required>
+                        <option value="">Selecione o tipo</option>
+                        <option value="Implantação Inicial">Implantação Inicial</option>
+                        <option value="Migração">Migração</option>
+                        <option value="Atualização">Atualização</option>
+                        <option value="Manutenção">Manutenção</option>
+                        <option value="Treinamento">Treinamento</option>
+                        <option value="Suporte">Suporte</option>
+                    </select>
+                </div>
+                <div class="implantacao-form-group">
+                    <label for="novaImplantacaoTickets">Tickets Pendentes</label>
+                    <input type="number" id="novaImplantacaoTickets" placeholder="Número de tickets" min="0" value="0">
+                </div>
+            </div>
+            
+            <div class="implantacao-form-group">
+                <label for="novaImplantacaoResumo">Resumo</label>
+                <textarea id="novaImplantacaoResumo" placeholder="Descreva os detalhes da implantação..." required></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 30px;">
+                <button type="button" onclick="showTab('documents')" style="background-color: #6c757d; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; transition: background-color 0.3s ease; flex: 1;">
+                    <i class="fas fa-arrow-left" style="margin-right: 8px;"></i>
+                    Voltar
+                </button>
+                <button type="button" id="btnCancelarEdicao" onclick="cancelarEdicao()" style="background-color: #f44336; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; transition: background-color 0.3s ease; flex: 1; display: none;">
+                    <i class="fas fa-times" style="margin-right: 8px;"></i>
+                    Cancelar Edição
+                </button>
+                <button type="submit" class="btn-salvar-implantacao" style="flex: 2;">
+                    <i class="fas fa-save" style="margin-right: 8px;"></i>
+                    Salvar Projeto
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Seção de Filtros e Lista de Implantações -->
+    <div style="max-width: 1200px; margin: 50px auto 0; padding: 0 20px;">
+        <div style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%); padding: 25px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: white; box-shadow: 0 8px 25px rgba(41, 182, 246, 0.3);">
+            <h3 style="margin: 0; font-size: 1.8em; margin-bottom: 10px;">
+                <i class="fas fa-list" style="margin-right: 10px;"></i>
+                Projetos Registrados
+            </h3>
+            <p style="margin: 0; font-size: 1em; opacity: 0.9;">
+                Visualize e filtre os resumos dos projetos em andamento
+            </p>
+        </div>
+
+        <!-- Filtros -->
+        <div style="background-color: rgba(179, 229, 252, 0.95); padding: 25px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2);">
+            <h4 style="color: #4fc3f7; margin-bottom: 20px; font-size: 1.3em;">
+                <i class="fas fa-filter" style="margin-right: 10px;"></i>
+                Filtros
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; align-items: end;">
+                <div class="implantacao-form-group">
+                    <label for="filtroEspecialista">Especialista</label>
+                    <select id="filtroEspecialista" onchange="filtrarImplantacoes()">
+                        <option value="">Todos os especialistas</option>
+                    </select>
+                </div>
+                <div class="implantacao-form-group">
+                    <label for="filtroCliente">Cliente</label>
+                    <select id="filtroCliente" onchange="filtrarImplantacoes()">
+                        <option value="">Todos os clientes</option>
+                    </select>
+                </div>
+                <div class="implantacao-form-group">
+                    <label for="filtroTipo">Tipo</label>
+                    <select id="filtroTipo" onchange="filtrarImplantacoes()">
+                        <option value="">Todos os tipos</option>
+                        <option value="Implantação Inicial">Implantação Inicial</option>
+                        <option value="Migração">Migração</option>
+                        <option value="Atualização">Atualização</option>
+                        <option value="Manutenção">Manutenção</option>
+                        <option value="Treinamento">Treinamento</option>
+                        <option value="Suporte">Suporte</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="limparFiltros()" style="background-color: #ff9800; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background-color 0.3s ease;">
+                        <i class="fas fa-eraser" style="margin-right: 8px;"></i>
+                        Limpar
+                    </button>
+                    <button onclick="carregarImplantacoesLista()" style="background-color: #4caf50; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background-color 0.3s ease;">
+                        <i class="fas fa-sync-alt" style="margin-right: 8px;"></i>
+                        Atualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Implantações -->
+        <div id="implantacoesContainer" style="min-height: 200px;">
+            <div id="loadingImplantacoes" style="text-align: center; padding: 40px; color: #666;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2em; margin-bottom: 15px;"></i>
+                <p>Carregando implantações...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seção: Treinamento -->
+<div class="content-section" id="treinamento">
+    <div style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%); padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: white; box-shadow: 0 8px 25px rgba(41, 182, 246, 0.3);">
+        <h2 style="margin: 0; font-size: 2.5em; margin-bottom: 10px;">
+            <i class="fas fa-graduation-cap" style="margin-right: 15px;"></i>
+            Centro de Treinamento
+        </h2>
+        <p style="margin: 0; font-size: 1.2em; opacity: 0.9;">
+            Organize e acesse vídeos de treinamento por produto
+        </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 300px 1fr; gap: 30px; min-height: 600px;">
+        <!-- Sidebar de Produtos -->
+        <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
+            <h3 style="color: #4fc3f7; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
+                <i class="fas fa-list" style="margin-right: 10px;"></i>Produtos
+            </h3>
+            
+            <!-- Lista de Produtos -->
+            <div id="productsList" style="margin-bottom: 20px;">
+                <div class="product-item-training active" data-product="sing" style="background: #4fc3f7; color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center;">
+                    <i class="fas fa-desktop" style="margin-right: 10px; font-size: 1.2em;"></i>
+                    <span style="font-weight: bold;">Sing</span>
+                </div>
+                <div class="product-item-training" data-product="telemetria" style="background: white; color: #333; padding: 15px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center;">
+                    <i class="fas fa-satellite-dish" style="margin-right: 10px; font-size: 1.2em;"></i>
+                    <span style="font-weight: bold;">Telemetria</span>
+                </div>
+                <div class="product-item-training" data-product="etrip" style="background: white; color: #333; padding: 15px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center;">
+                    <i class="fas fa-route" style="margin-right: 10px; font-size: 1.2em;"></i>
+                    <span style="font-weight: bold;">Etrip</span>
+                </div>
+                <div class="product-item-training" data-product="optz" style="background: white; color: #333; padding: 15px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center;">
+                    <i class="fas fa-cogs" style="margin-right: 10px; font-size: 1.2em;"></i>
+                    <span style="font-weight: bold;">OPT+z</span>
+                </div>
+                <div class="product-item-training" data-product="portal" style="background: white; color: #333; padding: 15px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center;">
+                    <i class="fas fa-globe" style="margin-right: 10px; font-size: 1.2em;"></i>
+                    <span style="font-weight: bold;">Portal</span>
+                </div>
+            </div>
+            
+            <!-- Botão Adicionar Produto -->
+            <button onclick="showAddProductModal()" style="width: 100%; background: #29b6f6; color: white; border: none; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: background 0.3s ease;">
+                <i class="fas fa-plus" style="margin-right: 8px;"></i>Adicionar Produto
+            </button>
+        </div>
+
+        <!-- Área Principal de Conteúdo -->
+        <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
+            <!-- Cabeçalho da Área de Conteúdo -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h3 id="currentProductTitle" style="color: #4fc3f7; margin: 0; font-size: 1.8em;">
+                    <i class="fas fa-desktop" style="margin-right: 10px;"></i>Treinamentos - Sing
+                </h3>
+                <button id="addVideoBtn" onclick="showAddVideoModal()" style="background: #4caf50; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.3s ease;">
+                    <i class="fas fa-video"></i>
+                    Adicionar Vídeo
+                </button>
+            </div>
+
+            <!-- Player de Vídeo -->
+            <div id="videoPlayerContainer" style="background: #000; border-radius: 10px; margin-bottom: 25px; min-height: 300px; display: flex; align-items: center; justify-content: center;">
+                <div style="text-align: center; color: #666;">
+                    <i class="fas fa-play-circle" style="font-size: 4em; margin-bottom: 15px;"></i>
+                    <p style="font-size: 1.2em;">Selecione um vídeo para reproduzir</p>
+                </div>
+            </div>
+
+            <!-- Lista de Vídeos -->
+            <div id="videosList">
+                <!-- Vídeos serão carregados aqui dinamicamente -->
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    <i class="fas fa-video" style="font-size: 3em; margin-bottom: 15px;"></i>
+                    <p style="font-size: 1.2em;">Nenhum vídeo encontrado para este produto</p>
+                    <p>Clique em "Adicionar Vídeo" para começar</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+    <!-- Modal para Adicionar Vídeo -->
+    <div id="addVideoModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100vw; height: 100vh; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: #fff; margin: auto; padding: 30px; border-radius: 12px; max-width: 500px; width: 100%; box-shadow: 0 4px 24px rgba(0,0,0,0.2); position: relative;">
+            <span class="close" onclick="closeAddVideoModal()">&times;</span>
+            <h3>
+                <i class="fas fa-video"></i>
+                Adicionar Novo Vídeo de Treinamento
+            </h3>
+            <form id="addVideoForm">
+                <div class="form-group">
+                    <label for="videoTitle">Título do Vídeo</label>
+                    <input type="text" id="videoTitle" placeholder="Digite o título do vídeo" required>
+                </div>
+                <div class="form-group">
+                    <label for="videoLevel">Nível</label>
+                    <select id="videoLevel" required>
+                        <option value="">Selecione o nível</option>
+                        <option value="basico">Básico</option>
+                        <option value="intermediario">Intermediário</option>
+                        <option value="avancado">Avançado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="videoDescription">Descrição</label>
+                    <textarea id="videoDescription" rows="3" placeholder="Descreva o conteúdo do vídeo"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="videoDuration">Duração (minutos)</label>
+                    <input type="number" id="videoDuration" placeholder="Ex: 15" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="videoFile">Arquivo de Vídeo ou URL</label>
+                    <input type="text" id="videoUrl" placeholder="Cole a URL do vídeo (YouTube, Vimeo, etc.)" style="margin-bottom: 10px;">
+                    <div class="upload-area" onclick="document.getElementById('videoFile').click()">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2em; margin-bottom: 10px; color: #4fc3f7;"></i>
+                        <p>Clique para selecionar arquivo de vídeo</p>
+                        <small>Ou cole uma URL acima. Formatos: MP4, AVI, MOV (máx. 500MB)</small>
+                        <input type="file" id="videoFile" style="display: none;" accept="video/*">
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddVideoModal()">Cancelar</button>
+                    <button type="submit" class="btn">Adicionar Vídeo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<!-- Modal para Adicionar Produto -->
+<div class="modal-overlay" id="addProductModal">
+    <div class="modal-content" style="max-width: 500px;">
+        <h3 style="color: #4fc3f7; margin-bottom: 20px;">
+            <i class="fas fa-plus" style="margin-right: 10px;"></i>
+            Adicionar Novo Produto
+        </h3>
+        <form id="addProductForm">
+            <div class="form-group">
+                <label for="productName">Nome do Produto</label>
+                <input type="text" id="productNameTreinamento" placeholder="Digite o nome do produto" required>
+            </div>
+            <div class="form-group">
+                <label for="productIcon">Ícone</label>
+                <select id="productIcon" required>
+                    <option value="">Selecione um ícone</option>
+                    <option value="fas fa-desktop">💻 Desktop</option>
+                    <option value="fas fa-mobile-alt">📱 Mobile</option>
+                    <option value="fas fa-globe">🌐 Web</option>
+                    <option value="fas fa-database">🗄️ Database</option>
+                    <option value="fas fa-cloud">☁️ Cloud</option>
+                    <option value="fas fa-cogs">⚙️ Sistema</option>
+                    <option value="fas fa-chart-line">📊 Analytics</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="productDescription">Descrição</label>
+                <textarea id="productDescription" rows="3" placeholder="Descreva o produto"></textarea>
+            </div>
+            <div class="modal-buttons" style="margin-top: 20px;">
+                <button type="button" class="modal-button cancel" onclick="closeAddProductModal()">Cancelar</button>
+                <button type="submit" class="modal-button confirm">Adicionar Produto</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="content-section" id="clients">
+<div class="client-tabs">
+<button class="client-tab-button active" onclick="showClientTab('view-clients')">Visualizar Clientes</button>
+<button class="client-tab-button" onclick="showClientTab('add-client')">Adicionar Cliente</button>
+<button class="client-tab-button" id="editClientTabButton" onclick="showClientTab('edit-client-tab')" style="display:none;">Editar Cliente</button>
+</div>
+<div class="client-tab-content" id="view-clients" style="display: block;">
+<h3 style="margin-bottom: 20px;">Lista de Clientes</h3>
+<div style="background-color: rgba(179, 229, 252, 0.95); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+    <div class="form-row">
+        <div class="form-group">
+            <label for="filterClientGroup">Filtrar por Grupo</label>
+            <select id="filterClientGroup" onchange="filterClientsByGroup()">
+                <option value="">Todos os grupos</option>
+                <option value="4">JCA</option>
+    <option value="1">GRUPO GUANABARA</option>
+    <option value="7">VIAÇÃO ÁGUIA BRANCA S/A</option>
+                <option value="Nenhum">Nenhum</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="filterClientSubgroup">Filtrar por Subgrupo</label>
+            <select id="filterClientSubgroup" onchange="filterClientsByGroup()">
+                <option value="">Todos os subgrupos</option>
+     <option value="4">Nenhum</option>
+                    <option value="1">Carga</option>
+                    <option value="2">Urbano</option>
+                    <option value="3">Rodoviário</option>
+                </select>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="filterClientName">Filtrar por Nome</label>
+            <input type="text" id="filterClientName" placeholder="Digite o nome do cliente..." oninput="filterClientsByGroup()">
+        </div>
+        <div class="form-group">
+            <label for="filterClientStatus">Filtrar por Status</label>
+            <select id="filterClientStatus" onchange="filterClientsByGroup()">
+                <option value="">Todos os status</option>
+                <option value="Cliente Ativo">Cliente Ativo</option>
+                <option value="Cliente Inativo">Cliente Inativo</option>
+            </select>
+        </div>
+        <div class="form-group" style="display: flex; align-items: flex-end;">
+            <button class="btn-secondary" onclick="clearClientFilters()">Limpar Filtros</button>
+        </div>
+    </div>
+</div>
+<div class="clients-grid" id="clientsList">
+<div class="empty-state">
+<div class="empty-state-icon">👥</div>
+<p>Nenhum cliente encontrado</p>
+<p>Adicione clientes para começar</p>
+</div>
+</div>
+</div>
+<div class="client-tab-content" id="add-client" style="display: none;">
+<div class="form-container">
+<h3 style="margin-bottom: 20px;">Adicionar Novo Cliente</h3>
+<div class="form-row">
+<div class="form-group" style="flex: 0 0 150px; text-align: center;">
+<label>Logo do Cliente</label>
+<div class="upload-area" id="logoPreview" onclick="document.getElementById('clientLogo').click()">
+<div style="font-size: 48px; margin-bottom: 10px;">📷</div>
+<p>Clique para adicionar logo</p>
+</div>
+<input id="clientLogo" onchange="previewLogo(this)" style="display: none;" type="file"/>
+</div>
+<div class="form-group" style="flex: 2;">
+<label for="clientName">Nome do Cliente</label>
+<input id="clientName" placeholder="Nome completo ou da empresa..." type="text"/>
+<label for="clientEmail" style="margin-top: 15px;">CF Empresa (Campo Freshdesk)</label>
+<input id="clientEmail" placeholder="email@exemplo.com" type="email"/>
+                <label for="clientPhone" style="margin-top: 15px;">Telefone</label>
+                <input id="clientPhone" placeholder="(XX) XXXXX-XXXX" type="tel"/>
+                <label for="clientCNPJ" style="margin-top: 15px;">CNPJ</label>
+                <input id="clientCNPJ" placeholder="00.000.000/0000-00" type="text"/>
+                <label for="clientStatus" style="margin-top: 15px;">Status do Cliente</label>
+                <select id="clientStatus">
+                    <option value="Cliente Ativo">Cliente Ativo</option>
+                    <option value="Cliente Inativo">Cliente Inativo</option>
+                </select>
+                <label for="clientGroup" style="margin-top: 15px;">Grupo</label>
+                <select id="clientGroup">
+                    <option value="">Nenhum</option>
+    <option value="4">JCA</option>
+    <option value="1">GRUPO GUANABARA</option>
+    <option value="7">VIAÇÃO ÁGUIA BRANCA S/A</option>
+                </select>
+                <label for="clientSubgroup" style="margin-top: 15px;">Subgrupo</label>
+                <select id="clientSubgroup">
+                   <option value="4">Nenhum</option>
+                    <option value="1">Carga</option>
+                    <option value="2">Urbano</option>
+                    <option value="3">Rodoviário</option>
+                </select>
+                <label for="clientCfEmpresa" style="margin-top: 15px;">Email</label>
+                <input id="clientCfEmpresa" placeholder="Valor do campo cf_empresa no Freshdesk..." type="text"/>
+                <label for="clientCfEmpresa" style="margin-top: 15px;">email@exemplo.com</label>
+                <label for="clientBiLink" style="margin-top: 15px;">Link do Dashboard BI</label>
+                <input id="clientBiLink" placeholder="https://app.powerbi.com/dashboard/..." type="url"/>
+</div>
+</div>
+<div class="products-section">
+<div class="integration-section">
+  <h4>Integração</h4>
+  <div class="form-row">
+    <div class="form-group">
+      <label for="integrationType">Tipo</label>
+      <select id="integrationType">
+        <option value="servicos">Serviços</option>
+        <option value="servicos-bilhetes">Serviços/Bilhetes</option>
+        <option value="escala">Escala</option>
+        <option value="api">API</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="integrationSystem">Sistemas</label>
+      <select id="integrationSystem">
+        <option value="proprio">Sistema Próprio</option>
+        <option value="totalbus">Totalbus</option>
+        <option value="smartbus">Smartbus</option>
+        <option value="optz">Opt+z</option>
+      </select>
+    </div>
+    <div class="form-group" style="flex: 0 0 120px; display: flex; align-items: flex-end;">
+      <button class="btn-secondary" onclick="addIntegration()">Adicionar</button>
+    </div>
+  </div>
+  <div id="integrationList">
+    <div class="products-grid" id="integrationContainer">
+      <p style="color: rgba(0, 0, 0, 0.85);">Nenhuma integração adicionada ainda.</p>
+    </div>
+  </div>
+</div>
+<h4>Produtos / Serviços Associados</h4>
+<div class="form-row">
+<div class="form-group">
+<label for="productName">Nome do Produto/Serviço</label>
+<input id="productNameExample" placeholder="Ex: Software SaaS, Consultoria..." type="text"/>
+</div>
+<div class="form-group" style="flex: 0 0 100px;">
+<label for="productQuantity">Quantidade</label>
+<input id="productQuantity" min="1" type="number" value="1"/>
+</div>
+<div class="form-group" style="flex: 0 0 120px; display: flex; align-items: flex-end;">
+<button class="btn-secondary" onclick="addProduct()">Adicionar</button>
+</div>
+</div>
+<div id="productsList">
+<div class="products-grid" id="productsContainer">
+<p style="color: rgba(0, 0, 0, 0.85);">Nenhum produto adicionado ainda.</p>
+</div>
+</div>
+</div>
+<button class="btn-primary" onclick="saveClient()" style="margin-top: 30px;">Salvar Cliente</button>
+</div>
+</div>
+<div class="client-tab-content" id="edit-client-tab" style="display: none;">
+<div class="form-container">
+<h3 style="margin-bottom: 20px;">Editar Cliente</h3>
+<input id="editClientId" type="hidden"/>
+<div class="form-row">
+<div class="form-group" style="flex: 0 0 150px; text-align: center;">
+<label>Logo do Cliente</label>
+<div class="upload-area" id="editLogoPreview" onclick="document.getElementById('editClientLogo').click()">
+<div style="font-size: 48px; margin-bottom: 10px;">📷</div>
+<p>Clique para adicionar logo</p>
+</div>
+<input id="editClientLogo" onchange="previewEditLogo(this)" style="display: none;" type="file"/>
+</div>
+<div class="form-group" style="flex: 2;">
+<label for="editClientName">Nome do Cliente</label>
+<input id="editClientName" placeholder="Nome completo ou da empresa..." type="text"/>
+<label for="editClientEmail" style="margin-top: 15px;">CF Empresa (Campo Freshdesk)</label>
+<input id="editClientEmail" placeholder="email@exemplo.com" type="email"/>
+                <label for="editClientPhone" style="margin-top: 15px;">Telefone</label>
+                <input id="editClientPhone" placeholder="(XX) XXXXX-XXXX" type="tel"/>
+                <label for="editClientCNPJ" style="margin-top: 15px;">CNPJ</label>
+                <input id="editClientCNPJ" placeholder="00.000.000/0000-00" type="text"/>
+                <label for="editClientStatus" style="margin-top: 15px;">Status do Cliente</label>
+                <select id="editClientStatus">
+                    <option value="2">Cliente Ativo</option>
+                    <option value="3">Cliente Inativo</option>
+                </select>
+                <label for="editClientGroup" style="margin-top: 15px;">Grupo</label>
+                <select id="editClientGroup">
+    <option value="">Nenhum</option>
+    <option value="4">JCA</option>
+    <option value="1">GRUPO GUANABARA</option>
+    <option value="7">VIAÇÃO ÁGUIA BRANCA S/A</option>
+    <!-- ...outros grupos... -->
+</select>
+                <label for="editClientSubgroup" style="margin-top: 15px;">Subgrupo</label>
+                <select id="editClientSubgroup">
+                    <option value="4">Nenhum</option>
+                    <option value="1">Carga</option>
+                    <option value="2">Urbano</option>
+                    <option value="3">Rodoviário</option>
+                </select>
+                <label for="editClientCfEmpresa" style="margin-top: 15px;">Email</label>
+                <input id="editClientCfEmpresa" placeholder="Valor do campo cf_empresa no Freshdesk..." type="text"/>
+                <label for="editClientBiLink" style="margin-top: 15px;">Link do Dashboard BI</label>
+                <input id="editClientBiLink" placeholder="https://app.powerbi.com/dashboard/..." type="url"/>
+</div>
+</div>
+<div class="products-section">
+<div class="integration-section">
+  <h4>Integração</h4>
+  <div class="form-row">
+    <div class="form-group">
+      <label for="editIntegrationType">Tipo</label>
+      <select id="editIntegrationType">
+        <option value="servicos">Serviços</option>
+        <option value="servicos-bilhetes">Serviços/Bilhetes</option>
+        <option value="escala">Escala</option>
+        <option value="api">API</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="editIntegrationSystem">Sistemas</label>
+      <select id="editIntegrationSystem">
+        <option value="proprio">Sistema Próprio</option>
+        <option value="totalbus">Totalbus</option>
+        <option value="smartbus">Smartbus</option>
+        <option value="optz">Opt+z</option>
+      </select>
+    </div>
+    <div class="form-group" style="flex: 0 0 120px; display: flex; align-items: flex-end;">
+      <button class="btn-secondary" onclick="addEditIntegration()">Adicionar</button>
+    </div>
+  </div>
+  <div id="editIntegrationList">
+    <div class="products-grid" id="editIntegrationContainer">
+      <p style="color: rgba(0, 0, 0, 0.85);">Nenhuma integração adicionada ainda.</p>
+    </div>
+  </div>
+</div>
+<h4>Produtos / Serviços Associados</h4>
+<div class="form-row">
+<div class="form-group">
+<label for="editProductName">Nome do Produto/Serviço</label>
+<input id="editProductName" placeholder="Ex: Software SaaS, Consultoria..." type="text"/>
+</div>
+<div class="form-group" style="flex: 0 0 100px;">
+<label for="editProductQuantity">Quantidade</label>
+<input id="editProductQuantity" min="1" type="number" value="1"/>
+</div>
+<div class="form-group" style="flex: 0 0 120px; display: flex; align-items: flex-end;">
+<button class="btn-secondary" onclick="addEditProduct()">Adicionar</button>
+</div>
+</div>
+<div id="editProductsList">
+<div class="products-grid" id="editProductsContainer">
+<p style="color: rgba(0, 0, 0, 0.85);">Nenhum produto adicionado ainda.</p>
+</div>
+</div>
+</div>
+<button class="btn-primary" onclick="updateClient()" style="margin-top: 30px;">Atualizar Cliente</button>
+<button class="btn-secondary" onclick="showClientTab('view-clients')" style="margin-top: 30px; margin-left: 10px;">Cancelar</button>
+</div>
+</div>
+<div class="client-tab-content" id="view-client-documents" style="display:none;">
+</div>
+</div>
+
+<!-- Aba Painel de Tickets -->
+<div class="content-section" id="painel-tickets">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h3 style="margin: 0; color: #000; font-size: 1.8em;">
+            <i class="fas fa-ticket-alt" style="margin-right: 10px; color: #ff9800;"></i>
+            Painel de Tickets
+        </h3>
+        <button onclick="refreshAllTickets()" style="background: #4fc3f7; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+            <i class="fas fa-sync-alt"></i> Atualizar
+        </button>
+    </div>
+
+    <!-- Métricas dos Tickets -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div style="background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%); border-radius: 12px; padding: 20px; text-align: center;">
+            <h4 style="margin: 0 0 10px 0; color: #000;">Total de Tickets</h4>
+            <p style="margin: 0; font-size: 2em; font-weight: bold; color: #0277bd;" id="totalTicketsCount">-</p>
+        </div>
+        <div style="background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%); border-radius: 12px; padding: 20px; text-align: center;">
+            <h4 style="margin: 0 0 10px 0; color: #000;">Abertos</h4>
+            <p style="margin: 0; font-size: 2em; font-weight: bold; color: #2e7d32;" id="openTicketsCount">-</p>
+        </div>
+        <div style="background: linear-gradient(135deg, #ffcc80 0%, #ffb74d 100%); border-radius: 12px; padding: 20px; text-align: center;">
+            <h4 style="margin: 0 0 10px 0; color: #000;">Pendentes</h4>
+            <p style="margin: 0; font-size: 2em; font-weight: bold; color: #ef6c00;" id="pendingTicketsCount">-</p>
+        </div>
+        <div style="background: linear-gradient(135deg, #d1c4e9 0%, #b39ddb 100%); border-radius: 12px; padding: 20px; text-align: center;">
+            <h4 style="margin: 0 0 10px 0; color: #000;">Resolvidos</h4>
+            <p style="margin: 0; font-size: 2em; font-weight: bold; color: #7b1fa2;" id="resolvedTicketsCount">-</p>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div style="background: rgba(179, 229, 252, 0.95); border-radius: 10px; padding: 20px; margin-bottom: 30px;">
+        <h4 style="margin: 0 0 15px 0; color: #000;">Filtros</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #000;">Cliente:</label>
+                <select id="filterByClient" onchange="filterTickets()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Todos os clientes</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #000;">Status:</label>
+                <select id="filterByStatus" onchange="filterTickets()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Todos os status</option>
+                    <option value="2">Aberto</option>
+                    <option value="3">Pendente</option>
+                    <option value="4">Resolvido</option>
+                    <option value="5">Fechado</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #000;">Prioridade:</label>
+                <select id="filterByPriority" onchange="filterTickets()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Todas as prioridades</option>
+                    <option value="1">Baixa</option>
+                    <option value="2">Média</option>
+                    <option value="3">Alta</option>
+                    <option value="4">Urgente</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #000;">Período:</label>
+                <select id="filterByPeriod" onchange="filterTickets()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Todos os períodos</option>
+                    <option value="today">Hoje</option>
+                    <option value="week">Esta semana</option>
+                    <option value="month">Este mês</option>
+                    <option value="quarter">Este trimestre</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Tickets -->
+    <div style="background: rgba(179, 229, 252, 0.95); border-radius: 10px; padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h4 style="margin: 0; color: #000;">Lista de Tickets</h4>
+            <span id="ticketsResultCount" style="color: #666; font-size: 0.9em;">Carregando...</span>
+        </div>
+        <div id="allTicketsList" style="max-height: 600px; overflow-y: auto;">
+            <div style="text-align: center; padding: 40px; color: #666;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2em; margin-bottom: 20px;"></i>
+                <p>Carregando todos os tickets...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="content-section" id="dashboard">
+<h3 style="margin-bottom: 20px;">Dashboards </h3>
+<div class="dashboards-grid" id="dashboardsList">
+<div class="empty-state">
+<div class="empty-state-icon">📊</div>
+<p>Nenhum Dashboard de cliente encontrado.</p>
+<p>Adicione clientes com links de BI para visualizá-los aqui.</p>
+</div>
+</div>
+</div>
+<div class="content-section" id="homologacao">
+<div class="main-container">
+<div class="header">
+<h1>Gerenciador de Homologações</h1>
+</div>
+<div class="tabs">
+<button class="tab-button active" onclick="openHomologacaoTab(event, 'formularioHomologacao')">
+                        📝 Formulário de Registro
+                    </button>
+<button class="tab-button" onclick="openHomologacaoTab(event, 'listaHomologacoes')">
+                        📚 Homologações Registradas
+                    </button>
+</div>
+<div class="tab-content active" id="formularioHomologacao">
+<form id="homologacaoForm">
+<div class="form-row">
+<div class="form-group">
+<label for="especialista"> Especialista Responsável</label>
+<select id="especialista" name="especialista" required="">
+<option value="">Selecione o especialista</option>
+<option value="Julyana">Julyana</option>
+<option value="Marlos">Marlos</option>
+<option value="Renata">Renata</option>
+<option value="Larissa">Larissa</option>
+<option value="GabrielCS">GabrielCS</option>
+<option value="AdrielCS">AdrielCS</option>
+</select>
+</div>
+<div class="form-group">
+<label for="versao"> Versão</label>
+<input id="versao" name="versao" placeholder="Ex: v1.2.3" required="" type="text"/>
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label for="dataLiberacao"> Data de Liberação</label>
+<input id="dataLiberacao" name="dataLiberacao" required="" type="date"/>
+</div>
+<div class="form-group">
+<label for="dataHomologacao"> Data de Homologação</label>
+<input id="dataHomologacao" name="dataHomologacao" type="date"/>
+</div>
+</div>
+<div class="form-group">
+<label for="sistema"> Sistema</label>
+<select id="sistema" name="sistema" required="">
+<option value="">Selecione o sistema</option>
+<option value="Sing">Sing</option>
+<option value="Telemetria">Telemetria</option>
+<option value="Etrip">Etrip</option>
+<option value="OPT+z">OPT+z</option>
+<option value="POrtal">POrtal</option>
+<option value="Outro">Outro</option>
+</select>
+</div>
+<div class="form-group">
+<label for="observacao"> Observações</label>
+<textarea id="observacao" name="observacao" placeholder="Descreva detalhes da homologação, testes realizados, bugs encontrados, etc."></textarea>
+</div>
+<div class="form-group">
+<label> Arquivos de Homologação</label>
+<div class="upload-area" id="uploadAreaHomologacao">
+<div class="upload-icon">☁️</div>
+<div class="upload-text">Clique aqui ou arraste arquivos</div>
+<div class="upload-subtext">PDF, DOC, XLS, IMG até 10MB cada</div>
+</div>
+<input accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif" id="fileInputHomologacao" multiple="" type="file"/>
+<div class="file-list" id="fileListHomologacao"></div>
+</div>
+<div class="btn-group">
+<button class="btn btn-secondary" onclick="limparHomologacaoForm()" type="button">
+                                 Limpar
+                            </button>
+<button class="btn btn-primary" type="submit">
+                                 Salvar Homologação
+                            </button>
+</div>
+</form>
+</div>
+<div class="tab-content" id="listaHomologacoes">
+<div class="filters-section">
+  <div class="form-row">
+    <div class="form-group">
+      <label for="filtroSistema">Filtrar por Sistema</label>
+      <select id="filtroSistema" onchange="filtrarHomologacoes()">
+        <option value="">Todos os sistemas</option>
+        <option value="Sing">Sing</option>
+        <option value="Telemetria">Telemetria</option>
+        <option value="Etrip">Etrip</option>
+        <option value="OPT+z">OPT+z</option>
+        <option value="POrtal">POrtal</option>
+        <option value="Outro">Outro</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="filtroEspecialista">Filtrar por Especialista</label>
+      <input id="filtroEspecialista" onkeyup="filtrarHomologacoes()" placeholder="Nome do especialista" type="text"/>
+    </div>
+    <div class="form-group">
+      <label for="filtroDataInicio">Data início</label>
+      <input id="filtroDataInicio" type="date" onchange="filtrarHomologacoes()" />
+    </div>
+    <div class="form-group">
+      <label for="filtroDataFim">Data fim</label>
+      <input id="filtroDataFim" type="date" onchange="filtrarHomologacoes()" />
+    </div>
+  </div>
+</div>
+<div class="homologacoes-grid" id="homologacoesGrid">
+</div>
+<div class="empty-state" id="emptyStateHomologacao" style="display: none;">
+<div>📋</div>
+<h3>Nenhuma homologação encontrada</h3>
+<p>Registre sua primeira homologação usando o formulário na aba "Formulário de Registro".</p>
+</div>
+<div id="totalHomologacoesFiltradas" style="margin: 20px 0 10px 0; font-weight: bold; font-size: 1.1em; text-align: right;"></div>
+</div>
+</div>
+</div>
+<div class="content-section" id="release">
+<div class="form-container">
+<h3 style="margin-bottom: 20px;">Cadastro de Release</h3>
+<div class="form-row">
+<div class="form-group"><label for="releaseDate"> Data de Liberação</label><input class="input-padrao" id="releaseDate" placeholder="Selecione a data" type="date" readonly/></div>
+<div class="form-group"><label for="releaseStatus"> Status</label><input id="releaseStatus" type="text"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label for="releaseSystem"> Sistema</label><input id="releaseSystem" type="text"/></div>
+<div class="form-group"><label for="releaseVersion"> Versão</label><input id="releaseVersion" type="text"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label for="releaseAnalyst"> Analista</label><input id="releaseAnalyst" type="text"/></div>
+<div class="form-group"><label for="releaseHomologDate"> Data de Homologação</label><input class="input-padrao" id="releaseHomologDate" placeholder="Selecione a data" type="date"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label for="releaseClient"> Cliente</label>
+<select id="releaseClient" onchange="carregarTicketsCliente()">
+<option value="">Selecione um cliente...</option>
+</select>
+</div>
+<div class="form-group"><label for="releaseType"> Tipo</label>
+<select id="releaseType">
+<option value="">Selecione o tipo</option>
+<option value="bug">Bug</option>
+<option value="melhoria">Melhoria</option>
+<option value="nova funcionalidade">Nova Funcionalidade</option>
+<option value="outro">Outro</option>
+</select>
+</div>
+</div>
+<div class="form-group" id="ticketsSection" style="display: none;">
+<label for="releaseTickets">🎫 Tickets Relacionados</label>
+
+<!-- Lista de tickets disponíveis para seleção -->
+<div id="ticketsDisponiveis" style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; background: white; padding: 10px; margin-bottom: 20px;">
+    <div style="text-align: center; color: #6c757d; padding: 20px;">
+        <i class="fas fa-spinner fa-spin"></i> Carregando tickets...
+    </div>
+</div>
+
+<!-- Seção de tickets selecionados com drag-and-drop -->
+<div style="margin-bottom: 20px;">
+    <label style="display: block; margin-bottom: 10px; font-weight: bold; color: #28a745;">Tickets Selecionados:</label>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; min-height: 200px;">
+        <!-- Zona de Bug -->
+        <div id="bugZone" class="drop-zone" 
+             style="border: 2px dashed #dc3545; border-radius: 8px; padding: 15px; background: #f8d7da; min-height: 180px;"
+             ondrop="dropTicket(event, 'bug')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+            <h4 style="margin: 0 0 10px 0; color: #721c24; text-align: center;">
+                 Bug
+            </h4>
+            <div id="bugTickets" class="ticket-container">
+                <div style="text-align: center; color: #721c24; font-style: italic; margin-top: 50px;">
+                    Arraste tickets aqui para classificar como Bug
+                </div>
+            </div>
+        </div>
+        
+        <!-- Zona de Melhoria -->
+        <div id="melhoriaZone" class="drop-zone" 
+             style="border: 2px dashed #28a745; border-radius: 8px; padding: 15px; background: #d4edda; min-height: 180px;"
+             ondrop="dropTicket(event, 'melhoria')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+            <h4 style="margin: 0 0 10px 0; color: #155724; text-align: center;">
+                 Melhoria
+            </h4>
+            <div id="melhoriaTickets" class="ticket-container">
+                <div style="text-align: center; color: #155724; font-style: italic; margin-top: 50px;">
+                    Arraste tickets aqui para classificar como Melhoria
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Contador de tickets -->
+    <div id="ticketCounter" style="margin-top: 10px; text-align: center; font-weight: bold; color: #495057;">
+        0 tickets selecionados (0 bugs, 0 melhorias)
+    </div>
+</div>
+</div>
+<div class="form-group"><label>📎 Anexar Documento</label>
+<div class="upload-area" onclick="document.getElementById('releaseFile').click()">
+<div class="upload-icon">📄</div>
+<p>Arraste e solte ou clique para selecionar um arquivo</p>
+<input id="releaseFile" style="display: none;" type="file"/>
+</div>
+</div>
+<button class="btn-primary" onclick="salvarRelease()">Salvar Release</button>
+</div>
+<div class="form-row" style="margin-top: 40px; align-items: flex-end;">
+<div class="form-group"><label for="filtroSistema"> Sistema</label><input id="filtroSistema" type="text"/></div>
+<div class="form-group"><label for="filtroTipo"> Tipo</label>
+<select id="filtroTipo">
+<option value="">Todos</option>
+<option value="bug">Bug</option>
+<option value="melhoria">Melhoria</option>
+<option value="nova funcionalidade">Nova Funcionalidade</option>
+<option value="outro">Outro</option>
+</select>
+</div>
+<div class="form-group"><button class="btn-secondary" onclick="limparFiltros()">Limpar</button></div>
+</div>
+<h3 style="margin-top: 20px;">Releases Salvos</h3>
+<div class="documents-grid" id="releaseList">
+<div class="empty-state"><div class="empty-state-icon"></div><p>Nenhum release salvo</p></div>
+</div>
+</div>
+<div class="content-section" id="reunioes">
+<h2>Reuniões</h2>
+<div class="form-row">
+<div class="form-group"><label for="reuniaoCliente">Cliente</label><select id="reuniaoCliente"><option value="">Selecione um cliente...</option></select></div>
+<div class="form-group"><label for="reuniaoData">Data</label><input class="input-padrao" id="reuniaoData" type="date"/></div>
+<div class="form-group"><label for="reuniaoHorario">Horário</label><input class="input-padrao" id="reuniaoHorario" type="time"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label for="reuniaoTipo">Tipo</label><input id="reuniaoTipo" type="text"/></div>
+<div class="form-group"><label for="reuniaoResponsavel">Responsável pela Reunião</label><select id="reuniaoResponsavel"><option value="">Selecione um responsável...</option></select></div>
+</div>
+<div class="form-group"><label for="reuniaoParticipantes">Participantes</label><input id="reuniaoParticipantes" type="text"/></div>
+<div class="form-group"><label for="reuniaoFile">📎 Anexar Ata (opcional)</label>
+<input class="input-padrao" id="reuniaoFile" type="file"/>
+</div>
+<button class="btn-primary" onclick="salvarReuniao()">Salvar Reunião</button>
+<h3 style="margin-top: 30px;">Filtros</h3>
+<div class="form-row">
+<div class="form-group"><label for="filtroReuniaoCliente">Filtrar por Cliente</label><select id="filtroReuniaoCliente" onchange="carregarReunioes()"><option value="">Todos os clientes</option></select></div>
+<div class="form-group"><label for="filtroReuniaoParticipante">Filtrar por Participante</label><select id="filtroReuniaoParticipante" onchange="carregarReunioes()"><option value="">Todos os participantes</option></select></div>
+<div class="form-group">
+    <label for="filtroReuniaoDataInicio">Data início</label>
+    <input type="date" id="filtroReuniaoDataInicio" onchange="carregarReunioes()" />
+</div>
+<div class="form-group">
+    <label for="filtroReuniaoDataFim">Data fim</label>
+    <input type="date" id="filtroReuniaoDataFim" onchange="carregarReunioes()" />
+</div>
+</div>
+<div class="documents-grid" id="listaReunioes" style="margin-top: 20px;"></div>
+<div id="totalReunioesFiltradas" style="margin-top: 16px; font-weight: bold; font-size: 1.1em;"></div>
+</div>
+<!-- Seção: Painel do Setor -->
+<div class="content-section" id="painel-setor">
+    <div style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%); padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: white; box-shadow: 0 8px 25px rgba(41, 182, 246, 0.3);">
+        <h2 style="margin: 0; font-size: 2.5em; margin-bottom: 10px;">
+            <i class="fas fa-chart-pie" style="margin-right: 15px;"></i>
+            Painel do Setor
+        </h2>
+        <p style="margin: 0; font-size: 1.2em; opacity: 0.9;">
+            Gestão completa de tarefas, projetos, time e visitas
+        </p>
+    </div>
+
+    <!-- Layout Principal -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+        
+        <!--  Esquerda: Tarefas -->
+        <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
+            <h3 style="color: #4fc3f7; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
+                <i class="fas fa-tasks" style="margin-right: 10px;"></i>TAREFAS
+            </h3>
+            
+            <!-- Tarefas -->
+            <div id="tarefasGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;"></div>
+            
+            <!-- Botão para adicionar tarefa -->
+            <button class="btn-primary" onclick="showAddTaskModal()" style="width: 100%; margin-top: 15px;">
+                <i class="fas fa-plus" style="margin-right: 8px;"></i>Adicionar Tarefa
+            </button>
+            <button class="btn-primary" id="save-tasks-btn" onclick="saveTasks()" style="width: 100%; margin-top: 15px;">
+                <i class="fas fa-save" style="margin-right: 8px;"></i>Salvar Tarefas
+            </button>
+        </div>
+
+        <!-- Coluna Direita: Time -->
+        <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
+            <h3 style="color: #4fc3f7; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
+                <i class="fas fa-users" style="margin-right: 10px;"></i>TIME
+            </h3>
+            
+            <!-- Lista do Time -->
+            <div id="timeList" style="max-height: 400px; overflow-y: auto;">
+               
+            </div>
+            
+            <!-- Botão para adicionar membro -->
+            <button class="btn-primary" onclick="showAddTeamMemberModal()" style="width: 100%; margin-top: 15px;">
+                <i class="fas fa-user-plus" style="margin-right: 8px;"></i>Adicionar Membro
+            </button>
+        </div>
+    </div>
+
+    <!-- Projetos em Andamento -->
+    <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
+        <h3 style="color: #4fc3f7; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
+            <i class="fas fa-project-diagram" style="margin-right: 10px;"></i>PROJETOS EM ANDAMENTO
+        </h3>
+        
+        <!-- Tabela de Projetos -->
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <thead style="background: #4fc3f7; color: white;">
+                    <tr>
+                            <th style="padding: 15px; text-align: left; font-weight: bold;">Projeto</th>
+                            <th style="padding: 15px; text-align: left; font-weight: bold;">Empresa</th>
+                            <th style="padding: 15px; text-align: left; font-weight: bold;">Especialista</th>
+                            <th style="padding: 15px; text-align: left; font-weight: bold;">Início</th>
+                            <th style="padding: 15px; text-align: left; font-weight: bold;">Término</th>
+                            <th style="padding: 15px; text-align: center; font-weight: bold;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="projetosTableBody">
+                    <!-- Os dados dos projetos devem incluir os campos de Início e Término -->
+                </tbody>
+            </table>
+        </div>
+        
+        
+        
+        <!--  adicionar projeto -->
+        <button class="btn-primary" onclick="showAddProjectModal()" style="margin-top: 15px;">
+            <i class="fas fa-plus" style="margin-right: 8px;"></i>Adicionar Projeto
+        </button>
+    </div>
+
+    <!-- Layout Inferior: Visitas e Entregas -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        
+        <!-- Visitas com Mapa -->
+        <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
+            <h3 style="color: #4fc3f7; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
+                <i class="fas fa-map-marker-alt" style="margin-right: 10px;"></i>VISITAS
+            </h3>
+            
+            <!-- Mapa -->
+            <div id="mapContainer" style="height: 200px; border-radius: 10px; margin-bottom: 20px; z-index: 1;">
+              
+            </div>
+            
+            <!-- Lista de Visitas -->
+            <div id="visitasList" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;">
+                <div style="text-align: center; padding: 20px; color: #666;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 1.5em; margin-bottom: 10px;"></i>
+                    <p>Carregando visitas...</p>
+                </div>
+            </div>
+            
+            <!-- Contador de visitas -->
+            <div style="text-align: center; margin-bottom: 15px;">
+                <span style="font-size: 1.2em; font-weight: bold; color: #4fc3f7;">
+                    <i class="fas fa-map-marker-alt" style="margin-right: 8px;"></i>
+                    <span id="visitasCount">00</span> Visitas
+                </span>
+            </div>
+            
+            <!-- Botão para atualizar visitas -->
+            <button class="btn-primary" onclick="atualizarSecaoVisitas()" style="width: 100%;">
+                <i class="fas fa-sync-alt" style="margin-right: 8px;"></i>Atualizar Visitas
+            </button>
+        </div>
+
+        <!-- Entregas -->
+        <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
+            <h3 style="color: #4fc3f7; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
+                <i class="fas fa-calendar" style="margin-right: 10px;"></i>ENTREGAS
+            </h3>
+            
+            <!-- Tabela de Entregas por Mês -->
+            <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <div style="background: #4fc3f7; color: white; padding: 15px; text-align: center; font-weight: bold;">
+                    SLA Por Mês
+                </div>
+                
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead style="background: #e3f2fd;" id="entregasTableHeader">
+                        <!-- Cabeçalhos serão gerados dinamicamente -->
+                    </thead>
+                    <tbody id="entregasTableBody">
+                       
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Botão para adicionar entrega -->
+            <button class="btn-primary" onclick="showAddEntregaModal()" style="width: 100%; margin-top: 15px;">
+                <i class="fas fa-plus" style="margin-right: 8px;"></i>Adicionar Entrega
+            </button>
+        </div>
+    </div>
+
+    <!-- Rodapé com Tags -->
+    <div style="text-align: center; margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%); border-radius: 15px; color: white;">
+        <div style="display: flex; justify-content: center; align-items: center; gap: 30px; font-size: 1.2em; font-weight: bold;">
+            <span><i class="fas fa-shield-alt" style="margin-right: 8px;"></i>+ segurança</span>
+            <span><i class="fas fa-chart-line" style="margin-right: 8px;"></i>+ eficiência</span>
+            <span><i class="fas fa-coins" style="margin-right: 8px;"></i>+ economia</span>
+        </div>
+    </div>
+</div></div>
+
+<!-- Nova Seção: Gerenciar Logins -->
+<div class="content-section" id="gerenciar-logins">
+    <div style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%); padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: #333333; box-shadow: 0 8px 25px rgba(41, 182, 246, 0.3);">
+        <h2 style="margin: 0; font-size: 2.5em; margin-bottom: 10px;">
+            <i class="fas fa-user-shield" style="margin-right: 15px;"></i>
+            Gerenciar Logins
+        </h2>
+        <p style="margin: 0; font-size: 1.2em; opacity: 0.9;">
+            Gerencie usuários e permissões do sistema
+        </p>
+    </div>
+
+    <!-- Formulário para Adicionar Usuário -->
+    <div class="form-container">
+        <h3 style="margin-bottom: 20px; color: #333333;">Adicionar ou Editar Usuário</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="usuarioNome">Nome Completo</label>
+                <input type="text" id="usuarioNome" placeholder="Digite o nome completo do usuário">
+            </div>
+            <div class="form-group">
+                <label for="usuarioEmail">Email</label>
+                <input type="email" id="usuarioEmail" placeholder="Digite o email do usuário">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="usuarioSenha">Senha</label>
+                <input type="password" id="usuarioSenha" placeholder="Digite a senha">
+            </div>
+            <div class="form-group">
+                <label for="usuarioConfirmarSenha">Confirmar Senha</label>
+                <input type="password" id="usuarioConfirmarSenha" placeholder="Confirme a senha">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="usuarioSetor">Setor</label>
+                <select id="usuarioSetor">
+                    <option value="">Selecione o setor</option>
+                    <option value="Time de implantação">Time de implantação</option>
+                    <option value="CS">CS</option>
+                    <option value="Suporte">Suporte</option>
+                    <option value="Tecnico">Técnico</option>
+                    <option value="Dev">Dev</option>
+                    <option value="Produto">Produto</option>
+                    <option value="Comercial">Comercial</option>
+                    <option value="Administrativo">Administrativo</option>
+                    <option value="TI">TI</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+           <div class="permissions-container">
+    <div class="section-title">Permissões</div>
+    <div class="permissions-grid">
+        
+        <div class="permission-item checked">
+            <input type="checkbox" id="perm-inicio" value="inicio" checked>
+            <label for="perm-inicio">Início</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-painel-setor" value="painel-setor">
+            <label for="perm-painel-setor">Painel do Setor</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-dashboard" value="dashboard">
+            <label for="perm-dashboard">Dashboards</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-clients" value="clients">
+            <label for="perm-clients">Clientes</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-homologacao" value="homologacao">
+            <label for="perm-homologacao">Homologação</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-visitas" value="https://tryvia.github.io/TryviaBI/mapa_visitas.html">
+            <label for="perm-visitas">Visitas</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-calendario" value="https://tryvia.github.io/TryviaBI/calendario.html">
+            <label for="perm-calendario">Calendário</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-mvp" value="https://tryvia.github.io/TryviaBI/linha%20do%20tempo.html">
+            <label for="perm-mvp">MVP</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-implantacao" value="https://tryvia.github.io/TryviaBI/implanta%C3%A7%C3%A3o.html">
+            <label for="perm-implantacao">Implantações</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-release" value="release">
+            <label for="perm-release">Release</label>
+        </div>
+
+        <div class="permission-item">
+            <input type="checkbox" id="perm-treinamento" value="treinamento">
+            <label for="perm-treinamento">Treinamento</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-reunioes" value="reunioes">
+            <label for="perm-reunioes">Reuniões</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-relatorioVisita" value="relatorioVisita">
+            <label for="perm-relatorioVisita">Relatório de Visita</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-documents" value="documents">
+            <label for="perm-documents">Time de Implantação</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-evaluations" value="evaluations">
+            <label for="perm-evaluations">Avaliações</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-gestao" value="gestao">
+            <label for="perm-gestao">Gestão</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-cs" value="cs">
+            <label for="perm-cs">cs</label>
+        </div>
+
+        <div class="permission-item">
+            <input type="checkbox" id="perm-gerenciar-logins" value="gerenciar-logins">
+            <label for="perm-gerenciar-logins">Gerenciar Logins</label>
+        </div>
+    </div>
+
+    <!-- Funções da aba de clientes -->
+    <div class="subsection-title">Funções da aba de clientes</div>
+    
+    <div class="permissions-grid">
+        <div class="permission-item">
+            <input type="checkbox" id="perm-saveClient" value="saveClient">
+            <label for="perm-saveClient">Salvar Cliente</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-editClient" value="editClient">
+            <label for="perm-editClient">Editar Cliente</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-updateClient" value="updateClient">
+            <label for="perm-updateClient">Atualizar Cliente</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-deleteClient" value="deleteClient">
+            <label for="perm-deleteClient">Excluir Cliente</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-addClientDocument" value="addClientDocument">
+            <label for="perm-addClientDocument">Adicionar Documento do Cliente</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-deleteClientDocument" value="deleteClientDocument">
+            <label for="perm-deleteClientDocument">Excluir Documento do Cliente</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-addProduct" value="addProduct">
+            <label for="perm-addProduct">Adicionar Produto</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-removeProduct" value="removeProduct">
+            <label for="perm-removeProduct">Remover Produto</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-addEditProduct" value="addEditProduct">
+            <label for="perm-addEditProduct">Adicionar/Editar Produto</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-addIntegration" value="addIntegration">
+            <label for="perm-addIntegration">Adicionar Integração</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-addEditIntegration" value="addEditIntegration">
+            <label for="perm-addEditIntegration">Adicionar/Editar Integração</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-removeIntegration" value="removeIntegration">
+            <label for="perm-removeIntegration">Remover Integração</label>
+        </div>
+    </div>
+
+    <!-- Funções de Documentos -->
+    <div class="subsection-title">Funções de Documentos do time</div>
+    
+    <div class="permissions-grid">
+        <div class="permission-item">
+            <input type="checkbox" id="perm-addDocument" value="addDocument">
+            <label for="perm-addDocument">Adicionar Documento do time</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-deleteDocument" value="deleteDocument">
+            <label for="perm-deleteDocument">Excluir Documento do time</label>
+        </div>
+    </div>
+
+    <!-- Funções de Homologação -->
+    <div class="subsection-title">Funções de Homologação</div>
+    
+    <div class="permissions-grid">
+        <div class="permission-item">
+            <input type="checkbox" id="perm-submitHomologacao" value="submitHomologacao">
+            <label for="perm-submitHomologacao">Adicionar homologação</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-deleteHomologacao" value="deleteHomologacao">
+            <label for="perm-deleteHomologacao">Excluir Homologação</label>
+        </div>
+    </div>
+
+    <!-- Funções de Releases -->
+    <div class="subsection-title">Funções de Releases</div>
+    
+    <div class="permissions-grid">
+        <div class="permission-item">
+            <input type="checkbox" id="perm-salvarRelease" value="salvarRelease">
+            <label for="perm-salvarRelease">Salvar Release</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-deleteRelease" value="deleteRelease">
+            <label for="perm-deleteRelease">Excluir Release</label>
+        </div>
+    </div>
+
+    <!-- Funções de Reuniões -->
+    <div class="subsection-title">Funções de Reuniões</div>
+    
+    <div class="permissions-grid">
+        <div class="permission-item">
+            <input type="checkbox" id="perm-salvarReuniao" value="salvarReuniao">
+            <label for="perm-salvarReuniao">Salvar Reunião</label>
+        </div>
+    </div>
+
+    <!-- Funções de Treinamento -->
+    <div class="subsection-title">Funções de Treinamento</div>
+
+     <div class="permissions-grid">
+        <div class="permission-item">
+            <input type="checkbox" id="perm-showAddVideoModal" value="showAddVideoModal">
+            <label for="perm-showAddVideoModal">Adicionar Video</label>
+        </div>
+    </div>
+    
+    <div class="permissions-grid">
+        <div class="permission-item">
+            <input type="checkbox" id="perm-showAddProductModal" value="showAddProductModal">
+            <label for="perm-showAddProductModal">Adicionar Produto</label>
+        </div>
+    </div>
+ 
+    <div class="permissions-grid">
+        <div class="permission-item">
+            <input type="checkbox" id="perm-deleteTrainingVideo" value="deleteTrainingVideo">
+            <label for="perm-deleteTrainingVideo">Excluir Video</label>
+        </div>
+    </div>
+
+    <!-- Funções de Painel do Setor -->
+    <div class="subsection-title">Funções de Painel do Setor</div>
+    
+    <div class="permissions-grid">
+        <div class="permission-item">
+            <input type="checkbox" id="perm-alterarQuantidade" value="alterarQuantidade">
+            <label for="perm-alterarQuantidade">Alterar Quantidade nas tarefas</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-saveTasks" value="saveTasks">
+            <label for="perm-saveTasks">Salvar Tarefas</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-abrirModalTarefa" value="abrirModalTarefa">
+            <label for="perm-abrirModalTarefa">Adicionar Tarefa</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-abrirModalMembro" value="abrirModalMembro">
+            <label for="perm-abrirModalMembro">Adicionar Membro do Time</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-abrirModalProjeto" value="abrirModalProjeto">
+            <label for="perm-abrirModalProjeto">Adicionar Projeto</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-abrirModalVisita" value="abrirModalVisita">
+            <label for="perm-abrirModalVisita">Adicionar Visita</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-abrirModalEntrega" value="abrirModalEntrega">
+            <label for="perm-abrirModalEntrega">Adicionar Entrega</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-saveTask" value="saveTask">
+            <label for="perm-saveTask">Salvar Tarefa</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-saveProject" value="saveProject">
+            <label for="perm-saveProject">Salvar Projeto</label>
+        </div>
+        
+        <div class="permission-item">
+            <input type="checkbox" id="perm-excluirProjeto" value="excluirProjeto">
+            <label for="perm-excluirProjeto">Excluir Projeto</label>
+        </div>
+    </div>
+</div>
+        </div>
+        <button class="btn-primary" id="btnSalvarUsuario" onclick="adicionarUsuario()">
+            <i class="fas fa-user-plus" style="margin-right: 8px;"></i>
+            Adicionar Usuário
+        </button>
+    </div>
+
+    <!-- Formulário para Criar Login de Cliente -->
+    <div class="form-container" style="margin-top: 30px;">
+        <h3 style="margin-bottom: 20px; color: #333333;">Criar Login para Cliente</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="clienteSelect">Cliente *</label>
+                <select id="clienteSelect" required>
+                    <option value="">Selecione um cliente</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="clienteLoginEmail">Email do Login</label>
+                <input type="email" id="clienteLoginEmail" placeholder="Digite o email para o login do cliente">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="clienteLoginSenha">Senha</label>
+                <input type="password" id="clienteLoginSenha" placeholder="Digite a senha">
+            </div>
+            <div class="form-group">
+                <label for="clienteLoginConfirmarSenha">Confirmar Senha</label>
+                <input type="password" id="clienteLoginConfirmarSenha" placeholder="Confirme a senha">
+            </div>
+        </div>
+       <div class="client-permissions-container">
+    <div class="client-section-title">Permissões do Cliente</div>
+    <div class="client-permissions-grid">
+        <!-- Permissões Básicas do Cliente -->
+        <div class="client-permission-item checked">
+            <input type="checkbox" id="cliente-perm-inicio-cliente" value="inicio-cliente" checked>
+            <label for="cliente-perm-inicio-cliente">Início</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-dashboard" value="dashboard">
+            <label for="cliente-perm-dashboard">Dashboards</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-mvp" value="https://tryvia.github.io/TryviaBI/linha%20do%20tempo.html">
+            <label for="cliente-perm-mvp">MVP</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-implantacao" value="https://tryvia.github.io/TryviaBI/implanta%C3%A7%C3%A3o.html">
+            <label for="cliente-perm-implantacao">Implantações</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-clients" value="clients">
+            <label for="cliente-perm-clients">Clientes</label>
+        </div>
+    </div>
+
+    <!-- Funções da aba de clientes -->
+    <div class="client-subsection-title">Funções da aba de clientes</div>
+    
+    <div class="client-permissions-grid">
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-saveClient" value="saveClient">
+            <label for="cliente-perm-saveClient">Salvar Cliente</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-editClient" value="editClient">
+            <label for="cliente-perm-editClient">Editar Cliente</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-updateClient" value="updateClient">
+            <label for="cliente-perm-updateClient">Atualizar Cliente</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-deleteClient" value="deleteClient">
+            <label for="cliente-perm-deleteClient">Excluir Cliente</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-addClientDocument" value="addClientDocument">
+            <label for="cliente-perm-addClientDocument">Adicionar Documento do Cliente</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-deleteClientDocument" value="deleteClientDocument">
+            <label for="cliente-perm-deleteClientDocument">Excluir Documento do Cliente</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-addProduct" value="addProduct">
+            <label for="cliente-perm-addProduct">Adicionar Produto</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-removeProduct" value="removeProduct">
+            <label for="cliente-perm-removeProduct">Remover Produto</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-addEditProduct" value="addEditProduct">
+            <label for="cliente-perm-addEditProduct">Adicionar/Editar Produto</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-addIntegration" value="addIntegration">
+            <label for="cliente-perm-addIntegration">Adicionar Integração</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-addEditIntegration" value="addEditIntegration">
+            <label for="cliente-perm-addEditIntegration">Adicionar/Editar Integração</label>
+        </div>
+        
+        <div class="client-permission-item">
+            <input type="checkbox" id="cliente-perm-removeIntegration" value="removeIntegration">
+            <label for="cliente-perm-removeIntegration">Remover Integração</label>
+        </div>
+    </div>
+</div>
+        <button class="btn-primary" onclick="criarLoginCliente()">
+            <i class="fas fa-user-plus" style="margin-right: 8px;"></i>
+            Criar Login de Cliente
+        </button>
+    </div>
+
+    <!-- Lista de Usuários -->
+    <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
+        <h3 style="color: #333333; margin-bottom: 20px; font-size: 1.5em;">
+            <i class="fas fa-users" style="margin-right: 10px;"></i>
+            Usuários Cadastrados
+        </h3>
+        
+        <!-- Filtros -->
+        <div style="background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="filtroNomeUsuario">Filtrar por Nome</label>
+                    <input type="text" id="filtroNomeUsuario" placeholder="Digite o nome..." oninput="filtrarUsuarios()">
+                </div>
+                <div class="form-group">
+                    <label for="filtroEmailUsuario">Filtrar por Email</label>
+                    <input type="text" id="filtroEmailUsuario" placeholder="Digite o email..." oninput="filtrarUsuarios()">
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button class="btn-secondary" onclick="limparFiltrosUsuarios()">Limpar Filtros</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela de Usuários -->
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <thead style="background: #4fc3f7; color: white;">
+                    <tr>
+                        <th style="padding: 15px; text-align: left; font-weight: bold;">Nome</th>
+                        <th style="padding: 15px; text-align: left; font-weight: bold;">Email</th>
+                        <th style="padding: 15px; text-align: left; font-weight: bold;">Setor</th>
+                        <th style="padding: 15px; text-align: center; font-weight: bold;">Permissões</th>
+                        <th style="padding: 15px; text-align: center; font-weight: bold;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="usuariosTableBody">
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 20px; color: #666;">
+                            <i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>
+                            Carregando usuários...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Início do Relatório de Visita -->
+<!-- Botão na barra lateral -->
+<li class="nav-item">
+</li>
+<!--  Seção: Relatório de Visita -->
+<div class="content-section" id="relatorioVisita">
+<div class="form-container">
+<h3 style="margin-bottom: 20px; color: var(--accent-color);">Relatório de Visita</h3>
+<div class="form-row">
+<div class="form-group">
+<label>Cliente</label>
+<select id="rvEmpresa">
+<option value="">Selecione um cliente...</option>
+</select>
+</div>
+<div class="form-group">
+<label>Data</label>
+<input class="input-padrao" id="rvData" type="date" readonly/>
+</div>
+<div class="form-group">
+<label>Gestor</label>
+<input id="rvGestor" type="text"/>
+</div>
+<div class="form-group">
+<label>Analista Responsável</label>
+<select id="rvAnalista">
+<option value="Julyana">Julyana</option>
+<option value="Marlos">Marlos</option>
+<option value="Renata">Renata</option>
+<option value="Larissa">Larissa</option>
+<option value="AdrielCS">Adriel CS</option>
+<option value="GabrielCS">Gabriel CS</option>
+</select>
+</div>
+</div>
+<div class="form-group">
+<label>Serviços Contratados</label>
+<textarea id="rvServicos" rows="2"></textarea>
+</div>
+<div class="form-group">
+<label>Resumo da Visita</label>
+<textarea id="rvResumo" rows="4"></textarea>
+</div>
+<div class="form-group">
+<label>Chamados Urgentes</label>
+<textarea id="rvChamados" rows="3"></textarea>
+</div>
+<div class="form-group">
+<label>Local</label>
+<input id="rvLocal" type="text"/>
+</div>
+<div class="form-group">
+<div style="margin-bottom: 1rem;">
+<label>Sem Report:</label>
+<input id="inputSemReport" min="0" style="width: 80px; margin-right: 1rem;" type="number" value="0"/>
+<label>Reportando:</label>
+<input id="inputReportando" min="0" style="width: 80px; margin-right: 1rem;" type="number" value="0"/>
+<label>Manutenção:</label>
+<input id="inputManutencao" min="0" style="width: 80px;" type="number" value="0"/>
+<button onclick="atualizarGraficoStatus()" style="margin-left: 1rem;">Atualizar Gráfico</button>
+</div>
+<label>Report de Veículos</label>
+<canvas id="chartVeiculos"></canvas>
+</div>
+<button class="btn-secondary" onclick="gerarPDFVisita()">Gerar PDF</button>
+<button class="btn-primary" onclick="enviarPorEmail()" style="margin-left: 10px;">Enviar por Email</button>
+<button class="btn-primary" onclick="enviarPorWhatsapp()" style="margin-left: 10px;">Enviar por WhatsApp</button>
+</div>
+</div>
+
+
+<!-- Modal de Tickets -->
+<div id="ticketsModal" class="tickets-modal">
+    <div class="tickets-modal-content">
+        <div class="tickets-modal-header">
+            <h2 id="ticketsModalTitle">Tickets do Cliente</h2>
+            <span class="tickets-modal-close" onclick="closeTicketsModal()">&times;</span>
+        </div>
+        <div id="ticketsModalContent">
+            <div class="loading-tickets">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Carregando tickets...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Integrações Ativas -->
+<div id="integracoesModal" class="tickets-modal">
+    <div class="tickets-modal-content">
+        <div class="tickets-modal-header">
+            <h2 id="integracoesModalTitle">Integrações</h2>
+            <span class="tickets-modal-close" onclick="closeIntegracoesModal()">&times;</span>
+        </div>
+        <div id="integracoesModalContent">
+            <div class="loading-tickets">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Carregando integrações...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Chat Widget -->
+<!-- Botão para mostrar/esconder o chat -->
+<div id="chat-toggle-button" style="position: fixed; top: 20px; right: 20px; width: 50px; height: 50px; background-color: #0288d1; color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1001;">
+    💬
+</div>
+
+<div id="chat-container" style="position: fixed; top: 20px; right: 20px; width: 300px; height: 400px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); display: none; flex-direction: column; z-index: 1000; transition: all 0.3s ease;">
+    <div id="chat-header" style="background-color: #0288d1; color: white; padding: 10px; border-top-left-radius: 10px; border-top-right-radius: 10px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+        <span>Assistente do Portal</span>
+        <button id="chat-close-button" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; padding: 0; width: 20px; height: 20px;">×</button>
+    </div>
+    <div id="chat-messages" style="flex-grow: 1; padding: 10px; overflow-y: auto; border-bottom: 1px solid #eee;"></div>
+    <div id="chat-input-container" style="padding: 10px; display: flex;">
+        <input type="text" id="chat-input" placeholder="Digite sua mensagem..." style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 5px; margin-right: 10px;">
+        <button id="chat-send-button" style="background-color: #0288d1; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer;">Enviar</button>
+    </div>
+</div>
+
+
+
+<!-- Modais para Painel do Setor -->
+<!-- Modal para Adicionar Tarefa -->
+<div id="addTaskModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+        <h3>Adicionar Nova Tarefa</h3>
+        <div class="form-group">
+            <label for="taskType">Tipo</label>
+            <input type="text" id="taskType" placeholder="Digite o tipo da tarefa" required>
+        </div>
+        <div class="form-group">
+            <label for="taskTitle">Tarefa</label>
+            <input type="text" id="taskTitle" placeholder="Descreva a tarefa" required>
+        </div>
+        <div class="form-group">
+            <label for="taskDescription">Descrição</label>
+            <textarea id="taskDescription" placeholder="Descreva a tarefa"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="taskResponsible">Responsável</label>
+            <input type="text" id="taskResponsible" placeholder="Nome do responsável">
+        </div>
+        <div class="form-group">
+            <label for="taskDeadline">Prazo</label>
+            <input type="date" id="taskDeadline">
+        </div>
+        <div class="modal-buttons">
+            <button class="modal-button cancel" onclick="closeModal('addTaskModal')">Cancelar</button>
+            <button class="modal-button confirm" onclick="saveTask()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!--  Adicionar Membro do Time -->
+<div id="addTeamMemberModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+        <h3>Adicionar Membro do Time</h3>
+        <div class="form-group">
+            <label for="memberName">Nome</label>
+            <input type="text" id="memberName" placeholder="Nome completo">
+        </div>
+        <div class="form-group">
+            <label for="memberRole">Cargo</label>
+            <select id="memberRole">
+                <option value="Gerente">Gerente</option>
+                <option value="Especialista">Especialista</option>
+                <option value="Analista">Analista</option>
+                <option value="Desenvolvedor">Desenvolvedor</option>
+                <option value="Consultor">Consultor</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="memberEmail">Email</label>
+            <input type="email" id="memberEmail" placeholder="email@exemplo.com">
+        </div>
+        <div class="form-group">
+            <label for="memberPhoto">Foto</label>
+            <input type="file" id="memberPhoto" accept="image/*">
+        </div>
+        <div class="modal-buttons">
+            <button class="modal-button cancel" onclick="closeModal('addTeamMemberModal')">Cancelar</button>
+            <button class="modal-button confirm" onclick="saveTeamMember()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!--  Adicionar Projeto -->
+<div id="addProjectModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 600px;">
+        <h3>Adicionar Novo Projeto</h3>
+        <div class="form-group">
+            <label for="projectName">Nome do Projeto</label>
+            <input type="text" id="projectName" placeholder="Nome do projeto">
+        </div>
+        <div class="form-group">
+            <label for="projectCompany">Empresa</label>
+            <input type="text" id="projectCompany" placeholder="Nome da empresa">
+        </div>
+        <div class="form-group">
+            <label for="projectSpecialist">Especialista Responsável</label>
+            <input type="text" id="projectSpecialist" placeholder="Nome do especialista">
+        </div>
+        <div class="form-group">
+            <label for="projectDescription">Descrição</label>
+            <textarea id="projectDescription" placeholder="Descrição do projeto"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="projectStatus">Status</label>
+            <select id="projectStatus">
+                <option value="Planejamento">Planejamento</option>
+                <option value="Em Andamento">Em Andamento</option>
+                <option value="Homologação">Homologação</option>
+                <option value="Finalizado">Finalizado</option>
+            </select>
+        </div>
+        <div class="modal-buttons">
+            <button class="modal-button cancel" onclick="closeModal('addProjectModal')">Cancelar</button>
+            <button class="modal-button confirm" onclick="saveProject()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Adicionar Visita -->
+<div id="addVisitModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+        <h3>Adicionar Nova Visita</h3>
+        <div class="form-group">
+            <label for="visitCompany">Empresa</label>
+            <input type="text" id="visitCompany" placeholder="Nome da empresa">
+        </div>
+        <div class="form-group">
+            <label for="visitAddress">Endereço</label>
+            <input type="text" id="visitAddress" placeholder="Endereço completo">
+        </div>
+        <div class="form-group">
+            <label for="visitCity">Cidade</label>
+            <input type="text" id="visitCity" placeholder="Cidade">
+        </div>
+        <div class="form-group">
+            <label for="visitState">Estado</label>
+            <input type="text" id="visitState" placeholder="Estado">
+        </div>
+        <div class="form-group">
+            <label for="visitDate">Data da Visita</label>
+            <input type="date" id="visitDate">
+        </div>
+        <div class="form-group">
+            <label for="visitPurpose">Objetivo</label>
+            <textarea id="visitPurpose" placeholder="Objetivo da visita"></textarea>
+        </div>
+        <div class="modal-buttons">
+            <button class="modal-button cancel" onclick="closeModal('addVisitModal')">Cancelar</button>
+            <button class="modal-button confirm" onclick="saveVisit()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Adicionar Entrega -->
+<div id="addEntregaModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+        <h3>Adicionar Nova Entrega</h3>
+        <div class="form-group">
+            <label for="entregaMonth">Mês</label>
+            <select id="entregaMonth">
+                <option value="JAN">Janeiro</option>
+                <option value="FEV">Fevereiro</option>
+                <option value="MAR">Março</option>
+                <option value="ABR">Abril</option>
+                <option value="MAI">Maio</option>
+                <option value="JUN">Junho</option>
+                <option value="JUL">Julho</option>
+                <option value="AGO">Agosto</option>
+                <option value="SET">Setembro</option>
+                <option value="OUT">Outubro</option>
+                <option value="NOV">Novembro</option>
+                <option value="DEZ">Dezembro</option>
+            </select>
+        </div>
+        <div id="entregaFieldsContainer">
+            <!-- Campos serão gerados dinamicamente baseados nos membros da equipe -->
+        </div>
+        <div class="modal-buttons">
+            <button class="modal-button cancel" onclick="closeModal('addEntregaModal')">Cancelar</button>
+            <button class="modal-button confirm" onclick="saveEntrega()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal de Avaliação -->
+<div id="evaluationModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 500px; border-radius: 10px;">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0; color: #333;">Avaliar Visita</h2>
+            <span class="close" onclick="closeEvaluationModal()" style="color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+        </div>
+        
+        <div class="modal-body">
+            <div style="margin-bottom: 15px;">
+                <strong>Documento:</strong> <span id="evalDocumentTitle"></span>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 10px; font-weight: bold;">Avaliação:</label>
+                <div class="star-rating" style="font-size: 30px; color: #ddd; cursor: pointer;">
+                    <span class="star" data-rating="1">★</span>
+                    <span class="star" data-rating="2">★</span>
+                    <span class="star" data-rating="3">★</span>
+                    <span class="star" data-rating="4">★</span>
+                    <span class="star" data-rating="5">★</span>
+                </div>
+                <div id="ratingText" style="margin-top: 5px; font-size: 14px; color: #666;"></div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label for="evaluationObservations" style="display: block; margin-bottom: 5px; font-weight: bold;">Observações:</label>
+                <textarea id="evaluationObservations" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical;" placeholder="Descreva sua experiência com a visita..."></textarea>
+            </div>
+            
+            <div style="text-align: right;">
+                <button onclick="closeEvaluationModal()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-right: 10px; cursor: pointer;">Cancelar</button>
+                <button onclick="submitEvaluation()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Salvar Avaliação</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Seção de Avaliações -->
+<div class="content-section" id="evaluations">
+    <div class="form-container">
+        <h3 style="margin-bottom: 20px; color: var(--accent-color);">
+            <i class="fas fa-star" style="margin-right: 10px;"></i>
+            Avaliações de Visitas
+        </h3>
+        
+        <!-- Filtros -->
+        <div class="form-row" style="margin-bottom: 20px; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+            <div class="form-group">
+                <label for="filterClient">Filtrar por Cliente:</label>
+                <select id="filterClient" onchange="filterEvaluations()">
+                    <option value="">Todos os clientes</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="filterRating">Filtrar por Avaliação:</label>
+                <select id="filterRating" onchange="filterEvaluations()">
+                    <option value="">Todas as avaliações</option>
+                    <option value="5">⭐⭐⭐⭐⭐ Excelente</option>
+                    <option value="4">⭐⭐⭐⭐ Bom</option>
+                    <option value="3">⭐⭐⭐ Regular</option>
+                    <option value="2">⭐⭐ Ruim</option>
+                    <option value="1">⭐ Muito Ruim</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="searchEvaluations">Buscar:</label>
+                <input type="text" id="searchEvaluations" placeholder="Buscar por documento ou observações..." onkeyup="filterEvaluations()">
+            </div>
+        </div>
+        
+        <!-- Estatísticas -->
+        <div class="stats-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+            <div class="stat-card" style="background: linear-gradient(135deg, #4fc3f7, #29b6f6); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                <h4 style="margin: 0; font-size: 2em;" id="totalEvaluations">0</h4>
+                <p style="margin: 5px 0 0 0;">Total de Avaliações</p>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #66bb6a, #4caf50); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                <h4 style="margin: 0; font-size: 2em;" id="averageRating">0.0</h4>
+                <p style="margin: 5px 0 0 0;">Avaliação Média</p>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #ffa726, #ff9800); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                <h4 style="margin: 0; font-size: 2em;" id="lastMonthEvaluations">0</h4>
+                <p style="margin: 5px 0 0 0;">Último Mês</p>
+            </div>
+        </div>
+        
+        <!-- Lista de Avaliações -->
+        <div id="evaluationsList">
+            <div class="empty-state" style="text-align: center; padding: 40px; color: #666;">
+                <div style="font-size: 4em; margin-bottom: 20px;">⭐</div>
+                <h3>Nenhuma avaliação encontrada</h3>
+                <p>As avaliações de visitas aparecerão aqui quando forem criadas.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seção de CS (Customer Service) -->
+<div class="content-section" id="cs">
+    <div class="form-container">
+        <h3 style="margin-bottom: 20px; color: var(--accent-color);">
+            <i class="fas fa-headset" style="margin-right: 10px;"></i>
+            Customer Service (CS)
+        </h3>
+        
+        <!-- Formulário de Contato CS -->
+        <div class="form-row" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="csClientName">Nome do Cliente:</label>
+                <input type="text" id="csClientName" placeholder="Digite o nome do cliente" required>
+            </div>
+            <div class="form-group">
+                <label for="csContactType">Tipo de Contato:</label>
+                <select id="csContactType" required>
+                    <option value="">Selecione o tipo de contato</option>
+                    <option value="telefone">Telefone</option>
+                    <option value="email">E-mail</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="presencial">Presencial</option>
+                    <option value="video-chamada">Vídeo Chamada</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="csContactDate">Data do Contato:</label>
+                <input type="date" id="csContactDate" required readonly>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="csObservation">Observações:</label>
+                <textarea id="csObservation" rows="4" placeholder="Digite as observações sobre o contato com o cliente..." required></textarea>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1; text-align: center;">
+                <button onclick="salvarContatoCS()" style="background: #4fc3f7; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 1.1em; cursor: pointer; transition: background 0.3s ease;">
+                    <i class="fas fa-save" style="margin-right: 8px;"></i>
+                    Salvar Contato
+                </button>
+            </div>
+        </div>
+        
+        <!-- Filtros -->
+        <div class="form-row" style="margin-bottom: 20px; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+            <div class="form-group">
+                <label for="filterCSClient">Filtrar por Cliente:</label>
+                <input type="text" id="filterCSClient" placeholder="Digite o nome do cliente..." onkeyup="filtrarContatosCS()">
+            </div>
+            <div class="form-group">
+                <label for="filterCSContactType">Filtrar por Tipo:</label>
+                <select id="filterCSContactType" onchange="filtrarContatosCS()">
+                    <option value="">Todos os tipos</option>
+                    <option value="telefone">Telefone</option>
+                    <option value="email">E-mail</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="presencial">Presencial</option>
+                    <option value="video-chamada">Vídeo Chamada</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="filterCSDate">Filtrar por Data:</label>
+                <input type="date" id="filterCSDate" onchange="filtrarContatosCS()">
+            </div>
+        </div>
+        
+        <!-- Estatísticas -->
+        <div class="stats-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+            <div class="stat-card" style="background: linear-gradient(135deg, #4fc3f7, #29b6f6); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                <h4 style="margin: 0; font-size: 2em;" id="totalContatos">0</h4>
+                <p style="margin: 5px 0 0 0;">Total de Contatos</p>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #66bb6a, #4caf50); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                <h4 style="margin: 0; font-size: 2em;" id="contatosHoje">0</h4>
+                <p style="margin: 5px 0 0 0;">Contatos Hoje</p>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #ffa726, #ff9800); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                <h4 style="margin: 0; font-size: 2em;" id="contatosSemana">0</h4>
+                <p style="margin: 5px 0 0 0;">Esta Semana</p>
+            </div>
+        </div>
+        
+        <!-- Lista de Contatos -->
+        <div id="csContactsList">
+            <div class="empty-state" style="text-align: center; padding: 40px; color: #666;">
+                <div style="font-size: 4em; margin-bottom: 20px;">📞</div>
+                <h3>Nenhum contato registrado</h3>
+                <p>Os contatos com clientes aparecerão aqui quando forem registrados.</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Seção de Gerenciamento de Logins -->
+<div id="gerenciar-logins" class="content-section" style="display: none;">
+    <h2>Gerenciar Logins</h2>
+    
+    <!-- Filtros -->
+    <div style="background: rgba(179, 229, 252, 0.95); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="filtroEmailLogin">Filtrar por Email</label>
+                <input type="text" id="filtroEmailLogin" placeholder="Digite o email..." oninput="filtrarLoginsUsuarios()">
+            </div>
+            <div class="form-group">
+                <label for="filtroNomeLogin">Filtrar por Nome</label>
+                <input type="text" id="filtroNomeLogin" placeholder="Digite o nome..." oninput="filtrarLoginsUsuarios()">
+            </div>
+            <div class="form-group" style="display: flex; align-items: flex-end;">
+                <button class="btn-secondary" onclick="limparFiltrosLogins()">Limpar Filtros</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Usuários -->
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <thead style="background: #4fc3f7; color: white;">
+                <tr>
+                    <th style="padding: 15px; text-align: left; font-weight: bold;">Nome</th>
+                    <th style="padding: 15px; text-align: left; font-weight: bold;">Email</th>
+                    <th style="padding: 15px; text-align: left; font-weight: bold;">Setor</th>
+                    <th style="padding: 15px; text-align: center; font-weight: bold;">Permissões</th>
+                    <th style="padding: 15px; text-align: center; font-weight: bold;">Ações</th>
+                </tr>
+            </thead>
+            <tbody id="loginsTableBody">
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 20px; color: #666;">
+                        <i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>
+                        Carregando usuários...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal de Edição de Login -->
+<div class="modal-overlay" id="modalEditarLogin">
+    <div class="modal-content" style="max-width: 700px;">
+        <h3 style="color: #4fc3f7; margin-bottom: 20px;">
+            <i class="fas fa-user-edit" style="margin-right: 10px;"></i>
+            Editar Login de Usuário
+        </h3>
+        
+        <form id="formEditarLogin">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="editLoginNome">Nome</label>
+                    <input type="text" id="editLoginNome" required>
+                </div>
+                <div class="form-group">
+                    <label for="editLoginEmail">Email</label>
+                    <input type="email" id="editLoginEmail" readonly style="background-color: #f5f5f5;">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="editLoginSetor">Setor</label>
+                    <select id="editLoginSetor">
+                        <option value="Comercial">Comercial</option>
+                        <option value="Implantação">Implantação</option>
+                        <option value="Suporte">Suporte</option>
+                        <option value="Desenvolvimento">Desenvolvimento</option>
+                        <option value="Gestão">Gestão</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editLoginSenha">Nova Senha (deixe em branco para não alterar)</label>
+                    <input type="password" id="editLoginSenha" placeholder="Digite a nova senha...">
+                </div>
+            </div>
+
+            <!-- Permissões -->
+            <div style="background: white; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h4 style="color: #4fc3f7; margin-bottom: 15px;">Permissões do Usuário</h4>
+                <div id="editPermissoesContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                    <!-- Permissões serão carregadas dinamicamente -->
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button type="button" class="modal-button cancel" onclick="fecharModalEditarLogin()">Cancelar</button>
+                <button type="submit" class="modal-button confirm">
+                    <i class="fas fa-save" style="margin-right: 8px;"></i>
+                    Salvar Alterações
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Modal de Edição de Usuário -->
+<div id="modalEditarUsuario" class="modal-editar-usuario" style="display: none;">
+    <div class="modal-editar-usuario-content">
+        <div class="modal-editar-usuario-header">
+            <h2><i class="fas fa-user-edit"></i> Editar Usuário</h2>
+            <span class="modal-editar-usuario-close">&times;</span>
+        </div>
+        
+        <div class="modal-editar-usuario-body">
+            <!-- Informações do Usuário -->
+            <div class="usuario-info-section">
+                <h3><i class="fas fa-info-circle"></i> Informações do Usuário</h3>
+                <div class="usuario-info-grid">
+                    <div class="info-item">
+                        <label>Nome:</label>
+                        <span id="usuarioNome">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Email:</label>
+                        <span id="usuarioEmail">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Status:</label>
+                        <span id="usuarioStatus" class="status-badge">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Último Acesso:</label>
+                        <span id="usuarioUltimoAcesso">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção de Permissões -->
+            <div class="permissoes-section">
+                <h3><i class="fas fa-shield-alt"></i> Gerenciar Permissões</h3>
+                <div class="permissoes-container">
+                    <div class="permissoes-disponiveis">
+                        <h4>Permissões Disponíveis</h4>
+                        <div class="permissoes-search">
+                            <input type="text" id="searchPermissoes" placeholder="Buscar permissões..." class="search-input">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div id="listaPermissoesDisponiveis" class="permissoes-list">
+                            <!-- Permissões disponíveis serão carregadas aqui -->
+                        </div>
+                    </div>
+                    
+                    <div class="permissoes-usuario">
+                        <h4>Permissões do Usuário</h4>
+                        <div id="listaPermissoesUsuario" class="permissoes-list">
+                            <!-- Permissões do usuário serão carregadas aqui -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção de Alteração de Senha -->
+            <div class="senha-section">
+                <h3><i class="fas fa-key"></i> Alterar Senha</h3>
+                <div class="senha-form">
+                    <div class="form-group">
+                        <label for="novaSenha">Nova Senha:</label>
+                        <div class="password-input-container">
+                            <input type="password" id="novaSenha" class="form-input" placeholder="Digite a nova senha">
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('novaSenha')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="password-strength">
+                            <div class="strength-bar">
+                                <div class="strength-fill" id="strengthFill"></div>
+                            </div>
+                            <span class="strength-text" id="strengthText">Digite uma senha</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmarSenha">Confirmar Senha:</label>
+                        <div class="password-input-container">
+                            <input type="password" id="confirmarSenha" class="form-input" placeholder="Confirme a nova senha">
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('confirmarSenha')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="password-match" id="passwordMatch"></div>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="forcarTrocaSenha">
+                        <label for="forcarTrocaSenha">Forçar troca de senha no próximo login</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-editar-usuario-footer">
+            <button type="button" class="btn-cancelar" onclick="fecharModalEditarUsuario()">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button type="button" class="btn-salvar" onclick="salvarAlteracoesUsuario()">
+                <i class="fas fa-save"></i> Salvar Alterações
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="portal.js"></script>
+
+</body>
+</html>
