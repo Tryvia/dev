@@ -65,7 +65,6 @@ function formatDateTimeForDisplay(dateString) {
         timeZone: 'America/Sao_Paulo'
     });
 }
-
 // Função para popular responsáveis no formulário de nova reunião
 function populateReuniaoResponsaveis() {
     const responsaveis = [
@@ -10957,6 +10956,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 });
+
 
 
 
