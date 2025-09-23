@@ -3721,9 +3721,6 @@ if (elInativos) elInativos.textContent = inativos;
 
 
 
-
-
-
 // ===== FUNÇÕES DA ABA INÍCIO =====
 
 let dashboardData = {
@@ -10524,5 +10521,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
