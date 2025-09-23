@@ -3144,7 +3144,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
 
 async function gerarPDFVisita() {
   const { jsPDF } = window.jspdf;
