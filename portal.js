@@ -55,6 +55,9 @@ function populateReuniaoClientes() {
   if (!select) return;
   select.innerHTML = '<option value="">Selecione um cliente...</option>';
   if (!window.clients || !Array.isArray(window.clients)) return;
+  window.clients.forEach(c => {
+    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+  });
   
   // Ordenar clientes alfabeticamente pelo nome
   const clientesOrdenados = window.clients.slice().sort((a, b) => {
@@ -11024,3 +11027,4 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 });
+
