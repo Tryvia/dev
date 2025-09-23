@@ -1,19 +1,4 @@
-
-    (function(){
-      emailjs.init("4DvVlBCto4HMC88CF");
-   })();
-const PDF_SERVER_URL = 'https://servis-pdf.onrender.com';
-let permissoes = [];
-try {
-  permissoes = JSON.parse(localStorage.getItem('permissoes')) || [];
-} catch (e) {
-  permissoes = [];
-}
-if (!sessionStorage.getItem('tryvia_logged')) {
-window.location.href = 'https://tryvia.github.io/dev/tryvia_portal_dev.html';
-sessionStorage.setItem('tryvia_logged', 'true');
-}
-   // Função para exibir apenas a data (dd/mm/aaaa), ignorando horário UTC
+ // Função para exibir apenas a data (dd/mm/aaaa), ignorando horário UTC
 function formatDateOnlyBR(dateString) {
     if (!dateString) return 'Não informada';
     const match = dateString.match(/^\d{4}-\d{2}-\d{2}/);
@@ -65,6 +50,7 @@ function formatDateTimeForDisplay(dateString) {
         timeZone: 'America/Sao_Paulo'
     });
 }
+
 // Função para popular responsáveis no formulário de nova reunião
 function populateReuniaoResponsaveis() {
     const responsaveis = [
@@ -332,10 +318,26 @@ async function carregarEntregas() {
     tableBody.innerHTML = tableRows;
 }
 // Função global para popular o select de clientes na aba reuniões
-
+function populateReuniaoClientes() {
+  const select = document.getElementById('reuniaoCliente');
+  if (!select) return;
+  select.innerHTML = '<option value="">Selecione um cliente...</option>';
+  if (!window.clients || !Array.isArray(window.clients)) return;
+  window.clients.forEach(c => {
+    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+  });
+}
 
 // Função para popular o select de clientes na aba release
-
+function populateReleaseClientes() {
+  const select = document.getElementById('releaseClient');
+  if (!select) return;
+  select.innerHTML = '<option value="">Selecione um cliente...</option>';
+  if (!window.clients || !Array.isArray(window.clients)) return;
+  window.clients.forEach(c => {
+    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+  });
+}
 
 // Função para buscar tickets do Freshdesk
 async function fetchFreshdeskTickets(clientName) {
@@ -966,11 +968,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('csContactsList')) {
         fetchAndRenderContatosCS();
     }
-});
+    });
 
-
-
-        let resolveModalPromise;
+     let resolveModalPromise;
 
        
         function showAlert(title, message) {
@@ -1015,7 +1015,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-         
+        const SUPABASE_URL = 'https://mzjdmhgkrroajmsfwryu.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMzMwMzUsImV4cCI6MjA2MzgwOTAzNX0.tQCwUfFCV7sD-IexQviU0XEPcbn9j5uK9NSUbH-OeBc'; 
         
         if (!window.supabaseClient) {
             window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1247,7 +1248,7 @@ function removeIntegration(idx, listName) {
                 fetchAndRenderUsuarios();
             } else if (tabId === 'release') {
                 carregarReleases();
-                populateClientSelect("releaseClient");
+                populateReleaseClientes();
             }else if (tabId === 'painel-setor') {
     carregarTarefas();
     carregarProjetos();
@@ -1951,8 +1952,9 @@ async function fetchAndRenderClients() {
                 return;
             }
 
-          clients = data;       
-window.clients = clients || []; 
+          // Ordena os clientes por ordem alfabética antes de atribuir
+          clients = data.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));       
+          window.clients = clients || []; 
 atualizarMetricasClientes();
 if (clients.length === 0) {
     container.innerHTML = `
@@ -3067,7 +3069,7 @@ const { data, error } = await query;
             });
         });
 
-let chartStatusVeiculos = null;
+        let chartStatusVeiculos = null;
 let chartComparativo = null;
 
 function atualizarGraficoStatus() {
@@ -3142,7 +3144,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
 async function gerarPDFVisita() {
   const { jsPDF } = window.jspdf;
@@ -3505,386 +3507,143 @@ async function salvarRelease() {
     }
 }
 
-// ===== FUNÇÕES MODIFICADAS PARA FILTRO POR SETOR - ABA REUNIÕES =====
-
-// Função para salvar reunião incluindo o setor do usuário logado
-// Função para salvar reunião incluindo o setor do usuário logado
 async function salvarReuniao() {
     if (!permissoes.includes('salvarReuniao')) {
         showAlert('Atenção', 'Você não tem permissão para salvar uma reunião.');
         return;
     }
-    
-    const clientId = document.getElementById("reuniaoCliente").value;
-    let cliente = "";
-    if (window.clients && clientId) {
-        const obj = window.clients.find(c => String(c.id) === String(clientId));
-        if (obj) cliente = obj.name;
-    }
-    
-    const data = document.getElementById("reuniaoData").value;
-    const horario = document.getElementById("reuniaoHorario").value;
-    const tipo = document.getElementById("reuniaoTipo").value;
-    const responsavel = document.getElementById("reuniaoResponsavel").value;
-    const participantes = document.getElementById("reuniaoParticipantes").value;
-    const file = document.getElementById("reuniaoFile").files[0];
-    
-    // Obter o setor do usuário logado
-    const setorUsuario = sessionStorage.getItem('setor') || 'Time de implantação';
+  const clientId = document.getElementById("reuniaoCliente").value;
+  let cliente = "";
+  if (window.clients && clientId) {
+    const obj = window.clients.find(c => String(c.id) === String(clientId));
+    if (obj) cliente = obj.name;
+  }
+  const data = document.getElementById("reuniaoData").value;
+  const horario = document.getElementById("reuniaoHorario").value;
+  const tipo = document.getElementById("reuniaoTipo").value;
+  const responsavel = document.getElementById("reuniaoResponsavel").value;
+  const participantes = document.getElementById("reuniaoParticipantes").value;
+  const file = document.getElementById("reuniaoFile").files[0];
 
-    let file_url = "", file_path = "";
+  let file_url = "", file_path = "";
 
-    if (file) {
-        file_path = Date.now() + '_' + file.name.replace(/\s+/g, "_");
-        const { error } = await releaseClient.storage.from("reuniaofiles").upload(file_path, file);
-        if (error) return alert("Erro ao fazer upload da ata");
-        file_url = `${RELEASE_SUPABASE_URL}/storage/v1/object/public/reuniaofiles/${file_path}`;
-    }
+  if (file) {
+    file_path = Date.now() + '_' + file.name.replace(/\s+/g, "_");
+    const { error } = await releaseClient.storage.from("reuniaofiles").upload(file_path, file);
+    if (error) return alert("Erro ao fazer upload da ata");
+    file_url = `${RELEASE_SUPABASE_URL}/storage/v1/object/public/reuniaofiles/${file_path}`;
+  }
 
-    // Incluir o setor na inserção da reunião
-    const { error: insertError } = await releaseClient.from("reunioes").insert([{ 
-        client_id: clientId ? Number(clientId) : null, 
-        cliente, 
-        data, 
-        horario, 
-        tipo, 
-        responsavel, 
-        participantes, 
-        file_url, 
-        file_path,
-        setor: setorUsuario  // Adicionar o setor do usuário logado
-    }]);
-    
-    if (insertError) return alert("Erro ao salvar reunião.");
-    
-    // Limpar formulário após salvar
-    document.getElementById("reuniaoCliente").value = "";
-    document.getElementById("reuniaoData").value = "";
-    document.getElementById("reuniaoHorario").value = "";
-    document.getElementById("reuniaoTipo").value = "";
-    document.getElementById("reuniaoResponsavel").value = "";
-    document.getElementById("reuniaoParticipantes").value = "";
-    document.getElementById("reuniaoFile").value = "";
-    
-    showAlert("Sucesso", "Reunião salva com sucesso!");
-    carregarReunioes();
+  const { error: insertError } = await releaseClient.from("reunioes").insert([{ client_id: clientId ? Number(clientId) : null, cliente, data, horario, tipo, responsavel, participantes, file_url, file_path }]);
+  if (insertError) return alert("Erro ao salvar reunião.");
+  carregarReunioes();
 }
 
-// Função para carregar reuniões com filtro por setor
 async function carregarReunioes() {
-    const userType = localStorage.getItem('user_type');
-    const clientId = sessionStorage.getItem('client_id');
-    const setorUsuario = sessionStorage.getItem('setor');
-    
-    let query = releaseClient.from("reunioes").select("*").order("data", { ascending: false });
-    
-    // Filtro por cliente (para usuários do tipo 'client')
-    if (
-        userType === 'client' &&
-        clientId &&
-        clientId !== 'null' &&
-        clientId !== null &&
-        clientId !== undefined &&
-        clientId !== '' &&
-        !isNaN(Number(clientId))
-    ) {
-        query = query.eq('client_id', Number(clientId));
-    }
-    
-    // Filtro por setor (para usuários internos)
-    // Aplica o filtro de setor apenas se o userType não for 'client' e o setorUsuario estiver definido
-    if (setorUsuario && userType !== 'client') {
-        query = query.eq("setor", setorUsuario);
-    }
-    
-    const { data, error } = await query;
-    if (error) return console.error("Erro ao carregar reuniões", error);
+  const userType = localStorage.getItem('user_type');
+const clientId = sessionStorage.getItem('client_id');
+let query = releaseClient.from("reunioes").select("*").order("data", { ascending: false });
+if (
+  userType === 'client' &&
+  clientId &&
+  clientId !== 'null' &&
+  clientId !== null &&
+  clientId !== undefined &&
+  clientId !== '' &&
+  !isNaN(Number(clientId))
+) {
+  query = query.eq('client_id', Number(clientId));
+}
+const { data, error } = await query;
+  if (error) return console.error("Erro ao carregar reuniões", error);
 
-    const container = document.getElementById("listaReunioes");
-    if (!container) return;
-    
-    container.innerHTML = "";
+  const container = document.getElementById("listaReunioes")
+  container.innerHTML = "";
 
-    // Verificar se há reuniões
-    if (!data || data.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state" style="text-align: center; padding: 40px; color: #666;">
-                <div style="font-size: 48px; margin-bottom: 16px;">📅</div>
-                <h3>Nenhuma reunião encontrada</h3>
-                <p>Não há reuniões cadastradas para ${setorUsuario ? `o setor "${setorUsuario}"` : 'este usuário'}.</p>
-            </div>
-        `;
-        return;
-    }
+  const agrupado = {};
+  data.forEach(r => {
+    const cli = r.cliente ? r.cliente.toLowerCase() : (r.client_id ? String(r.client_id) : '');
+    if (!agrupado[cli]) agrupado[cli] = [];
+    agrupado[cli].push(r);
+  });
 
-    const agrupado = {};
-    data.forEach(r => {
-        const cli = r.cliente ? r.cliente.toLowerCase() : (r.client_id ? String(r.client_id) : '');
-        if (!agrupado[cli]) agrupado[cli] = [];
-        agrupado[cli].push(r);
-    });
-
-    // Filtros ativos
-    const filtroCliente = document.getElementById("filtroReuniaoCliente")?.value?.toLowerCase() || "";
-    const filtroParticipante = document.getElementById("filtroReuniaoParticipante")?.value?.toLowerCase() || "";
+  // Filtros ativos
+  const filtroCliente = document.getElementById("filtroReuniaoCliente")?.value?.toLowerCase() || "";
+  const filtroParticipante = document.getElementById("filtroReuniaoParticipante")?.value?.toLowerCase() || "";
     const filtroDataInicio = document.getElementById("filtroReuniaoDataInicio")?.value || "";
     const filtroDataFim = document.getElementById("filtroReuniaoDataFim")?.value || "";
 
-    let totalReunioesFiltradas = 0;
-    Object.keys(agrupado).forEach(cli => {
-        const blocos = agrupado[cli];
-        // Filtra as reuniões do cliente conforme os filtros ativos
-        const blocosFiltrados = blocos.filter(r => {
-            // Participante (busca exata, igual Excel)
-            let matchParticipante = true;
-            if (filtroParticipante) {
-                // Divide os nomes da reunião e compara cada um
-                const nomes = (r.participantes || "").split(/,|;| e |\n/gi).map(n => n.trim());
-                matchParticipante = nomes.some(n => n.toLowerCase() === filtroParticipante.toLowerCase());
-            }
-            // Cliente
-            let matchCliente = !filtroCliente || (r.cliente && r.cliente.toLowerCase().includes(filtroCliente));
-            // Data
-            let matchData = true;
-            if (filtroDataInicio || filtroDataFim) {
-                let dataISO = r.data;
-                if (/\d{2}\/\d{2}\/\d{4}/.test(r.data)) {
-                    const [d, m, y] = r.data.split("/");
-                    dataISO = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-                }
-                if (filtroDataInicio && dataISO < filtroDataInicio) matchData = false;
-                if (filtroDataFim && dataISO > filtroDataFim) matchData = false;
-            }
-            return matchCliente && matchParticipante && matchData;
-        });
-        
-        totalReunioesFiltradas += blocosFiltrados.length;
-        if (blocosFiltrados.length === 0) return; // Não mostra card se não houver reuniões filtradas
-        
-        const card = document.createElement("div");
-        card.className = "document-card";
-        card.setAttribute("data-cliente", cli);
-        const responsavelPrimeiro = blocosFiltrados[0].responsavel ? blocosFiltrados[0].responsavel.toLowerCase() : "";
-        card.setAttribute("data-responsavel", responsavelPrimeiro);
-        card.innerHTML = `
-            <div class="document-title">${blocosFiltrados[0].cliente}</div>
-            <div class="document-author">Total de reuniões: ${blocosFiltrados.length}</div>
-            ${setorUsuario && userType !== 'client' ? `<div class="document-sector" style="color: #666; font-size: 0.9em; margin-top: 5px;">Setor: ${blocosFiltrados[0].setor || 'Não informado'}</div>` : ''}
-            <div style="margin-top: 10px;">
-                ${blocosFiltrados.map(r => `
-                    <div style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed #336699;">
-                        <p><strong>Data:</strong> ${r.data}</p>
-                        ${r.horario ? `<p><strong>Horário:</strong> ${r.horario}</p>` : ''}
-                        <p><strong>Tipo:</strong> ${r.tipo}</p>
-                        ${r.responsavel ? `<p><strong>Responsável:</strong> ${r.responsavel}</p>` : ''}
-                        <p><strong>Participantes:</strong> ${r.participantes}</p>
-                        ${setorUsuario && userType !== 'client' ? `<p><strong>Setor:</strong> ${r.setor || 'Não informado'}</p>` : ''}
-                        <div class="reuniao-actions">
-                            ${r.file_url ? `<a class="btn-ver-ata" href="${r.file_url}" target="_blank">Ver Ata</a>` : "<em>Sem ata</em>"}
-                            <button class="btn-editar-reuniao" onclick="abrirModalEditarReuniao('${r.id}')">
-                                <i class="fas fa-edit"></i> Editar
-                            </button>
-                            <button class="btn-excluir-reuniao" onclick="excluirReuniao('${r.id}')">
-                                <i class="fas fa-trash"></i> Excluir
-                            </button>
-                        </div>
-                    </div>
-                `).join("")}
-            </div>
-        `;
-        container.appendChild(card);
+  let totalReunioesFiltradas = 0;
+  Object.keys(agrupado).forEach(cli => {
+    const blocos = agrupado[cli];
+    // Filtra as reuniões do cliente conforme os filtros ativos
+    const blocosFiltrados = blocos.filter(r => {
+      // Participante (busca exata, igual Excel)
+      let matchParticipante = true;
+      if (filtroParticipante) {
+        // Divide os nomes da reunião e compara cada um
+        const nomes = (r.participantes || "").split(/,|;| e |\n/gi).map(n => n.trim());
+        matchParticipante = nomes.some(n => n.toLowerCase() === filtroParticipante.toLowerCase());
+      }
+      // Cliente
+      let matchCliente = !filtroCliente || (r.cliente && r.cliente.toLowerCase().includes(filtroCliente));
+      // Data
+      let matchData = true;
+      if (filtroDataInicio || filtroDataFim) {
+        let dataISO = r.data;
+        if (/\d{2}\/\d{2}\/\d{4}/.test(r.data)) {
+          const [d, m, y] = r.data.split("/");
+          dataISO = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+        }
+        if (filtroDataInicio && dataISO < filtroDataInicio) matchData = false;
+        if (filtroDataFim && dataISO > filtroDataFim) matchData = false;
+      }
+      return matchCliente && matchParticipante && matchData;
     });
+    totalReunioesFiltradas += blocosFiltrados.length;
+    if (blocosFiltrados.length === 0) return; // Não mostra card se não houver reuniões filtradas
+    const card = document.createElement("div");
+    card.className = "document-card";
+    card.setAttribute("data-cliente", cli);
+    const responsavelPrimeiro = blocosFiltrados[0].responsavel ? blocosFiltrados[0].responsavel.toLowerCase() : "";
+    card.setAttribute("data-responsavel", responsavelPrimeiro);
+    card.innerHTML = `
+      <div class="document-title">${blocosFiltrados[0].cliente}</div>
+      <div class="document-author">Total de reuniões: ${blocosFiltrados.length}</div>
+      <div style="margin-top: 10px;">
+        ${blocosFiltrados.map(r => `
+          <div style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed #336699;">
+            <p><strong>Data:</strong> ${r.data}</p>
+            ${r.horario ? `<p><strong>Horário:</strong> ${r.horario}</p>` : ''}
+            <p><strong>Tipo:</strong> ${r.tipo}</p>
+            ${r.responsavel ? `<p><strong>Responsável:</strong> ${r.responsavel}</p>` : ''}
+            <p><strong>Participantes:</strong> ${r.participantes}</p>
+            <div class="reuniao-actions">
+              ${r.file_url ? `<a class="btn-ver-ata" href="${r.file_url}" target="_blank">Ver Ata</a>` : "<em>Sem ata</em>"}
+              <button class="btn-editar-reuniao" onclick="abrirModalEditarReuniao('${r.id}')">
+                <i class="fas fa-edit"></i> Editar
+              </button>
+              <button class="btn-excluir-reuniao" onclick="excluirReuniao('${r.id}')">
+                <i class="fas fa-trash"></i> Excluir
+              </button>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+    container.appendChild(card);
+  });
 
-    // Exibe o total de reuniões filtradas no final da página
-    let totalDiv = document.getElementById('totalReunioesFiltradas');
-    if (!totalDiv) {
-        totalDiv = document.createElement('div');
-        totalDiv.id = 'totalReunioesFiltradas';
-        totalDiv.style = 'margin: 30px 0 10px 0; font-weight: bold; font-size: 1.1em; text-align: right;';
-        container.parentNode.appendChild(totalDiv);
-    }
-    
-    const setorInfo = setorUsuario && userType !== 'client' ? ` (Setor: ${setorUsuario})` : '';
-    totalDiv.textContent = `${totalReunioesFiltradas} ${totalReunioesFiltradas === 1 ? 'reunião' : 'reuniões'} no período selecionado${setorInfo}`;
+  // Exibe o total de reuniões filtradas no final da página
+  let totalDiv = document.getElementById('totalReunioesFiltradas');
+  if (!totalDiv) {
+    totalDiv = document.createElement('div');
+    totalDiv.id = 'totalReunioesFiltradas';
+    totalDiv.style = 'margin: 30px 0 10px 0; font-weight: bold; font-size: 1.1em; text-align: right;';
+    container.parentNode.appendChild(totalDiv);
+  }
+    totalDiv.textContent = `${totalReunioesFiltradas} ${totalReunioesFiltradas === 1 ? 'reunião' : 'reuniões'} no período selecionado`;
 }
-
-// Função para abrir modal de edição de reunião
-async function abrirModalEditarReuniao(reuniaoId) {
-    try {
-        // Buscar dados da reunião
-        const { data, error } = await releaseClient
-            .from('reunioes')
-            .select('*')
-            .eq('id', reuniaoId)
-            .single();
-
-        if (error) {
-            console.error('Erro ao buscar reunião:', error);
-            showAlert('Erro', 'Erro ao carregar dados da reunião.');
-            return;
-        }
-
-        // Preencher formulário de edição
-        document.getElementById('editReuniaoCliente').value = data.client_id || '';
-        document.getElementById('editReuniaoData').value = data.data || '';
-        document.getElementById('editReuniaoHorario').value = data.horario || '';
-        document.getElementById('editReuniaoTipo').value = data.tipo || '';
-        document.getElementById('editReuniaoResponsavel').value = data.responsavel || '';
-        document.getElementById('editReuniaoParticipantes').value = data.participantes || '';
-
-        // Armazenar ID da reunião no formulário
-        document.getElementById('formEditarReuniao').dataset.reuniaoId = reuniaoId;
-
-        // Mostrar modal
-        document.getElementById('modalEditarReuniao').classList.add('visible');
-
-    } catch (error) {
-        console.error('Erro ao abrir modal de edição:', error);
-        showAlert('Erro', 'Erro ao abrir formulário de edição.');
-    }
-}
-
-// Função para fechar modal de edição de reunião
-function fecharModalEditarReuniao() {
-    document.getElementById('modalEditarReuniao').classList.remove('visible');
-    document.getElementById('formEditarReuniao').reset();
-    delete document.getElementById('formEditarReuniao').dataset.reuniaoId;
-}
-
-// Função para atualizar reunião (chamada pelo formulário de edição)
-async function atualizarReuniao() {
-    const reuniaoId = document.getElementById('formEditarReuniao').dataset.reuniaoId;
-    if (!reuniaoId) {
-        showAlert('Erro', 'ID da reunião não encontrado.');
-        return;
-    }
-
-    if (!permissoes.includes('atualizarReuniao')) {
-        showAlert('Atenção', 'Você não tem permissão para atualizar uma reunião.');
-        return;
-    }
-    
-    const clientId = document.getElementById("editReuniaoCliente").value;
-    let cliente = "";
-    if (window.clients && clientId) {
-        const obj = window.clients.find(c => String(c.id) === String(clientId));
-        if (obj) cliente = obj.name;
-    }
-    
-    const data = document.getElementById("editReuniaoData").value;
-    const horario = document.getElementById("editReuniaoHorario").value;
-    const tipo = document.getElementById("editReuniaoTipo").value;
-    const responsavel = document.getElementById("editReuniaoResponsavel").value;
-    const participantes = document.getElementById("editReuniaoParticipantes").value;
-    const file = document.getElementById("editReuniaoFile").files[0];
-    
-    // Obter o setor do usuário logado
-    const setorUsuario = sessionStorage.getItem('setor') || 'Time de implantação';
-
-    let updateData = {
-        client_id: clientId ? Number(clientId) : null,
-        cliente,
-        data,
-        horario,
-        tipo,
-        responsavel,
-        participantes,
-        setor: setorUsuario  // Manter o setor do usuário logado
-    };
-
-    // Se houver novo arquivo, fazer upload
-    if (file) {
-        const file_path = Date.now() + '_' + file.name.replace(/\s+/g, "_");
-        const { error } = await releaseClient.storage.from("reuniaofiles").upload(file_path, file);
-        if (error) {
-            showAlert('Erro', 'Erro ao fazer upload da nova ata');
-            return;
-        }
-        
-        updateData.file_url = `${RELEASE_SUPABASE_URL}/storage/v1/object/public/reuniaofiles/${file_path}`;
-        updateData.file_path = file_path;
-    }
-
-    const { error: updateError } = await releaseClient
-        .from("reunioes")
-        .update(updateData)
-        .eq('id', reuniaoId);
-    
-    if (updateError) {
-        showAlert('Erro', 'Erro ao atualizar reunião.');
-        return;
-    }
-    
-    showAlert('Sucesso', 'Reunião atualizada com sucesso!');
-    
-    // Fechar modal e recarregar lista
-    fecharModalEditarReuniao();
-    carregarReunioes();
-}
-
-// Função para excluir reunião
-async function excluirReuniao(reuniaoId) {
-    if (!permissoes.includes('excluirReuniao')) {
-        showAlert('Atenção', 'Você não tem permissão para excluir uma reunião.');
-        return;
-    }
-
-    const confirmed = await showConfirm('Confirmação', 'Tem certeza que deseja excluir esta reunião?');
-    if (!confirmed) return;
-
-    try {
-        // Buscar dados da reunião para deletar arquivo se existir
-        const { data: reuniaoData } = await releaseClient
-            .from('reunioes')
-            .select('file_path')
-            .eq('id', reuniaoId)
-            .single();
-
-        // Deletar arquivo se existir
-        if (reuniaoData && reuniaoData.file_path) {
-            await releaseClient.storage
-                .from('reuniaofiles')
-                .remove([reuniaoData.file_path]);
-        }
-
-        // Deletar reunião do banco
-        const { error } = await releaseClient
-            .from('reunioes')
-            .delete()
-            .eq('id', reuniaoId);
-
-        if (error) {
-            showAlert('Erro', 'Erro ao excluir reunião.');
-            return;
-        }
-
-        showAlert('Sucesso', 'Reunião excluída com sucesso!');
-        carregarReunioes();
-
-    } catch (error) {
-        console.error('Erro ao excluir reunião:', error);
-        showAlert('Erro', 'Erro ao excluir reunião.');
-    }
-}
-
-// Event listener para o formulário de edição de reunião
-document.addEventListener('DOMContentLoaded', function() {
-    const formEditarReuniao = document.getElementById('formEditarReuniao');
-    if (formEditarReuniao) {
-        formEditarReuniao.addEventListener('submit', function(e) {
-            e.preventDefault();
-            atualizarReuniao();
-        });
-    }
-});
-
-// ===== FIM DAS FUNÇÕES MODIFICADAS =====
-
-
-
-
-
-
 
 
 // Função para popular dropdown de participantes no filtro
@@ -3923,7 +3682,7 @@ function populateFiltroClientes() {
 document.addEventListener("DOMContentLoaded", function() {
   if (typeof fetchAndRenderClients === 'function') {
     fetchAndRenderClients().then(() => {
-      populateClientSelect("reuniaoCliente");
+      populateReuniaoClientes();
       populateFiltroClientes();
       populateReuniaoResponsaveis();
       carregarReunioes();
@@ -3964,7 +3723,7 @@ if (elInativos) elInativos.textContent = inativos;
 
 
 
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 
 // ===== FUNÇÕES DA ABA INÍCIO =====
@@ -4501,6 +4260,9 @@ document.addEventListener('DOMContentLoaded', function() {
         showTab('inicio');
     }, 500);
 });
+
+
+// Função para abrir modal de tickets do cliente
 async function viewClientTickets(clientId, clientName, clientEmail) {
     const modal = document.getElementById('ticketsModal');
     const title = document.getElementById('ticketsModalTitle');
@@ -5140,7 +4902,7 @@ window.onclick = function(event) {
                 }
             }
 
-    const chatMessages = document.getElementById("chat-messages");
+             const chatMessages = document.getElementById("chat-messages");
     const chatInput = document.getElementById("chat-input");
     const chatSendButton = document.getElementById("chat-send-button");
     const chatContainer = document.getElementById("chat-container");
@@ -5206,8 +4968,7 @@ window.onclick = function(event) {
         }
     });
 
-    
-let painelData = {
+    let painelData = {
     tarefas: [],
     time: [],
     projetos: [],
@@ -5748,7 +5509,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Adicionar funcionalidade específica para o painel do setor
 document.addEventListener('DOMContentLoaded', function() {
     
- const painelButton = document.querySelector("button[onclick=\"showTab(\'painel-setor\')\"]");    if (painelButton) {
+    const painelButton = document.querySelector('button[onclick="showTab(\'painel-setor\')"]');
+    if (painelButton) {
         painelButton.addEventListener('click', function(e) {
             e.preventDefault();
             
@@ -5991,9 +5753,6 @@ async function excluirProjeto(projetoId) {
     }
 }
 
-
-
-
   document.addEventListener('DOMContentLoaded', function() {
     const releaseDateInput = document.getElementById('releaseDate');
     const today = new Date();
@@ -6002,9 +5761,6 @@ async function excluirProjeto(projetoId) {
     const day = String(today.getDate()).padStart(2, '0');
     releaseDateInput.value = `${year}-${month}-${day}`;
   });
-
-
-
 
   document.addEventListener("DOMContentLoaded", function() {
     const rvDateInput = document.getElementById("rvData");
@@ -6935,7 +6691,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function logoutTryvia() {
     sessionStorage.removeItem('tryvia_logged');
     localStorage.removeItem('username');
-    window.location.href = 'https://tryvia.github.io/dev/tryvia_portal_dev.html';
+    window.location.href = 'https://tryvia.github.io/TryviaBI/tryvia_bi_login%20(1).html';
 }
 
 // ===== FUNÇÕES PARA GERENCIAR USUÁRIOS =====
@@ -6997,7 +6753,9 @@ function renderUsuarios() {
     }
 
     tbody.innerHTML = usuariosFiltrados.map(usuario => {
-        const nomeSeguro = String(usuario.nome).replace(/'/g, "'").replace(/\n/g, ' ');     return `
+        
+        const nomeSeguro = String(usuario.nome).replace(/'/g, "\\'").replace(/\n/g, ' ');
+        return `
         <tr style="border-bottom: 1px solid #eee;">
             <td style="padding: 15px; font-weight: bold;">${usuario.nome}</td>
             <td style="padding: 15px;">${usuario.email}</td>
@@ -9342,7 +9100,8 @@ function renderizarImplantacoes(implantacoes) {
                             <i class="fas fa-edit"></i>
                             Editar
                         </button>
-                                               <button onclick="excluirImplantacao("${implantacao.id}", "${implantacao.projeto}", "${implantacao.cliente}")" style="
+                        
+                        <button onclick="excluirImplantacao('${implantacao.id}', \'${implantacao.projeto}\', \'${implantacao.cliente}\')" style="
                             background-color: #f44336; 
                             color: white; 
                             border: none; 
@@ -9563,7 +9322,7 @@ async function abrirModalEditarReuniao(reuniaoId) {
 
         // Popular dropdowns
         try {
-            populateClientSelect("editReuniaoCliente");
+            populateEditReuniaoClientes();
         } catch (e) {
             console.error('[abrirModalEditarReuniao] Erro em populateEditReuniaoClientes:', e);
         }
@@ -10767,190 +10526,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-
-
-// ===== FUNÇÕES ADICIONAIS PARA EDIÇÃO E EXCLUSÃO DE REUNIÕES =====
-
-// Função para abrir modal de edição de reunião
-async function abrirModalEditarReuniao(reuniaoId) {
-    try {
-        // Buscar dados da reunião
-        const { data, error } = await releaseClient
-            .from("reunioes")
-            .select("*")
-            .eq("id", reuniaoId)
-            .single();
-
-        if (error) {
-            console.error("Erro ao buscar reunião:", error);
-            showAlert("Erro", "Erro ao carregar dados da reunião.");
-            return;
-        }
-
-        // Preencher formulário de edição
-        document.getElementById("editReuniaoCliente").value = data.client_id || "";
-        document.getElementById("editReuniaoData").value = data.data || "";
-        document.getElementById("editReuniaoHorario").value = data.horario || "";
-        document.getElementById("editReuniaoTipo").value = data.tipo || "";
-        document.getElementById("editReuniaoResponsavel").value = data.responsavel || "";
-        document.getElementById("editReuniaoParticipantes").value = data.participantes || "";
-
-        // Armazenar ID da reunião no formulário
-        document.getElementById("formEditarReuniao").dataset.reuniaoId = reuniaoId;
-
-        // Mostrar modal
-        document.getElementById("modalEditarReuniao").classList.add("visible");
-
-    } catch (error) {
-        console.error("Erro ao abrir modal de edição:", error);
-        showAlert("Erro", "Erro ao abrir formulário de edição.");
-    }
-}
-
-// Função para fechar modal de edição de reunião
-function fecharModalEditarReuniao() {
-    document.getElementById("modalEditarReuniao").classList.remove("visible");
-    document.getElementById("formEditarReuniao").reset();
-    delete document.getElementById("formEditarReuniao").dataset.reuniaoId;
-}
-
-// Função para atualizar reunião (chamada pelo formulário de edição)
-async function atualizarReuniao() {
-    const reuniaoId = document.getElementById("formEditarReuniao").dataset.reuniaoId;
-    if (!reuniaoId) {
-        showAlert("Erro", "ID da reunião não encontrado.");
-        return;
-    }
-
-    if (!permissoes.includes("atualizarReuniao")) {
-        showAlert("Atenção", "Você não tem permissão para atualizar uma reunião.");
-        return;
-    }
-    
-    const clientId = document.getElementById("editReuniaoCliente").value;
-    let cliente = "";
-    if (window.clients && clientId) {
-        const obj = window.clients.find(c => String(c.id) === String(clientId));
-        if (obj) cliente = obj.name;
-    }
-    
-    const data = document.getElementById("editReuniaoData").value;
-    const horario = document.getElementById("editReuniaoHorario").value;
-    const tipo = document.getElementById("editReuniaoTipo").value;
-    const responsavel = document.getElementById("editReuniaoResponsavel").value;
-    const participantes = document.getElementById("editReuniaoParticipantes").value;
-    const file = document.getElementById("editReuniaoFile").files[0];
-    
-    // Obter o setor do usuário logado
-    const setorUsuario = sessionStorage.getItem("setor") || "Time de implantação";
-
-    let updateData = {
-        client_id: clientId ? Number(clientId) : null,
-        cliente,
-        data,
-        horario,
-        tipo,
-        responsavel,
-        participantes,
-        setor: setorUsuario  // Manter o setor do usuário logado
-    };
-
-    // Se houver novo arquivo, fazer upload
-    if (file) {
-        const file_path = Date.now() + "_" + file.name.replace(/\s+/g, "_");
-        const { error } = await releaseClient.storage.from("reuniaofiles").upload(file_path, file);
-        if (error) {
-            showAlert("Erro", "Erro ao fazer upload da nova ata");
-            return;
-        }
-        
-        updateData.file_url = `${RELEASE_SUPABASE_URL}/storage/v1/object/public/reuniaofiles/${file_path}`;
-        updateData.file_path = file_path;
-    }
-
-    const { error: updateError } = await releaseClient
-        .from("reunioes")
-        .update(updateData)
-        .eq("id", reuniaoId);
-    
-    if (updateError) {
-        showAlert("Erro", "Erro ao atualizar reunião.");
-        return;
-    }
-    
-    showAlert("Sucesso", "Reunião atualizada com sucesso!");
-    
-    // Fechar modal e recarregar lista
-    fecharModalEditarReuniao();
-    carregarReunioes();
-}
-
-// Função para excluir reunião
-async function excluirReuniao(reuniaoId) {
-    if (!permissoes.includes("excluirReuniao")) {
-        showAlert("Atenção", "Você não tem permissão para excluir uma reunião.");
-        return;
-    }
-
-    const confirmed = await showConfirm("Confirmação", "Tem certeza que deseja excluir esta reunião?");
-    if (!confirmed) return;
-
-    try {
-        // Buscar dados da reunião para deletar arquivo se existir
-        const { data: reuniaoData } = await releaseClient
-            .from("reunioes")
-            .select("file_path")
-            .eq("id", reuniaoId)
-            .single();
-
-        // Deletar arquivo se existir
-        if (reuniaoData && reuniaoData.file_path) {
-            await releaseClient.storage
-                .from("reuniaofiles")
-                .remove([reuniaoData.file_path]);
-        }
-
-        // Deletar reunião do banco
-        const { error } = await releaseClient
-            .from("reunioes")
-            .delete()
-            .eq("id", reuniaoId);
-
-        if (error) {
-            showAlert("Erro", "Erro ao excluir reunião.");
-            return;
-        }
-
-        showAlert("Sucesso", "Reunião excluída com sucesso!");
-        carregarReunioes();
-
-    } catch (error) {
-        console.error("Erro ao excluir reunião:", error);
-        showAlert("Erro", "Erro ao excluir reunião.");
-    }
-}
-
-// Event listener para o formulário de edição de reunião
-document.addEventListener("DOMContentLoaded", function() {
-    const formEditarReuniao = document.getElementById("formEditarReuniao");
-    if (formEditarReuniao) {
-        formEditarReuniao.addEventListener("submit", function(e) {
-            e.preventDefault();
-            atualizarReuniao();
-        });
-    }
-});
-
-
-
-
-
-
-
-
-// Função para popular o select de clientes no modal de editar reunião com ordenação alfabética
-
-
-
-
-
