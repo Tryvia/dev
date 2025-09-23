@@ -3718,9 +3718,6 @@ if (elInativos) elInativos.textContent = inativos;
     const nome = localStorage.getItem('username') || 'TRYVIA';
     document.getElementById('nomeUsuario').innerText = nome;
   });
-
-
-
 // ===== FUNÇÕES DA ABA INÍCIO =====
 
 let dashboardData = {
@@ -10521,6 +10518,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
