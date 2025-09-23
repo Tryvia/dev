@@ -3721,7 +3721,7 @@ if (elInativos) elInativos.textContent = inativos;
 
 
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 
 
 // ===== FUNÇÕES DA ABA INÍCIO =====
@@ -10524,4 +10524,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
