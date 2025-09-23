@@ -49,6 +49,74 @@ function formatDateForInput(dateString) {
 let currentProducts = []; 
 currentProducts = [];
 
+// Função global para popular o select de clientes na aba reuniões com ordenação alfabética
+function populateReuniaoClientes() {
+  const select = document.getElementById('reuniaoCliente');
+  if (!select) return;
+  select.innerHTML = '<option value="">Selecione um cliente...</option>';
+  if (!window.clients || !Array.isArray(window.clients)) return;
+  
+  // Ordenar clientes alfabeticamente pelo nome
+  const clientesOrdenados = window.clients.slice().sort((a, b) => {
+    return a.name.localeCompare(b.name, 'pt', { sensitivity: 'base' });
+  });
+  
+  clientesOrdenados.forEach(c => {
+    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+  });
+}
+
+// Função para popular o select de clientes na aba release com ordenação alfabética
+function populateReleaseClientes() {
+  const select = document.getElementById('releaseClient');
+  if (!select) return;
+  select.innerHTML = '<option value="">Selecione um cliente...</option>';
+  if (!window.clients || !Array.isArray(window.clients)) return;
+  
+  // Ordenar clientes alfabeticamente pelo nome
+  const clientesOrdenados = window.clients.slice().sort((a, b) => {
+    return a.name.localeCompare(b.name, 'pt', { sensitivity: 'base' });
+  });
+  
+  clientesOrdenados.forEach(c => {
+    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+  });
+}
+
+// Função para popular o select de clientes no modal de editar reunião com ordenação alfabética
+function populateEditReuniaoClientes() {
+  const select = document.getElementById('editReuniaoCliente');
+  if (!select) return;
+  select.innerHTML = '<option value="">Selecione um cliente...</option>';
+  if (!window.clients || !Array.isArray(window.clients)) return;
+  
+  // Ordenar clientes alfabeticamente pelo nome
+  const clientesOrdenados = window.clients.slice().sort((a, b) => {
+    return a.name.localeCompare(b.name, 'pt', { sensitivity: 'base' });
+  });
+  
+  clientesOrdenados.forEach(c => {
+    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+  });
+}
+
+// Função genérica para popular qualquer select de clientes com ordenação alfabética
+function populateClientSelect(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  select.innerHTML = '<option value="">Selecione um cliente...</option>';
+  if (!window.clients || !Array.isArray(window.clients)) return;
+  
+  // Ordenar clientes alfabeticamente pelo nome
+  const clientesOrdenados = window.clients.slice().sort((a, b) => {
+    return a.name.localeCompare(b.name, 'pt', { sensitivity: 'base' });
+  });
+  
+  clientesOrdenados.forEach(c => {
+    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+  });
+}
+
 
 
 
@@ -10956,9 +11024,3 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 });
-
-
-
-
-
-
