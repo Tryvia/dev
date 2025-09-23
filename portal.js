@@ -3144,8 +3144,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-
-
 async function gerarPDFVisita() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -10526,3 +10524,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
