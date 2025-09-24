@@ -1706,11 +1706,12 @@ function addEditProduct() {
 
                 const publicURL = `${RELEASE_SUPABASE_URL}/storage/v1/object/public/documentfiles/${filePath}`;
 
-                const { data, error } = await releaseClient
-                    .from('documents_setor')
-                    .insert([
-                        { title, author, type, file_url: publicURL, file_path: filePath }
-                    ]);
+    const setorUsuario = sessionStorage.getItem("setor");
+    const { data, error } = await releaseClient
+        .from("documents_setor")
+        .insert([
+            { title, author, type, file_url: fileUrl, file_path: filePath, setor: setorUsuario }
+        ]);
 
                 if (error) {
                     console.error('Erro ao adicionar documento no banco de dados:', error.message);
@@ -10968,3 +10969,44 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 
+
+
+
+async function loadDocuments() {
+    const setorUsuario = sessionStorage.getItem("setor");
+    let query = releaseClient
+        .from("documents_setor")
+        .select("*");
+
+    if (setorUsuario) {
+        query = query.eq("setor", setorUsuario);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error("Erro ao carregar documentos:", error.message);
+        return;
+    }
+
+    const documentList = document.getElementById("documentList");
+    if (!documentList) return;
+    documentList.innerHTML = "";
+
+    if (!data || data.length === 0) {
+        documentList.innerHTML = "<p>Nenhum documento encontrado.</p>";
+        return;
+    }
+
+    data.forEach(doc => {
+        const docElement = document.createElement("div");
+        docElement.className = "document-item";
+        docElement.innerHTML = `
+            <h4>${doc.title}</h4>
+            <p>Autor: ${doc.author}</p>
+            <p>Tipo: ${doc.type}</p>
+            <a href="${doc.file_url}" target="_blank">Ver Documento</a>
+        `;
+        documentList.appendChild(docElement);
+    });
+}
