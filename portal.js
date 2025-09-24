@@ -179,7 +179,7 @@ let teamMembers = []; // Variável global para armazenar os membros da equipe
 async function carregarMembros() {
     const setorUsuario = sessionStorage.getItem("setor");
     const { data, error } = await releaseClient
-        .from("membros")
+        .from("usuarios")
         .select("*")
         .eq("setor", setorUsuario);
 
