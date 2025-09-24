@@ -10972,7 +10972,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 
-async function loadDocuments() {
+async function loadAllDocuments() {
     const setorUsuario = sessionStorage.getItem("setor");
     let query = releaseClient
         .from("documents_setor")
@@ -11009,4 +11009,52 @@ async function loadDocuments() {
         `;
         documentList.appendChild(docElement);
     });
+}
+
+
+
+async function loadDocuments() {
+    const documentsList = document.getElementById('documentsList');
+    const documentTypeFilter = document.getElementById('documentTypeFilter');
+    const filterValue = documentTypeFilter.value;
+    const setorUsuario = sessionStorage.getItem("setor");
+
+    if (!setorUsuario) {
+        documentsList.innerHTML = '<tr><td colspan="5">Setor do usuário não definido. Não é possível carregar documentos.</td></tr>';
+        return;
+    }
+
+    let query = releaseClient.from('documents_setor').select('*');
+
+    if (filterValue) {
+        query = query.eq('type', filterValue);
+    }
+
+    query = query.eq('setor', setorUsuario);
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Erro ao carregar documentos:', error);
+        documentsList.innerHTML = '<tr><td colspan="5">Erro ao carregar documentos.</td></tr>';
+        return;
+    }
+
+    if (data.length === 0) {
+        documentsList.innerHTML = '<tr><td colspan="5">Nenhum documento encontrado para o seu setor.</td></tr>';
+        return;
+    }
+
+    documentsList.innerHTML = data.map(doc => `
+        <tr>
+            <td>${doc.title}</td>
+            <td>${doc.author}</td>
+            <td>${doc.type}</td>
+            <td>${new Date(doc.created_at).toLocaleDateString()}</td>
+            <td>
+                <a href="${doc.file_url}" target="_blank" class="btn-action">Ver</a>
+                <button onclick="deleteDocument(${doc.id}, '${doc.file_path}')" class="btn-action delete">Excluir</button>
+            </td>
+        </tr>
+    `).join('');
 }
