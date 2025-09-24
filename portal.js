@@ -999,7 +999,7 @@ async function updateDocumentAuthorsSelect() {
     
     try {
         const { data: membros, error } = await releaseClient
-            .from('membros')
+            .from('usuarios')
             .select('nome')
             .eq('setor', setorUsuario);
             
