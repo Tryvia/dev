@@ -11013,24 +11013,33 @@ async function loadAllDocuments() {
 
 
 
+// Função loadDocuments corrigida com debug e validações adicionais
 async function loadDocuments() {
     const documentsList = document.getElementById('documentsList');
     const documentTypeFilter = document.getElementById('documentTypeFilter');
     const filterValue = documentTypeFilter.value;
     const setorUsuario = sessionStorage.getItem("setor");
 
+    // Debug: Log do setor do usuário
+    console.log('Setor do usuário logado:', setorUsuario);
+
     if (!setorUsuario) {
+        console.error('Setor do usuário não definido no sessionStorage');
         documentsList.innerHTML = '<tr><td colspan="5">Setor do usuário não definido. Não é possível carregar documentos.</td></tr>';
         return;
     }
 
-    let query = releaseClient.from('documents_setor').select('*');
+    // Construir query com filtro obrigatório por setor
+    let query = releaseClient.from('documents_setor').select('*').eq('setor', setorUsuario);
 
+    // Aplicar filtro adicional por tipo, se selecionado
     if (filterValue) {
         query = query.eq('type', filterValue);
+        console.log('Filtro por tipo aplicado:', filterValue);
     }
 
-    query = query.eq('setor', setorUsuario);
+    // Debug: Log da query que será executada
+    console.log('Executando query para buscar documentos do setor:', setorUsuario);
 
     const { data, error } = await query.order('created_at', { ascending: false });
 
@@ -11040,12 +11049,29 @@ async function loadDocuments() {
         return;
     }
 
+    // Debug: Log dos documentos encontrados
+    console.log('Documentos encontrados:', data.length);
+    console.log('Dados dos documentos:', data);
+
+    // Verificar se todos os documentos pertencem ao setor correto
+    const documentosIncorretos = data.filter(doc => doc.setor !== setorUsuario);
+    if (documentosIncorretos.length > 0) {
+        console.error('ATENÇÃO: Encontrados documentos que não pertencem ao setor do usuário:', documentosIncorretos);
+    }
+
     if (data.length === 0) {
         documentsList.innerHTML = '<tr><td colspan="5">Nenhum documento encontrado para o seu setor.</td></tr>';
         return;
     }
 
-    documentsList.innerHTML = data.map(doc => `
+    // Filtrar novamente no frontend como medida de segurança adicional
+    const documentosFiltrados = data.filter(doc => doc.setor === setorUsuario);
+    
+    if (documentosFiltrados.length !== data.length) {
+        console.warn('Filtro adicional no frontend removeu documentos incorretos. Documentos antes:', data.length, 'Documentos depois:', documentosFiltrados.length);
+    }
+
+    documentsList.innerHTML = documentosFiltrados.map(doc => `
         <tr>
             <td>${doc.title}</td>
             <td>${doc.author}</td>
@@ -11057,4 +11083,7 @@ async function loadDocuments() {
             </td>
         </tr>
     `).join('');
+
+    // Debug: Log final
+    console.log('Documentos exibidos na tela:', documentosFiltrados.length);
 }
