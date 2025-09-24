@@ -35,6 +35,10 @@ function showTab(tabId) {
         selectedTab.classList.add('active');
     }
 
+    if (tabId === 'documents') {
+        loadDocuments();
+    }
+
     // Remove a classe active de todos os botões
     document.querySelectorAll('.nav-item button').forEach(button => {
         button.parentElement.classList.remove('active');
