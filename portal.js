@@ -65,19 +65,32 @@ function formatDateTimeForDisplay(dateString) {
     });
 }
 // Função para popular responsáveis no formulário de nova reunião
-function populateReuniaoResponsaveis() {
-    const responsaveis = [
-        "Julyana",
-        "Marlos",
-        "Renata",
-        "Larissa",
-    ];
+async function populateReuniaoResponsaveis() {
+    const setorUsuario = sessionStorage.getItem('setor');
     const select = document.getElementById('reuniaoResponsavel');
+    
     if (!select) return;
-    select.innerHTML = '<option value="">Selecione um responsável...</option>';
-    responsaveis.forEach(resp => {
-        select.innerHTML += `<option value="${resp}">${resp}</option>`;
-    });
+    
+    try {
+        const { data: responsaveis, error } = await releaseClient
+            .from('usuarios')
+            .select('nome')
+            .eq('setor', setorUsuario);
+            
+        if (error) throw error;
+        
+        // Limpa o select
+        select.innerHTML = '<option value="">Selecione um responsável...</option>';
+        
+        // Adiciona os responsáveis do setor como opções
+        if (responsaveis && responsaveis.length > 0) {
+            responsaveis.forEach(resp => {
+                select.innerHTML += `<option value="${resp.nome}">${resp.nome}</option>`;
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao carregar responsáveis:', error);
+    }
 }
 // Função para carregar tarefas do setor do usuário logado
 async function carregarTarefas() {
