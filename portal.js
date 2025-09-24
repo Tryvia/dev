@@ -983,7 +983,41 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('csContactsList')) {
         fetchAndRenderContatosCS();
     }
+    
+    // Atualiza o select de autores quando abre a aba documentos
+    if (document.getElementById('documents')) {
+        updateDocumentAuthorsSelect();
+    }
 });
+
+// Função para atualizar o select de autores baseado no setor atual
+async function updateDocumentAuthorsSelect() {
+    const setorUsuario = sessionStorage.getItem('setor');
+    const selectAuthor = document.getElementById('documentAuthor');
+    
+    if (!selectAuthor) return;
+    
+    try {
+        const { data: membros, error } = await releaseClient
+            .from('membros')
+            .select('nome')
+            .eq('setor', setorUsuario);
+            
+        if (error) throw error;
+        
+        // Limpa o select
+        selectAuthor.innerHTML = '<option value="">Selecione o autor</option>';
+        
+        // Adiciona os membros do setor como opções
+        if (membros && membros.length > 0) {
+            membros.forEach(membro => {
+                selectAuthor.innerHTML += `<option value="${membro.nome}">${membro.nome}</option>`;
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao carregar autores:', error);
+    }
+}
 
 
 
@@ -1249,6 +1283,7 @@ function removeIntegration(idx, listName) {
                 }, 100);
             } else if (tabId === 'documents') {
                 fetchAndRenderDocuments();
+                updateDocumentAuthorsSelect();
             } else if (tabId === 'clients') {
                 document.getElementById('editClientTabButton').style.display = 'none';
                 showClientTab('view-clients');
