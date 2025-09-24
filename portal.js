@@ -9,7 +9,7 @@ try {
   permissoes = [];
 }
 if (!sessionStorage.getItem('tryvia_logged')) {
-//window.location.href = 'https://tryvia.github.io/dev/tryvia_portal_dev.html';
+window.location.href = 'https://tryvia.github.io/dev/tryvia_portal_dev.html';
 sessionStorage.setItem('tryvia_logged', 'true');
 }
    // Função para exibir apenas a data (dd/mm/aaaa), ignorando horário UTC
@@ -6961,7 +6961,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function logoutTryvia() {
     sessionStorage.removeItem('tryvia_logged');
     localStorage.removeItem('username');
-    //window.location.href = 'https://tryvia.github.io/dev/tryvia_portal_dev.html';
+    window.location.href = 'https://tryvia.github.io/dev/tryvia_portal_dev.html';
 }
 
 // ===== FUNÇÕES PARA GERENCIAR USUÁRIOS =====
