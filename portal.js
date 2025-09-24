@@ -81,7 +81,7 @@ function populateReuniaoResponsaveis() {
 }
 // Função para carregar tarefas do setor do usuário logado
 async function carregarTarefas() {
-    const setorUsuario = sessionStorage.getItem('setor');
+    const setorUsuario = sessionStorage.getItem("setor");
     const { data, error } = await releaseClient
         .from('tarefas_painel_setor')
         .select('*')
@@ -136,7 +136,7 @@ async function carregarTarefas() {
 
 // Função para carregar projetos do setor do usuário logado
 async function carregarProjetos() {
-    const setorUsuario = sessionStorage.getItem('setor');
+    const setorUsuario = sessionStorage.getItem("setor");
     const { data, error } = await releaseClient
         .from('projetos_painel_setor')
         .select('*')
@@ -203,7 +203,7 @@ async function carregarMembros() {
 
 // Função para carregar visitas do setor do usuário logado
 async function carregarVisitas() {
-    const setorUsuario = sessionStorage.getItem('setor');
+    const setorUsuario = sessionStorage.getItem("setor");
     const { data, error } = await releaseClient
         .from('visitas')
         .select('*')
@@ -3594,7 +3594,7 @@ async function salvarReuniao() {
 async function carregarReunioes() {
     const userType = localStorage.getItem('user_type');
     const clientId = sessionStorage.getItem('client_id');
-    const setorUsuario = sessionStorage.getItem('setor');
+    const setorUsuario = sessionStorage.getItem("setor");
     
     let query = releaseClient.from("reunioes").select("*").order("data", { ascending: false });
     
@@ -5309,7 +5309,7 @@ async function saveTask() {
         showAlert('Atenção', 'Você não tem permissão para salvar uma tarefa.');
         return;
     }
-    const setorUsuario = sessionStorage.getItem('setor');
+    const setorUsuario = sessionStorage.getItem("setor");
     const taskData = {
         tipo: document.getElementById('taskType').value,
         titulo: document.getElementById('taskTitle').value,
@@ -5339,7 +5339,7 @@ async function saveTask() {
 }
 
 async function saveTeamMember() {
-    const setorUsuario = sessionStorage.getItem('setor');
+    const setorUsuario = sessionStorage.getItem("setor");
     const memberData = {
         nome: document.getElementById('memberName').value,
         cargo: document.getElementById('memberRole').value,
@@ -5386,7 +5386,7 @@ async function saveProject() {
         showAlert('Atenção', 'Você não tem permissão para salvar um projeto.');
         return;
     }
-    const setorUsuario = sessionStorage.getItem('setor');
+    const setorUsuario = sessionStorage.getItem("setor");
     const projectData = {
         nome: document.getElementById('projectName').value,
         empresa: document.getElementById('projectCompany').value,
@@ -5415,7 +5415,7 @@ async function saveProject() {
 }
 
 async function saveVisit() {
-    const setorUsuario = sessionStorage.getItem('setor');
+    const setorUsuario = sessionStorage.getItem("setor");
     const visitData = {
         empresa: document.getElementById('visitCompany').value,
         endereco: document.getElementById('visitAddress').value,
@@ -5451,7 +5451,7 @@ async function saveEntrega() {
     };
 
     const selectedMonth = document.getElementById('entregaMonth').value;
-    const setorUsuario = sessionStorage.getItem('setor');
+    const setorUsuario = sessionStorage.getItem("setor");
     const currentYear = new Date().getFullYear();
 
     try {
@@ -5635,7 +5635,7 @@ async function loadPainelData() {
 // Carregar dados do time
 async function loadTimeData() {
     try {
-        const setorUsuario = sessionStorage.getItem('setor');
+        const setorUsuario = sessionStorage.getItem("setor");
         const { data, error } = await releaseClient
             .from('time_painel_setor')
             .select('*')
@@ -5681,7 +5681,7 @@ async function loadTimeData() {
 // Carregar dados dos projetos
 async function loadProjectsData() {
     try {
-        const setorUsuario = sessionStorage.getItem('setor');
+        const setorUsuario = sessionStorage.getItem("setor");
         const { data, error } = await releaseClient
             .from('projetos_painel_setor')
             .select('*')
@@ -5834,7 +5834,7 @@ async function initializeMap() {
 // Função para carregar visitas no mapa
 async function loadVisitasOnMap() {
     try {
-        const setorUsuario = sessionStorage.getItem('setor');
+        const setorUsuario = sessionStorage.getItem("setor");
         const { data: visitas, error } = await releaseClient
             .from('visitas_setor')
             .select('*')
@@ -5936,7 +5936,7 @@ async function geocodeAddress(address) {
 
 //  função saveVisit para atualizar o mapa
 async function saveVisit() {
-    const setorUsuario = sessionStorage.getItem('setor');
+    const setorUsuario = sessionStorage.getItem("setor");
     const visitData = {
         empresa: document.getElementById('visitCompany').value,
         endereco: document.getElementById('visitAddress').value,
@@ -10058,7 +10058,7 @@ async function carregarVisitasSetor() {
         if (!visitasClient) {
             throw new Error('visitasClient não inicializado');
         }
-        const setorUsuario = sessionStorage.getItem('setor');
+        const setorUsuario = sessionStorage.getItem("setor");
         
         if (!setorUsuario) {
             console.error('Setor do usuário não encontrado');
@@ -10963,6 +10963,15 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
+
+
+
+
+
+
+
+
+
 async function loadDocuments() {
     const setorUsuario = sessionStorage.getItem("setor");
     let query = releaseClient
@@ -11001,4 +11010,3 @@ async function loadDocuments() {
         documentList.appendChild(docElement);
     });
 }
-
