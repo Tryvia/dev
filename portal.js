@@ -10963,15 +10963,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-
-
-
-
-
-
-
-
-
 async function loadDocuments() {
     const setorUsuario = sessionStorage.getItem("setor");
     let query = releaseClient
@@ -11010,3 +11001,4 @@ async function loadDocuments() {
         documentList.appendChild(docElement);
     });
 }
+
