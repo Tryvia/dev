@@ -336,7 +336,8 @@ function populateReuniaoClientes() {
   if (!select) return;
   select.innerHTML = '<option value="">Selecione um cliente...</option>';
   if (!window.clients || !Array.isArray(window.clients)) return;
-  window.clients.forEach(c => {
+  const sortedClients = [...window.clients].sort((a, b) => a.name.localeCompare(b.name));
+  sortedClients.forEach(c => {
     select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
   });
 }
@@ -347,7 +348,8 @@ function populateReleaseClientes() {
   if (!select) return;
   select.innerHTML = '<option value="">Selecione um cliente...</option>';
   if (!window.clients || !Array.isArray(window.clients)) return;
-  window.clients.forEach(c => {
+  const sortedClients = [...window.clients].sort((a, b) => a.name.localeCompare(b.name));
+  sortedClients.forEach(c => {
     select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
   });
 }
@@ -1967,6 +1969,7 @@ async function fetchAndRenderClients() {
             }
 
           clients = data;       
+clients.sort((a, b) => a.name.localeCompare(b.name));
 window.clients = clients || []; 
 atualizarMetricasClientes();
 if (clients.length === 0) {
@@ -2335,6 +2338,7 @@ if (editingIntegrations.length > 0) {
     if (error) throw error;
 
     // Armazena globalmente para outras funções, se precisar
+    clients.sort((a, b) => a.name.localeCompare(b.name));
     window.clients = clients;
 
     let activeCount = 0;
@@ -3930,7 +3934,8 @@ function populateFiltroClientes() {
   if (!select) return;
   select.innerHTML = '<option value="">Todos os clientes</option>';
   if (!window.clients || !Array.isArray(window.clients)) return;
-  window.clients.forEach(c => {
+  const sortedClients = [...window.clients].sort((a, b) => a.name.localeCompare(b.name));
+  sortedClients.forEach(c => {
     select.innerHTML += `<option value="${c.name.toLowerCase()}">${c.name}</option>`;
   });
 }
@@ -9614,8 +9619,9 @@ function populateEditReuniaoClientes() {
     const select = document.getElementById('editReuniaoCliente');
     if (!select) return;
     select.innerHTML = '<option value="">Selecione um cliente...</option>';
-    if (!window.clients || !Array.isArray(window.clients)) return;
-    window.clients.forEach(c => {
+  if (!window.clients || !Array.isArray(window.clients)) return;
+  const sortedClients = [...window.clients].sort((a, b) => a.name.localeCompare(b.name));
+  sortedClients.forEach(c => {
         select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
     });
 }
