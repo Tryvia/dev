@@ -1710,7 +1710,7 @@ function addEditProduct() {
     const { data, error } = await releaseClient
         .from("documents_setor")
         .insert([
-            { title, author, type, file_url: fileUrl, file_path: filePath, setor: setorUsuario }
+            { title, author, type, file_url: publicURL, file_path: filePath, setor: setorUsuario }
         ]);
 
                 if (error) {
