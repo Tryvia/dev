@@ -9,7 +9,7 @@ try {
   permissoes = [];
 }
 if (!sessionStorage.getItem('tryvia_logged')) {
-window.location.href = 'https://tryvia.github.io/dev/tryvia_portal_dev.html';
+window.location.href = 'https://tryvia.github.io/TryviaBI/tryvia_bi_login%20(1).html';
 sessionStorage.setItem('tryvia_logged', 'true');
 }
    // Função para exibir apenas a data (dd/mm/aaaa), ignorando horário UTC
@@ -3397,19 +3397,20 @@ function exibirRelease(d, url) {
     `;
   }
   
-  c.innerHTML = `
-    <div class="document-header"><span class="document-type">${d.tipo}</span></div>
-    <div class="document-title">${d.sistema} - ${d.versao}</div>
-    <div class="document-author">${d.analista}</div>
-    <p>Status: ${d.status}</p>
-    <p>Data Liberação: ${d.data_liberacao}</p>
-    <p>Data Homologação: ${d.data_homologacao}</p>
-    ${ticketsInfo}
-    <div style="display:flex; justify-content:space-between; margin-top:10px;">
-      <a href="${url}" class="btn-secondary" target="_blank">Ver Arquivo</a>
-      <button class="btn-secondary" style="background-color:#dc3545;" onclick="deleteRelease(${d.id}, '${arquivoJson}')">Excluir</button>
-    </div>`;
-  document.getElementById("releaseList").appendChild(c);
+c.innerHTML = `
+  <div class="document-header"><span class="document-type">${d.tipo}</span></div>
+  <div class="document-title">${d.sistema} - ${d.versao}</div>
+  <div class="document-author">${d.analista}</div>
+  <p>Status: ${d.status}</p>
+  <p>Data Liberação: ${d.data_liberacao}</p>
+  <p>Data Homologação: ${d.data_homologacao}</p>
+  ${ticketsInfo}
+  <div style="display:flex; justify-content:space-between; margin-top:10px;">
+    <a href="${url}" class="btn-secondary" target="_blank">Ver Arquivo</a>
+    <button class="btn-secondary" style="background-color:#dc3545;" onclick="deleteRelease('${d.id}', ${JSON.stringify(arquivoJson)})">Excluir</button>
+  </div>
+`;
+document.getElementById("releaseList").appendChild(c);
 }
 
 async function carregarReleases() {
@@ -7009,7 +7010,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function logoutTryvia() {
     sessionStorage.removeItem('tryvia_logged');
     localStorage.removeItem('username');
-    window.location.href = 'https://tryvia.github.io/dev/tryvia_portal_dev.html';
+    window.location.href = 'https://tryvia.github.io/TryviaBI/tryvia_bi_login%20(1).html';
 }
 
 // ===== FUNÇÕES PARA GERENCIAR USUÁRIOS =====
@@ -10496,6 +10497,7 @@ let permissoesDisponiveis = [
     {"id": "salvarRelease", "nome": "Salvar Release", "descricao": "Salvar Release"},
     {"id": "deleteRelease", "nome": "Excluir Release", "descricao": "Excluir Release"},
     {"id": "salvarReuniao", "nome": "Salvar Reunião", "descricao": "Salvar Reunião"},
+    {"id": "ExcluirReuniao", "nome": "Excluir Reunião", "descricao": "Excluir Reunião"},
     {"id": "showAddVideoModal", "nome": "Adicionar Video", "descricao": "Adicionar Video"},
     {"id": "showAddProductModal", "nome": "Adicionar Produto", "descricao": "Adicionar Produto"},
     {"id": "deleteTrainingVideo", "nome": "Excluir Video", "descricao": "Excluir Video"},
@@ -11019,12 +11021,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 
-
-
-
-
-
-
 async function loadAllDocuments() {
     const setorUsuario = sessionStorage.getItem("setor");
     let query = releaseClient
@@ -11063,7 +11059,6 @@ async function loadAllDocuments() {
         documentList.appendChild(docElement);
     });
 }
-
 
 
 // Função loadDocuments corrigida com debug e validações adicionais
