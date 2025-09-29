@@ -9,7 +9,7 @@ try {
   permissoes = [];
 }
 if (!sessionStorage.getItem('tryvia_logged')) {
-window.location.href = 'https://tryvia.github.io/TryviaBI/tryvia_bi_login%20(1).html';
+window.location.href = 'https://tryvia.github.io/dev/tryvia_portal_dev.html';
 sessionStorage.setItem('tryvia_logged', 'true');
 }
    // Função para exibir apenas a data (dd/mm/aaaa), ignorando horário UTC
@@ -3407,7 +3407,7 @@ c.innerHTML = `
   ${ticketsInfo}
   <div style="display:flex; justify-content:space-between; margin-top:10px;">
     <a href="${url}" class="btn-secondary" target="_blank">Ver Arquivo</a>
-    <button class="btn-secondary" style="background-color:#dc3545;" onclick="deleteRelease('${d.id}', ${JSON.stringify(arquivoJson)})">Excluir</button>
+    <button class="btn-secondary" style="background-color:#dc3545;" onclick="deleteRelease('${d.id}', '[]')">Excluir</button>
   </div>
 `;
 document.getElementById("releaseList").appendChild(c);
@@ -7010,7 +7010,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function logoutTryvia() {
     sessionStorage.removeItem('tryvia_logged');
     localStorage.removeItem('username');
-    window.location.href = 'https://tryvia.github.io/TryviaBI/tryvia_bi_login%20(1).html';
+    window.location.href = 'https://tryvia.github.io/dev/tryvia_portal_dev.html';
 }
 
 // ===== FUNÇÕES PARA GERENCIAR USUÁRIOS =====
