@@ -194,7 +194,8 @@ async function carregarMembros() {
     const { data, error } = await releaseClient
         .from("usuarios")
         .select("*")
-        .eq("setor", setorUsuario);
+        .eq("setor", setorUsuario)
+            ;
 
     if (error) {
         console.error("Erro ao buscar membros:", error.message);
@@ -370,7 +371,7 @@ function populateReleaseClientes() {
 // Função para buscar tickets do Freshdesk
 async function fetchFreshdeskTickets(clientName) {
     try {
-        const response = await fetch(`https://servis-tikctes.onrender.com/api/tickets/client-by-empresa?cf_empresa=${encodeURIComponent(clientName)}`);
+        const response = await fetch(`https://77h9ikc6ney8.manus.space/api/tickets/client-by-empresa?cf_empresa=${encodeURIComponent(clientName)}`);
         
         if (!response.ok) {
             throw new Error(`Erro na API: ${response.status}`);
@@ -3650,7 +3651,8 @@ async function carregarReunioes() {
     const clientId = sessionStorage.getItem('client_id');
     const setorUsuario = sessionStorage.getItem("setor");
     
-    let query = releaseClient.from("reunioes").select("*").order("data", { ascending: false });
+    let query = releaseClient.from("reunioes").select("*").eq("setor", setorUsuario)
+            .order("data", { ascending: false });
     
     // Filtro por cliente (para usuários do tipo 'client')
     if (
@@ -4593,7 +4595,7 @@ async function viewClientTickets(clientId, clientName, clientEmail) {
     
     try {
         // Buscar tickets do cliente via API
-        const response = await fetch(`https://servis-tikctes.onrender.com/api/tickets/client-by-empresa?cf_empresa=${encodeURIComponent(clientName)}`);
+        const response = await fetch(`https://77h9ikc6ney8.manus.space/api/tickets/client-by-empresa?cf_empresa=${encodeURIComponent(clientName)}`);
         
         if (!response.ok) {
             throw new Error(`Erro na API: ${response.status}`);
@@ -4831,20 +4833,35 @@ async function consultarIntegracoesPorcnpj(cnpj) {
 // Função para consultar integrações por ID Cliente
 async function consultarIntegracoesPorIdCliente(idCliente) {
     try {
-        // Tenta buscar dados reais da API Flask
-        const response = await fetch(`https://6c1b22afd688.ngrok-free.app/api/integracoes/${idCliente}`, {
-    headers: {
-        'ngrok-skip-browser-warning': 'true'
-    }
-});
+        // Tenta buscar dados reais da API SingServices
+        const response = await fetch(`https://singservices.newsgps.com.br/api/SingServices/GetIntegracao?idCliente=${idCliente}`, {
+            headers: {
+                'accept': '*/*',
+                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImludGVncmFjYW9wb3J0YWwiLCJyb2xlIjoiU2luZ1NlcnZpY2VzIiwiVmlnZW5jaWEiOiIxNTAiLCJDbGllbnRlIjoiMSIsIm5iZiI6MTc1OTM0NDAzMiwiZXhwIjoxNzU5NDMwNDMyLCJpYXQiOjE3NTkzNDQwMzJ9.90qrjNxMfazTG5FL7fsh4OKZnskTnSC5RVamIhHX5Nc'
+            }
+        });
         if (!response.ok) {
-            throw new Error(`Erro na API Flask: ${response.status} ${response.statusText}`);
+            throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
         }
         const result = await response.json();
-        if (result.erro) {
-            return { erro: result.erro };
-        }
-        return result;
+
+        // Formata o resultado para o formato esperado pelo frontend
+        return {
+            sucesso: !result.erro,
+            cliente: {
+                nome: result.cliente?.nome || null,
+                id_cliente: idCliente
+            },
+            integracoes: result.map(item => ({
+                sistema: item.sistema,
+                entidade: item.entidade,
+                dataUltimaIntegracao: item.ultimaIntegracao,
+                status: item.erro ? 'Erro' : 'Ativo',
+                erro: item.erro || false
+            })),
+            total_integracoes: result.length,
+            observacao: result.erro ? result.mensagem : null
+        };
     } catch (error) {
         // Se falhar, retorna dados de demonstração
         console.error('Erro na consulta de integrações por ID Cliente:', error);
@@ -4964,7 +4981,7 @@ window.onclick = function(event) {
                 
                 try {
                     // Buscar tickets do cliente via API usando cf_empresa
-                    const response = await fetch(`https://servis-tikctes.onrender.com/api/tickets/client-by-empresa?cf_empresa=${encodeURIComponent(cfEmpresa)}`);
+                    const response = await fetch(`https://77h9ikc6ney8.manus.space/api/tickets/client-by-empresa?cf_empresa=${encodeURIComponent(cfEmpresa)}`);
                     
                     if (!response.ok) {
                         throw new Error(`Erro na API: ${response.status}`);
@@ -5091,7 +5108,7 @@ window.onclick = function(event) {
                 
                 try {
                     // Buscar tickets do cliente via API usando cf_empresa
-                    const response = await fetch(`https://servis-tikctes.onrender.com/api/tickets/client-by-empresa?cf_empresa=${encodeURIComponent(cfEmpresa)}`);
+                    const response = await fetch(`https://77h9ikc6ney8.manus.space/api/tickets/client-by-empresa?cf_empresa=${encodeURIComponent(cfEmpresa)}`);
                     
                     if (!response.ok) {
                         throw new Error(`Erro na API: ${response.status}`);
@@ -9186,6 +9203,7 @@ async function carregarImplantacoesLista() {
         const { data, error } = await window.supabaseClient
             .from('status_projetos')
             .select('*')
+            .eq('setor', sessionStorage.getItem('setor'))
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -9884,7 +9902,7 @@ async function loadAllTickets() {
             if (!client.email) return [];
             
             try {
-                const response = await fetch(`https://servis-tikctes.onrender.com/api/tickets/client-by-empresa?cf_empresa=${encodeURIComponent(client.name )}`);
+                const response = await fetch(`https://77h9ikc6ney8.manus.space/api/tickets/client-by-empresa?cf_empresa=${encodeURIComponent(client.name )}`);
                 if (!response.ok) return [];
                 
                 const tickets = await response.json();
@@ -10854,7 +10872,8 @@ async function abrirModalEditarReuniao(reuniaoId) {
         // Buscar dados da reunião
         const { data, error } = await releaseClient
             .from("reunioes")
-            .select("*")
+            .select("*").eq("setor", setorUsuario)
+            
             .eq("id", reuniaoId)
             .single();
 
@@ -11025,7 +11044,8 @@ async function loadAllDocuments() {
     const setorUsuario = sessionStorage.getItem("setor");
     let query = releaseClient
         .from("documents_setor")
-        .select("*");
+        .select("*").eq("setor", setorUsuario)
+            ;
 
     if (setorUsuario) {
         query = query.eq("setor", setorUsuario);
