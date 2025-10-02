@@ -9435,7 +9435,7 @@ function renderizarImplantacoes(implantacoes) {
                             <i class="fas fa-edit"></i>
                             Editar
                         </button>
-                                               <button onclick="excluirImplantacao("${implantacao.id}", "${implantacao.projeto}", "${implantacao.cliente}")" style="
+                                               <button onclick="excluirImplantacao('${implantacao.id}', '${implantacao.projeto}', '${implantacao.cliente}')" style="
                             background-color: #f44336; 
                             color: white; 
                             border: none; 
