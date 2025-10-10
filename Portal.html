@@ -12,6 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 <script>
     const setorUsuario = sessionStorage.getItem('setor');
 const RELEASE_SUPABASE_URL = 'https://mzjdmhgkrroajmsfwryu.supabase.co';
@@ -329,7 +330,6 @@ Salvar Alterações
     <!-- Cabeçalho de Boas-vindas -->
     <div class="welcome-header" style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%); padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: white; box-shadow: 0 8px 25px rgba(41, 182, 246, 0.3);">
         <h2 style="margin: 0; font-size: 2.5em; margin-bottom: 10px;">
-            <i class="fas fa-home" style="margin-right: 15px;"></i>
             Bem-vindo ao Portal Tryvia
         </h2>
         <p style="margin: 0; font-size: 1.2em; opacity: 0.9;" id="welcomeMessage">
@@ -1905,7 +1905,7 @@ Salvar Alterações
         
         <div class="permission-item">
             <input type="checkbox" id="perm-documents" value="documents">
-            <label for="perm-documents">Time de Implantação</label>
+            <label for="perm-documents">Documentos</label>
         </div>
         
         <div class="permission-item">
@@ -2049,6 +2049,13 @@ Salvar Alterações
         </div>
     </div>
 
+<div class="permissions-grid">
+        <div class="permission-item">
+            <input type="checkbox" id="perm-excluirReuniao" value="excluirReuniao">
+            <label for="perm-excluirReuniao">Excluir Reunião</label>
+        </div>
+    </div>
+            
     <!-- Funções de Treinamento -->
     <div class="subsection-title">Funções de Treinamento</div>
 
