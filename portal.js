@@ -4628,7 +4628,7 @@ async function viewClientTickets(clientId, clientName, clientEmail) {
                         <span class="ticket-status ${statusClass}">${statusText}</span>
                     </div>
                     <div class="ticket-subject">${ticket.subject || 'Sem assunto'}</div>
-                    <div class="ticket-description">${ticket.description_text ? ticket.description_text.substring(0, 200) + '...' : 'Sem descrição'}</div>
+                    <div class="ticket-description">${ticket.description_text ? ticket.description_text.substring(0, 200) + '...' : 'Detalhes'}</div>
                     <div class="ticket-meta">
                         <strong>Criado:</strong> ${createdDate} | 
                         <strong>Atualizado:</strong> ${updatedDate} | 
@@ -4946,14 +4946,19 @@ window.onclick = function(event) {
                         const statusClass = getTicketStatusClass(ticket.status);
                         const statusText = getTicketStatusText(ticket.status);
                         
+                        // tornar descrição clicável para abrir conversas do ticket
+                        const descriptionText = ticket.description_text ? ticket.description_text.substring(0, 200) + "..." : "Detalhes";
+                        // Adiciona data-ticket-id para delegação (não usar onclick inline para evitar duplicação)
+                        const descriptionHtml = `<a href="#" class=\"ticket-description-link\" data-ticket-id=\"${ticket.id}\">${escapeHtml(descriptionText)}</a>`;
+
                         return `
                             <div class="ticket-item">
                                 <div class="ticket-header">
                                     <span class="ticket-id"><a href="https://suportetryvia.freshdesk.com/a/tickets/${ticket.id}" target="_blank">#${ticket.id}</a></span>
                                     <span class="ticket-status ${statusClass}">${statusText}</span>
                                 </div>
-                                <div class="ticket-subject">${ticket.subject || "Sem assunto"}</div>
-                                <div class="ticket-description">${ticket.description_text ? ticket.description_text.substring(0, 200) + "..." : "Sem descrição"}</div>
+                                <div class="ticket-subject">${escapeHtml(ticket.subject || "Sem assunto")}</div>
+                                <div class="ticket-description">${descriptionHtml}</div>
                                 <div class="ticket-meta">
                                     <strong>Criado:</strong> ${createdDate} | 
                                     <strong>Atualizado:</strong> ${updatedDate} | 
@@ -4974,11 +4979,153 @@ window.onclick = function(event) {
                         </div>
                     `;
                 }
+                    // Listener delegado removido aqui: usamos um listener global adicionado uma vez
             }
 
             // Função para fechar modal de tickets
             function closeTicketsModal() {
                 document.getElementById("ticketsModal").style.display = "none";
+            }
+
+            // --- Funções para visualizar conversas de um ticket ---
+            // Função utilitária para escapar HTML simples
+            function escapeHtml(unsafe) {
+                return String(unsafe || "")
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/\"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            function openConversationsModal(ticketId, conversationsHtml) {
+                const modal = document.getElementById('conversationsModal');
+                const content = document.getElementById('conversationsContent');
+                const titleId = document.getElementById('conversationsTicketId');
+                console.log('openConversationsModal called for ticket', ticketId);
+                if (titleId) titleId.textContent = `#${ticketId}`;
+                if (content) content.innerHTML = conversationsHtml || '<p style="color:#666;">Nenhuma conversa encontrada.</p>';
+
+                if (!modal) {
+                    console.warn('conversationsModal element not found in DOM');
+                    return;
+                }
+
+                // Move modal to document.body to avoid stacking-context/overflow issues
+                try {
+                    if (modal.parentElement !== document.body) {
+                        console.log('Moving conversationsModal to document.body (was inside', modal.parentElement && modal.parentElement.tagName, ')');
+                        document.body.appendChild(modal);
+                    }
+                } catch (err) {
+                    console.warn('Failed to move conversationsModal to body:', err);
+                }
+
+                // Show modal
+                modal.style.display = 'flex';
+                // small timeout to allow transition if needed
+                setTimeout(() => modal.classList.add('visible'), 5);
+
+                // Debugging: log computed styles
+                try {
+                    const cs = window.getComputedStyle(modal);
+                    console.log('conversationsModal styles -> display:', modal.style.display, ', computed display:', cs.display, ', visibility:', cs.visibility, ', opacity:', cs.opacity, ', z-index:', cs.zIndex);
+                } catch (err) {
+                    console.warn('Erro ao obter estilos computados do modal:', err);
+                }
+            }
+
+            function closeConversationsModal() {
+                const modal = document.getElementById('conversationsModal');
+                if (modal) {
+                    modal.classList.remove('visible');
+                    setTimeout(() => { modal.style.display = 'none'; }, 300);
+                }
+            }
+
+            // Busca conversas do ticket via API Freshdesk
+            async function fetchTicketConversations(ticketId) {
+                console.log('fetchTicketConversations called with', ticketId);
+                if (!ticketId) return;
+                const contentEl = document.getElementById('conversationsContent');
+                openConversationsModal(ticketId, '<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin" style="font-size:24px; color:#4fc3f7"></i><div>Carregando conversas...</div></div>');
+
+                try {
+                    const url = `https://suportetryvia.freshdesk.com/api/v2/tickets/${ticketId}/conversations`;
+                    // Autenticação: a API Freshdesk usa Basic Auth com API key como usuário e 'X' como senha.
+                    // AVISO: incluir a chave diretamente no front-end é inseguro e pode expor sua API key.
+                    // O recomendado é usar um proxy/back-end que adicione a Authorization header.
+                    const providedKey = sessionStorage.getItem('FRESHDESK_API_KEY') || 'RObWd1NBqM0J9APJ2FoX';
+                    let authHeader = null;
+                    try {
+                        authHeader = 'Basic ' + btoa(providedKey + ':X');
+                    } catch (e) {
+                        console.warn('btoa not available or failed to encode API key', e);
+                    }
+
+                    const headers = {
+                        'Accept': 'application/json'
+                    };
+                    if (authHeader) headers['Authorization'] = authHeader;
+
+                    const response = await fetch(url, {
+                        headers
+                    });
+
+                    if (!response.ok) {
+                        let msg = `Falha ao buscar conversas (status ${response.status})`;
+                        if (response.status === 401 || response.status === 403) {
+                            msg += '. A API exige autenticação. Use um proxy/backend para incluir a API key do Freshdesk.';
+                        } else if (response.status === 0) {
+                            msg += '. Possível problema de CORS ou rede.';
+                        }
+                        if (contentEl) contentEl.innerHTML = `<div style="color:#f44336;">${escapeHtml(msg)}</div>`;
+                        return;
+                    }
+
+                    const conv = await response.json();
+                    if (!conv || conv.length === 0) {
+                        if (contentEl) contentEl.innerHTML = '<p style="color:#666;">Nenhuma conversa encontrada para este ticket.</p>';
+                        return;
+                    }
+
+                    const html = conv.map(c => {
+                        const who = c.incoming ? (c.from && (c.from.name || c.from.email)) : (c.user && (c.user.name || c.user.email)) || c.source || 'Remetente';
+                        const body = c.body_text ? escapeHtml(c.body_text) : (c.body ? escapeHtml(c.body) : '');
+                        const created = c.created_at ? formatDateTimeForDisplay(c.created_at) : '';
+                        return `
+                            <div style="border-bottom:1px solid #eee; padding:10px 0;">
+                                <div style="font-weight:600; color:#333;">${escapeHtml(who)} <span style="font-weight:400; color:#666; font-size:0.9em; margin-left:8px;">${escapeHtml(created)}</span></div>
+                                <div style="margin-top:6px; white-space:pre-wrap; color:#222;">${body}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    if (contentEl) contentEl.innerHTML = html;
+
+                } catch (err) {
+                    console.error('Erro ao buscar conversas do ticket', err);
+                    const message = err && err.message ? err.message : String(err);
+                    if (contentEl) contentEl.innerHTML = `<div style="color:#f44336;">Erro ao carregar conversas: ${escapeHtml(message)}. Se for CORS/401, use um proxy no backend para adicionar a API Key do Freshdesk.</div>`;
+                }
+            }
+
+            // Fallback global: garante que cliques em links de descrição acionem a busca (adicionado apenas uma vez)
+            try {
+                if (!window._ticketDescGlobalListenerAdded) {
+                    document.addEventListener('click', function (e) {
+                        const link = e.target.closest && e.target.closest('.ticket-description-link');
+                        if (link) {
+                            e.preventDefault();
+                            const ticketId = link.getAttribute('data-ticket-id') || link.dataset.ticketId;
+                            console.log('Global listener triggered for ticket', ticketId);
+                            fetchTicketConversations(ticketId);
+                        }
+                    });
+                    window._ticketDescGlobalListenerAdded = true;
+                }
+            } catch (err) {
+                console.warn('Não foi possível adicionar listener global de ticket-description-link:', err);
             }
 
             // Função para obter classe CSS do status do ticket
@@ -5029,78 +5176,6 @@ window.onclick = function(event) {
                     return;
                 }
                 showTicketsModal(clientName, cfEmpresa);
-            }
-
-            // Função para mostrar modal de tickets do cliente
-            async function showTicketsModal(clientName, cfEmpresa) {
-                const modal = document.getElementById("ticketsModal");
-                const title = document.getElementById("ticketsModalTitle");
-                const content = document.getElementById("ticketsModalContent");
-                
-                title.textContent = `Tickets - ${clientName}`;
-                content.innerHTML = `
-                    <div class="loading-tickets">
-                        <i class="fas fa-spinner fa-spin" style="font-size: 2em; margin-bottom: 20px; color: #4fc3f7;"></i>
-                        <p>Carregando tickets...</p>
-                    </div>
-                `;
-                
-                modal.style.display = "block";
-                
-                try {
-                    // Buscar tickets do cliente via API usando cf_empresa
-                    const response = await fetch(`https://77h9ikc6ney8.manus.space/api/tickets/client-by-empresa?cf_empresa=${encodeURIComponent(cfEmpresa)}`);
-                    
-                    if (!response.ok) {
-                        throw new Error(`Erro na API: ${response.status}`);
-                    }
-                    const tickets = await response.json();
-                    
-                    if (!tickets || tickets.length === 0) {
-                        content.innerHTML = `
-                            <div class="no-tickets">
-                                <i class="fas fa-info-circle" style="font-size: 3em; margin-bottom: 20px; color: #2196f3;"></i>
-                                <h3>Nenhum ticket encontrado</h3>
-                                <p>Não há tickets registrados para este cliente.</p>
-                            </div>
-                        `;
-                        return;
-                    }
-                    
-                    content.innerHTML = tickets.map(ticket => {
-                        const createdDate = formatDateTimeForDisplay(ticket.created_at);
-                        const updatedDate = formatDateTimeForDisplay(ticket.updated_at);
-                        const statusClass = getTicketStatusClass(ticket.status);
-                        const statusText = getTicketStatusText(ticket.status);
-                        
-                        return `
-                            <div class="ticket-item">
-                                <div class="ticket-header">
-                                    <span class="ticket-id"><a href="https://suportetryvia.freshdesk.com/a/tickets/${ticket.id}" target="_blank">#${ticket.id}</a></span>
-                                    <span class="ticket-status ${statusClass}">${statusText}</span>
-                                </div>
-                                <div class="ticket-subject">${ticket.subject || "Sem assunto"}</div>
-                                <div class="ticket-description">${ticket.description_text ? ticket.description_text.substring(0, 200) + "..." : "Sem descrição"}</div>
-                                <div class="ticket-meta">
-                                    <strong>Criado:</strong> ${createdDate} | 
-                                    <strong>Atualizado:</strong> ${updatedDate} | 
-                                    <strong>Prioridade:</strong> ${getTicketPriorityText(ticket.priority)}
-                                </div>
-                            </div>
-                        `;
-                    }).join("");
-                    
-                } catch (error) {
-                    console.error("Erro ao buscar tickets:", error);
-                    content.innerHTML = `
-                        <div class="no-tickets">
-                            <i class="fas fa-exclamation-triangle" style="font-size: 3em; margin-bottom: 20px; color: #f44336;"></i>
-                            <h3>Erro ao carregar tickets</h3>
-                            <p>Não foi possível conectar com o serviço de tickets. Verifique se a API está rodando.</p>
-                            <p style="font-size: 0.9em; color: #666;">Erro: ${error.message}</p>
-                        </div>
-                    `;
-                }
             }
 
             // Função para fechar modal de tickets
@@ -9954,7 +10029,7 @@ function renderTickets(tickets) {
                     <span class="ticket-status ${statusClass}">${statusText}</span>
                 </div>
                 <div class="ticket-subject">${ticket.subject || 'Sem assunto'}</div>
-                <div class="ticket-description">${ticket.description_text ? ticket.description_text.substring(0, 200) + '...' : 'Sem descrição'}</div>
+                <div class="ticket-description">${ticket.description_text ? ticket.description_text.substring(0, 200) + '...' : 'Detalhes'}</div>
                 <div class="ticket-meta">
                     <strong>Criado:</strong> ${createdDate} | 
                     <strong>Atualizado:</strong> ${updatedDate} | 
