@@ -8,6 +8,134 @@ button, a.button, .btn {
     font-weight: 500;
 }
 
+ /* Estilos básicos para o modal de conversas */
+        .modal-overlay {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            max-height: 70vh; /* Limita a altura do corpo do modal */
+            overflow-y: auto; /* Adiciona scroll se o conteúdo for muito grande */
+            padding-right: 10px; /* Espaçamento para a barra de rolagem */
+        }
+
+        .modal-footer {
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+            margin-top: 15px;
+            text-align: right;
+        }
+
+        .modal-button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .modal-button.cancel {
+            background-color: #f44336;
+            color: white;
+        }
+
+        /* Estilos para os itens de conversa */
+        .conversation-item {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .conversation-header {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .conversation-body {
+            font-size: 1em;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        .loading-conversations,
+        .no-conversations {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .loading-conversations i,
+        .no-conversations i {
+            margin-bottom: 10px;
+        }
+
+        /* Estilo para o botão Ver Detalhes */
+        .ticket-description a {
+            color: #007bff; /* Cor do link */
+            text-decoration: underline;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+
+        .ticket-description a:hover {
+            color: #0056b3;
+        }
+
 button:contains('Ver Ata'),
 a:contains('Ver Ata'),
 .ver-ata,
