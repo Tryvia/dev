@@ -210,6 +210,22 @@ Editar Homologação
 <input type="text" id="editHomologacaoEspecialista" class="input-padrao">
 </div>
 </div>
+
+<!-- Modal para Conversas do Ticket -->
+<div class="modal-overlay" id="conversationsModal" style="display:none;">
+    <div class="modal-content" style="max-width:800px; max-height:80vh; overflow:auto;">
+        <h3 style="color: #4fc3f7; margin-bottom: 10px;">
+            <i class="fas fa-comments" style="margin-right: 10px;"></i>
+            Anotações do Ticket <span id="conversationsTicketId" style="color:#333; font-weight:600;"></span>
+        </h3>
+        <div id="conversationsContent" style="margin-bottom: 16px;">
+            <!-- Conversas serão inseridas dinamicamente aqui -->
+        </div>
+        <div style="text-align:right;">
+            <button class="modal-button cancel" onclick="closeConversationsModal()">Fechar</button>
+        </div>
+    </div>
+</div>
 <div class="form-row">
 <div class="form-group">
 <label for="editHomologacaoSistema">Sistema</label>
