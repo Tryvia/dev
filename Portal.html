@@ -17,6 +17,95 @@
     const setorUsuario = sessionStorage.getItem('setor');
 const RELEASE_SUPABASE_URL = 'https://mzjdmhgkrroajmsfwryu.supabase.co';
 const RELEASE_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODIzMzAzNSwiZXhwIjoyMDYzODA5MDM1fQ.CVXkKh9yul_Mv2YMhPsDo4CmkQevxpkeI1CtitORpJ0';
+
+// Adiciona os estilos necessários dinamicamente
+const style = document.createElement('style');
+style.textContent = `
+    .sidebar {
+        transition: width 0.3s ease;
+    }
+    .sidebar.collapsed {
+        width: 60px !important;
+    }
+    .main-content {
+        transition: margin-left 0.3s ease;
+    }
+`;
+document.head.appendChild(style);
+
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    
+    if (!sidebar.style.width || sidebar.style.width === '250px') {
+        sidebar.style.width = '60px';
+        mainContent.style.marginLeft = '60px';
+    } else {
+        sidebar.style.width = '250px';
+        mainContent.style.marginLeft = '250px';
+    }
+}
+
+// Função para controlar o estado da sidebar
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    const toggleButton = document.querySelector('.toggle-sidebar');
+    const toggleIcon = toggleButton.querySelector('i');
+    const logo = document.getElementById('sidebarLogo'); // Novo: Obter o elemento da logo
+    
+    sidebar.classList.toggle('collapsed');
+    mainContent.classList.toggle('expanded');
+    toggleButton.classList.toggle('collapsed');
+    
+    // Forçar um reflow para garantir que as transições funcionem corretamente
+    sidebar.offsetHeight;
+    
+    if (sidebar.classList.contains('collapsed')) {
+        toggleIcon.classList.remove('fa-chevron-left');
+        toggleIcon.classList.add('fa-chevron-right');
+        localStorage.setItem('sidebarState', 'collapsed');
+        if (logo) { // Novo: Trocar a logo para o estado recuado
+            logo.src = 'logo11.png';
+        }
+    } else {
+        toggleIcon.classList.remove('fa-chevron-right');
+        toggleIcon.classList.add('fa-chevron-left');
+        localStorage.setItem('sidebarState', 'expanded');
+        if (logo) { // Novo: Trocar a logo para o estado expandido
+            logo.src = 'logo1.png';
+        }
+    }
+}
+
+// Função para restaurar o estado da sidebar ao carregar a página
+function restoreSidebarState() {
+    const sidebarState = localStorage.getItem('sidebarState') || 'collapsed';
+    const logo = document.getElementById('sidebarLogo'); // Novo: Obter o elemento da logo
+    
+    if (sidebarState === 'collapsed') {
+        const sidebar = document.querySelector('.sidebar');
+        const mainContent = document.querySelector('.main-content');
+        const toggleButton = document.querySelector('.toggle-sidebar');
+        const toggleIcon = toggleButton.querySelector('i');
+        
+        if (sidebar) sidebar.classList.add('collapsed');
+        if (mainContent) mainContent.classList.add('expanded');
+        if (toggleButton) toggleButton.classList.add('collapsed');
+        if (toggleIcon) toggleIcon.classList.add('fa-chevron-right');
+
+        if (logo) { // Novo: Definir a logo para o estado recuado
+            logo.src = 'logo11.png';
+        }
+    } else { // Novo: Adicionar o caso para o estado expandido na inicialização
+        if (logo) {
+            logo.src = 'logo1.png';
+        }
+    }
+}
+
+// Adiciona o evento para restaurar o estado da sidebar quando a página carregar
+document.addEventListener('DOMContentLoaded', restoreSidebarState);
 const releaseClient = supabase.createClient(RELEASE_SUPABASE_URL, RELEASE_SUPABASE_KEY);
 const SUPABASE_URL = 'https://mzjdmhgkrroajmsfwryu.supabase.co'; 
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMzMwMzUsImV4cCI6MjA2MzgwOTAzNX0.tQCwUfFCV7sD-IexQviU0XEPcbn9j5uK9NSUbH-OeBc';
@@ -195,7 +284,7 @@ Salvar Alterações
 <!-- Modal para Editar Homologação -->
 <div class="modal-overlay" id="modalEditarHomologacao">
 <div class="modal-content" style="max-width: 600px;">
-<h3 style="color: #4fc3f7; margin-bottom: 20px;">
+<h3 style="color: #0066ccbf; margin-bottom: 20px;">
 <i class="fas fa-edit" style="margin-right: 10px;"></i>
 Editar Homologação
 </h3>
@@ -261,77 +350,81 @@ Salvar Alterações
 </form>
 </div>
 </div>
-<div class="sidebar">
+<div class="sidebar collapsed">
+<button class="sidebar-toggle" onclick="toggleSidebar()">
+    <i class="fas fa-chevron-left"></i>
+</button>
 <div class="logo-container">
-<img alt="Sua Logo" class="your-custom-logo" src="logo1.png"/>
+	<img alt="Sua Logo" class="your-custom-logo" id="sidebarLogo" src="logo11.png"/>
+
 </div>
 <ul class="nav-list">
 <li class="nav-item">
-<button onclick="showTab('inicio')"data-permissao="inicio"><i class="fas fa-home"></i> Início</button>
+<button onclick="showTab('inicio')"data-permissao="inicio"><i class="fas fa-home"></i> <span>Início</span></button>
 </li>
 <li class="nav-item">
-<button onclick="showTab('painel-setor')"data-permissao="painel-setor"><i class="fas fa-chart-pie"></i> Painel do Setor</button>
+<button onclick="showTab('painel-setor')"data-permissao="painel-setor"><i class="fas fa-chart-pie"></i> <span>Painel do Setor</span></button>
 </li>
 <li class="nav-item">
-<button onclick="showTab('dashboard')"data-permissao="dashboard"><i class="fas fa-chart-line"></i> Dashboards</button>
+<button onclick="showTab('dashboard')"data-permissao="dashboard"><i class="fas fa-chart-line"></i> <span>Dashboards</span></button>
 </li>
 <li class="nav-item">
-<button onclick="showTab('clients')"data-permissao="clients"><i class="fas fa-users"></i> Clientes</button>
+<button onclick="showTab('clients')"data-permissao="clients"><i class="fas fa-users"></i> <span>Clientes</span></button>
 </li>
 <li class="nav-item">
-<button onclick="showTab('painel-tickets')"data-permissao="painel-tickets"><i class="fas fa-ticket-alt"></i> Painel de Tickets</button>
+<button onclick="showTab('painel-tickets')"data-permissao="painel-tickets"><i class="fas fa-ticket-alt"></i> <span>Painel de Tickets</span></button>
 </li>
 <li class="nav-item">
-<button onclick="window.location.href='https://tryvia.github.io/TryviaBI/mapa_visitas.html'"data-permissao="https://tryvia.github.io/TryviaBI/mapa_visitas.html"><i class="fas fa-calendar-check"></i> Visitas</button>
+<button onclick="window.location.href='https://tryvia.github.io/TryviaBI/mapa_visitas.html'"data-permissao="https://tryvia.github.io/TryviaBI/mapa_visitas.html"><i class="fas fa-calendar-check"></i> <span>Visitas</span></button>
 </li>
 <li class="nav-item">
 <button onclick="showTab('relatorioVisita')"data-permissao="relatorioVisita">
-<i class="fas fa-file-signature"></i> Relatório de Visita
-  </button>
-<li class="nav-item"><button onclick="showTab('homologacao')"data-permissao="homologacao"><i class="fas fa-clipboard-check"></i> Homologação</button></li>
+<i class="fas fa-file-signature"></i> <span>Relatório de Visita</span></button>
+</li>
+<li class="nav-item"><button onclick="showTab('homologacao')"data-permissao="homologacao"><i class="fas fa-clipboard-check"></i> <span>Homologação</span></button></li>
 <li class="nav-item">
-  <button onclick="showTab('release')"data-permissao="release"><i class="fas fa-rocket"></i> Release</button>
+  <button onclick="showTab('release')"data-permissao="release"><i class="fas fa-rocket"></i> <span>Release</span></button>
 </li>
 <li class="nav-item">
-  <button onclick="showTab('reunioes')"data-permissao="reunioes"><i class="fas fa-users"></i> Reuniões</button>
+  <button onclick="showTab('reunioes')"data-permissao="reunioes"><i class="fas fa-users"></i> <span>Reuniões</span></button>
 </li>
 <li class="nav-item">
-  <button onclick="showTab('documents')"data-permissao="documents"><i class="fas fa-file-alt"></i> Documentos</button>
+  <button onclick="showTab('documents')"data-permissao="documents"><i class="fas fa-file-alt"></i> <span>Documentos</span></button>
 </li>
 <li class="nav-item">
-  <button onclick="showTab('treinamento')"data-permissao="treinamento"><i class="fas fa-graduation-cap"></i> Treinamento</button>
+  <button onclick="showTab('treinamento')"data-permissao="treinamento"><i class="fas fa-graduation-cap"></i> <span>Treinamento</span></button>
 </li>
 <li class="nav-item">
-<button onclick="showTab('evaluations')"data-permissao="evaluations"><i class="fas fa-star"></i> Avaliações</button>
+<button onclick="showTab('evaluations')"data-permissao="evaluations"><i class="fas fa-star"></i> <span>Avaliações</span></button>
 </li>
 <li class="nav-item">
-<button onclick="showTab('cs')"data-permissao="cs"><i class="fas fa-headset"></i> CS</button>
+<button onclick="showTab('cs')"data-permissao="cs"><i class="fas fa-headset"></i> <span>CS</span></button>
 </li>
 <li class="nav-item">
-<button onclick="window.location.href='https://tryvia.github.io/TryviaBI/calendario.html'"data-permissao="https://tryvia.github.io/TryviaBI/calendario.html"><i class="fas fa-calendar"></i> Calendário</button>
+<button onclick="window.location.href='https://tryvia.github.io/TryviaBI/calendario.html'"data-permissao="https://tryvia.github.io/TryviaBI/calendario.html"><i class="fas fa-calendar"></i> <span>Calendário</span></button>
 </li>
 <li class="nav-item">
-<button onclick="window.location.href='https://tryvia.github.io/TryviaBI/linha%20do%20tempo.html'"data-permissao="https://tryvia.github.io/TryviaBI/linha%20do%20tempo.html"><i class="fas fa-clock"></i> MVP</button>
+<button onclick="window.location.href='https://tryvia.github.io/TryviaBI/linha%20do%20tempo.html'"data-permissao="https://tryvia.github.io/TryviaBI/linha%20do%20tempo.html"><i class="fas fa-clock"></i> <span>MVP</span></button>
 </li>
 <li class="nav-item">
-<button onclick="window.location.href='https://tryvia.github.io/TryviaBI/implanta%C3%A7%C3%A3o.html'"data-permissao="https://tryvia.github.io/TryviaBI/implanta%C3%A7%C3%A3o.html"><i class="fas fa-cogs"></i> Implantações</button>
+<button onclick="window.location.href='https://tryvia.github.io/TryviaBI/implanta%C3%A7%C3%A3o.html'"data-permissao="https://tryvia.github.io/TryviaBI/implanta%C3%A7%C3%A3o.html"><i class="fas fa-cogs"></i> <span>Implantações</span></button>
 </li>
 <li class="nav-item">
-<button onclick="showTab('gestao')"data-permissao="gestao"><i class="fas fa-users-cog"></i> Gestão</button>
+<button onclick="showTab('gestao')"data-permissao="gestao"><i class="fas fa-users-cog"></i> <span>Gestão</span></button>
 </li>
 <li class="nav-item">
-<button onclick="showTab('gerenciar-logins')"data-permissao="gerenciar-logins"><i class="fas fa-user-shield"></i> Gerenciar Logins</button>
+<button onclick="showTab('gerenciar-logins')"data-permissao="gerenciar-logins"><i class="fas fa-user-shield"></i> <span>Gerenciar Logins</span></button>
 </li>
 <li class="nav-item">
-<a href="#"><i class="fas fa-cog"></i> Configurações</a>
+<a href="#"><i class="fas fa-cog"></i> <span>Configurações</span></a>
 </li>
 <li class="nav-item">
-<a href="#" onclick="logoutTryvia()"><i class="fas fa-sign-out-alt"></i> Sair</a><li class="nav-item">
+<a href="#" onclick="logoutTryvia()"><i class="fas fa-sign-out-alt"></i> <span>Sair</span></a><li class="nav-item">
 </li>
 </li></li><li class="nav-item">
 </li></ul>
 </div>
-<div class="main-content">
+<div class="main-content expanded">
 <header class="header">
 
 <h1>Portal - Tryvia</h1>
@@ -344,198 +437,200 @@ Salvar Alterações
 <!-- Aba Início -->
 <div class="content-section active" id="inicio">
     <!-- Cabeçalho de Boas-vindas -->
-    <div class="welcome-header" style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%); padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: white; box-shadow: 0 8px 25px rgba(41, 182, 246, 0.3);">
-        <h2 style="margin: 0; font-size: 2.5em; margin-bottom: 10px;">
-            Bem-vindo ao Portal Tryvia
+    <div style="padding: 30px 0; margin-bottom: 30px;">
+        <h2 style="margin: 0; font-size: 2.5em; color: #1a1a1a; margin-bottom: 10px;">
+            Bem-vindo ao Dashboard
         </h2>
-        <p style="margin: 0; font-size: 1.2em; opacity: 0.9;" id="welcomeMessage">
-            Hoje é <span id="currentDate"></span> | Última atualização: <span id="lastUpdate"></span>
+        <p style="margin: 0; font-size: 1em; color: #666;" id="welcomeMessage">
+            Quinta-feira, 23 de outubro de 2025 • Última atualização: <span id="lastUpdate">15:03:41</span>
         </p>
     </div>
 
-    <!-- Métricas Principais -->
-    <div class="metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin-bottom: 40px;">
-        <div class="metric-card" style="background: linear-gradient(135deg, #b3e5fc 0%, #78c5e9 100%); border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="showTab('clients')">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                        <h3 style="margin: 0; color: #000; font-size: 1.1em; margin-bottom: 8px;">Clientes Ativos</h3>
-                        <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #0277bd;" id="activeClientsCount">-</p>
-                </div>
-                <div style="font-size: 3em; color: #0277bd; opacity: 0.7;">👥</div>
-            </div>
+    <!-- Ações Rápidas -->
+    <div style="margin-bottom: 30px;">
+        <h3 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 1.2em;">Ações Rápidas</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px;">
+            <button onclick="showTab('clients')" style="border: 1px solid #e0e0e0; background: white; color: #333; padding: 20px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; text-align: center;">
+                <i class="fas fa-user-plus" style="display: block; font-size: 1.5em; margin-bottom: 8px; color: #666;"></i>
+                <span style="font-size: 0.9em; font-weight: 500;">Clientes</span>
+            </button>
+            <button onclick="showTab('homologacao')" style="border: 1px solid #e0e0e0; background: white; color: #333; padding: 20px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; text-align: center;">
+                <i class="fas fa-clipboard-check" style="display: block; font-size: 1.5em; margin-bottom: 8px; color: #666;"></i>
+                <span style="font-size: 0.9em; font-weight: 500;">Homologação</span>
+            </button>
+            <button onclick="showTab('release')" style="border: 1px solid #e0e0e0; background: white; color: #333; padding: 20px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; text-align: center;">
+                <i class="fas fa-rocket" style="display: block; font-size: 1.5em; margin-bottom: 8px; color: #666;"></i>
+                <span style="font-size: 0.9em; font-weight: 500;">Release</span>
+            </button>
+            <button onclick="showTab('reunioes')" style="border: 1px solid #e0e0e0; background: white; color: #333; padding: 20px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; text-align: center;">
+                <i class="fas fa-calendar" style="display: block; font-size: 1.5em; margin-bottom: 8px; color: #666;"></i>
+                <span style="font-size: 0.9em; font-weight: 500;">Reunião</span>
+            </button>
+            <button onclick="showTab('documents')" style="border: 1px solid #e0e0e0; background: white; color: #333; padding: 20px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; text-align: center;">
+                <i class="fas fa-comments" style="display: block; font-size: 1.5em; margin-bottom: 8px; color: #666;"></i>
+                <span style="font-size: 0.9em; font-weight: 500;">Documentos</span>
+            </button>
+            <button onclick="showTab('relatorioVisita')" style="border: 1px solid #e0e0e0; background: white; color: #333; padding: 20px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; text-align: center;">
+                <i class="fas fa-file-alt" style="display: block; font-size: 1.5em; margin-bottom: 8px; color: #666;"></i>
+                <span style="font-size: 0.9em; font-weight: 500;">Relatório</span>
+            </button>
         </div>
+    </div>
 
-            <div class="metric-card" style="background: linear-gradient(135deg, #ffcdd2 0%, #e4c1a0 100%); border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(229, 115, 115, 0.3); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="showTab('clients')">
+    <!-- Tabs de Navegação -->
+    <div style="margin-bottom: 30px;">
+        <div style="display: flex; gap: 30px; border-bottom: 1px solid #e0e0e0; margin-bottom: 20px;">
+            <button onclick="switchDashboardTab('overview')" id="tab-overview" style="background: none; border: none; padding: 10px 0; font-size: 1em; color: #0066cc; border-bottom: 2px solid #0066cc; cursor: pointer; font-weight: 500;">
+                <i class="fas fa-chart-bar" style="margin-right: 8px;"></i>Visão Geral
+            </button>
+            <button onclick="switchDashboardTab('activities')" id="tab-activities" style="background: none; border: none; padding: 10px 0; font-size: 1em; color: #999; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 500;">
+                <i class="fas fa-history" style="margin-right: 8px;"></i>Atividades
+            </button>
+            <button onclick="switchDashboardTab('performance')" id="tab-performance" style="background: none; border: none; padding: 10px 0; font-size: 1em; color: #999; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 500;">
+                <i class="fas fa-chart-line" style="margin-right: 8px;"></i>Performance
+            </button>
+        </div>
+    </div>
+
+    <!-- Conteúdo das Abas -->
+    <div id="tab-content-overview">
+        <!-- Métricas Principais -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; transition: all 0.3s ease;" onclick="showTab('clients')">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                     <div>
-                        <h3 style="margin: 0; color: #000; font-size: 1.1em; margin-bottom: 8px;">Clientes Inativos</h3>
-                        <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #c62828;" id="inactiveClientsCount">-</p>
+                        <p style="margin: 0; color: #999; font-size: 0.9em; margin-bottom: 8px;">Clientes Ativos</p>
+                        <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #1a1a1a;" id="activeClientsCount">...</p>
+                        <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;"></p>
                     </div>
-                    <div style="font-size: 3em; color: #c62828; opacity: 0.7;">🚫</div>
+                    <div style="font-size: 2.5em; color: #ddd;"><i class="fas fa-users"></i></div>
                 </div>
             </div>
 
-        <div class="metric-card" style="background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%); border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="showTab('homologacao')">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <h3 style="margin: 0; color: #000; font-size: 1.1em; margin-bottom: 8px;">Homologações</h3>
-                    <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #2e7d32;" id="totalHomologacoes">-</p>
+            <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; transition: all 0.3s ease;" onclick="showTab('homologacao')">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <p style="margin: 0; color: #999; font-size: 0.9em; margin-bottom: 8px;">Homologações</p>
+                        <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #1a1a1a;" id="totalHomologacoes">...</p>
+                        <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;"></p>
+                    </div>
+                    <div style="font-size: 2.5em; color: #ddd;"><i class="fas fa-clipboard-check"></i></div>
                 </div>
-                <div style="font-size: 3em; color: #2e7d32; opacity: 0.7;">✅</div>
             </div>
-        </div>
 
-        <div class="metric-card" style="background: linear-gradient(135deg, #ffcc80 0%, #ffb74d 100%); border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="showTab('release')">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <h3 style="margin: 0; color: #000; font-size: 1.1em; margin-bottom: 8px;">Releases</h3>
-                    <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #ef6c00;" id="totalReleases">-</p>
+            <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; transition: all 0.3s ease;" onclick="showTab('release')">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <p style="margin: 0; color: #999; font-size: 0.9em; margin-bottom: 8px;">Releases</p>
+                        <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #1a1a1a;" id="totalReleases">...</p>
+                        <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;"></p>
+                    </div>
+                    <div style="font-size: 2.5em; color: #ddd;"><i class="fas fa-rocket"></i></div>
                 </div>
-                <div style="font-size: 3em; color: #ef6c00; opacity: 0.7;">🚀</div>
             </div>
-        </div>
 
-        <div class="metric-card" style="background: linear-gradient(135deg, #d1c4e9 0%, #b39ddb 100%); border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="showTab('reunioes')">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <h3 style="margin: 0; color: #000; font-size: 1.1em; margin-bottom: 8px;">Reuniões</h3>
-                    <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #7b1fa2;" id="totalReunioes">-</p>
+            <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; transition: all 0.3s ease;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <p style="margin: 0; color: #999; font-size: 0.9em; margin-bottom: 8px;">Avaliação Média</p>
+                        <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #1a1a1a;" id="averageRatingHome">...</p>
+                        <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;"></p>
+                    </div>
+                    <div style="font-size: 2.5em; color: #ddd;"><i class="fas fa-star"></i></div>
                 </div>
-                <div style="font-size: 3em; color: #7b1fa2; opacity: 0.7;">📅</div>
-            </div>
-        </div>
-
-        <div class="metric-card" style="background: linear-gradient(135deg, var(--primary-color) 0%, rgb(78 212 208) 100%); border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(3, 169, 244, 0.3); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="showTab('https://tryvia.github.io/TryviaBI/mapa_visitas.html')">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <h3 style="margin: 0; color: #000; font-size: 1.1em; margin-bottom: 8px;">Total de Visitas</h3>
-                    <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #0277bd;" id="totalVisitas">-</p>
-                </div>
-                <div style="font-size: 3em; color: #0277bd; opacity: 0.7;">🗺️</div>
-            </div>
-        </div>
-
-        <div class="metric-card" style="background:linear-gradient(135deg, rgb(183, 177, 177) 0%, rgb(181, 176, 180) 100%); border-radius: 12px; padding: 24px; box-shadow:rgba(41, 182, 246, 0.3) 0px 4px 15px; transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="showTab('evaluations')">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <h3 style="margin: 0; color: #000; font-size: 1.1em; margin-bottom: 8px;">Avaliação Média</h3>
-                    <p style="margin: 0; font-size: 2.5em; font-weight: bold; color: #a65b0b;" id="averageRatingHome">-</p>
-                </div>
-                <div style="font-size: 3em; color: #f57c00; opacity: 0.7;">⭐</div>
             </div>
         </div>
     </div>
 
-    <!-- Seções de Acesso Rápido e Notificações -->
-    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 30px;">
-        <!-- Acesso Rápido -->
-        <div class="quick-access" style="background: rgba(179, 229, 252, 0.95); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2);">
-            <h3 style="margin: 0 0 20px 0; color: #000; font-size: 1.4em;">
-                <i class="fas fa-bolt" style="margin-right: 10px; color: #ff9800;"></i>
-                Acesso Rápido
-            </h3>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
-                <button onclick="showTab('clients')" style="background: #4fc3f7; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; transition: background 0.3s ease; font-size: 0.9em;">
-                    <i class="fas fa-user-plus" style="display: block; font-size: 1.5em; margin-bottom: 5px;"></i>
-                    Novo Cliente
+    <div id="tab-content-activities" style="display: none;">
+        <!-- Atividades Recentes -->
+        <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: #1a1a1a; font-size: 1.2em;">Atividades Recentes</h3>
+                <button onclick="refreshActivities()" style="background: white; border: 1px solid #e0e0e0; color: #666; padding: 8px 12px; border-radius: 6px; cursor: pointer;">
+                    <i class="fas fa-sync-alt"></i>
                 </button>
-                <button onclick="showTab('homologacao')" style="background: #66bb6a; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; transition: background 0.3s ease; font-size: 0.9em;">
-                    <i class="fas fa-clipboard-check" style="display: block; font-size: 1.5em; margin-bottom: 5px;"></i>
-                    Homologação
-                </button>
-                <button onclick="showTab('release')" style="background: #ff7043; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; transition: background 0.3s ease; font-size: 0.9em;">
-                    <i class="fas fa-rocket" style="display: block; font-size: 1.5em; margin-bottom: 5px;"></i>
-                    Novo Release
-                </button>
-                <button onclick="showTab('reunioes')" style="background: #ab47bc; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; transition: background 0.3s ease; font-size: 0.9em;">
-                    <i class="fas fa-users" style="display: block; font-size: 1.5em; margin-bottom: 5px;"></i>
-                    Nova Reunião
-                </button>
-                <button onclick="showTab('documents')" style="background: #5c6bc0; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; transition: background 0.3s ease; font-size: 0.9em;">
-                    <i class="fas fa-file-alt" style="display: block; font-size: 1.5em; margin-bottom: 5px;"></i>
-                    Documentos
-                </button>
-                <button onclick="showTab('relatorioVisita')" style="background: #26a69a; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; transition: background 0.3s ease; font-size: 0.9em;">
-                    <i class="fas fa-file-signature" style="display: block; font-size: 1.5em; margin-bottom: 5px;"></i>
-                    Relatório
-                </button>
+            </div>
+            <div id="activitiesList" style="max-height: 400px; overflow-y: auto;">
+                <div style="text-align: center; padding: 40px; color: #999;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2em; margin-bottom: 15px;"></i>
+                    <p>Carregando atividades...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-content-performance" style="display: none;">
+        <!-- Performance -->
+        <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+            <h3 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 1.2em;">Desempenho Mensal</h3>
+            <div style="space-y: 20px;">
+                <canvas id="homologacoesChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção Inferior -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 30px;">
+        <!-- Últimas Atualizações -->
+        <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: #1a1a1a; font-size: 1.2em;">Últimas Atualizações</h3>
+                <button style="background: none; border: none; color: #0066cc; cursor: pointer; font-weight: 500;"></button>
+            </div>
+            <div style="space-y: 12px;">
+                <div style="border: 1px solid #f0f0f0; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+                    <div style="display: flex; gap: 8px; align-items: flex-start;">
+                        <div style="width: 6px; height: 6px; background: #999; border-radius: 50%; margin-top: 6px; flex-shrink: 0;"></div>
+                        <div style="flex: 1;">
+                            <p style="margin: 0; font-weight: 500; color: #1a1a1a; font-size: 0.95em;">Sistema atualizado</p>
+                            <p style="margin: 5px 0 0 0; color: #999; font-size: 0.85em;">Versão 2.5.0 disponível</p>
+                        </div>
+                        <span style="color: #999; font-size: 0.85em; white-space: nowrap;">10/11/2025</span>
+                    </div>
+                </div>
+                <div style="border: 1px solid #f0f0f0; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+                    <div style="display: flex; gap: 8px; align-items: flex-start;">
+                        <div style="width: 6px; height: 6px; background: #999; border-radius: 50%; margin-top: 6px; flex-shrink: 0;"></div>
+                        <div style="flex: 1;">
+                            <p style="margin: 0; font-weight: 500; color: #1a1a1a; font-size: 0.95em;">Melhorias de performance</p>
+                            <p style="margin: 5px 0 0 0; color: #999; font-size: 0.85em;">Otimizações implementadas</p>
+                        </div>
+                        <span style="color: #999; font-size: 0.85em; white-space: nowrap;">18/08/2025</span>
+                    </div>
+                </div>
+                <div style="border: 1px solid #f0f0f0; border-radius: 6px; padding: 12px;">
+                    <div style="display: flex; gap: 8px; align-items: flex-start;">
+                        <div style="width: 6px; height: 6px; background: #999; border-radius: 50%; margin-top: 6px; flex-shrink: 0;"></div>
+                        <div style="flex: 1;">
+                            <p style="margin: 0; font-weight: 500; color: #1a1a1a; font-size: 0.95em;">Novos recursos</p>
+                            <p style="margin: 5px 0 0 0; color: #999; font-size: 0.85em;">Integração com API externa</p>
+                        </div>
+                        <span style="color: #999; font-size: 0.85em; white-space: nowrap;">15/08/2025</span>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Notificações -->
-        <div class="notifications" style="background: rgba(179, 229, 252, 0.95); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2);">
-            <h3 style="margin: 0 0 20px 0; color: #000; font-size: 1.4em;">
-                <i class="fas fa-bell" style="margin-right: 10px; color: #f44336;"></i>
-                Notificações
-            </h3>
-            <div id="notificationsList">
-                <div style="text-align: center; padding: 20px; color: #666;">
-                    <i class="fas fa-check-circle" style="font-size: 2em; margin-bottom: 10px; color: #4caf50;"></i>
-                    <p style="margin: 0;">Atualização 20/08/2025!</p>
-                    <p style="margin: 5px 0 0 0; font-size: 0.9em;">As melhorias solicitadas nos tickets #4883, #4882 e #4881 foram aplicadas e já estão disponíveis em produção.</p>
+        <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+            <h3 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 1.2em;">Notificações</h3>
+            <div style="space-y: 12px;">
+                <div style="background: #ffe8e8; border: 1px solid #ffcccb; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+                    <p style="margin: 0; font-weight: 500; color: #c62828; font-size: 0.9em;">Tickets pendentes</p>
+                    <p style="margin: 5px 0 0 0; color: #c62828; font-size: 0.85em;">#4883, #4882, #4881</p>
+                </div>
+                <div style="background: #fffde8; border: 1px solid #fff9c4; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+                    <p style="margin: 0; font-weight: 500; color: #f57f17; font-size: 0.9em;">Clientes inativos</p>
+                    <p style="margin: 5px 0 0 0; color: #f57f17; font-size: 0.85em;">1 cliente inativo</p>
                 </div>
             </div>
         </div>
     </div>
 
-    
-    <div class="main-layout" style="display: block; margin-bottom: 40px;">
-        
-        <!-- Atividades Recentes e Clientes em Destaque -->
-        <div>
-            <!-- Atividades Recentes -->
-            <div class="activities-section" style="background: rgba(179, 229, 252, 0.95); border-radius: 12px; padding: 25px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3 style="margin: 0; color: #000; font-size: 1.4em;">
-                        <i class="fas fa-clock" style="margin-right: 10px; color: #29b6f6;"></i>
-                        Atividades Recentes
-                    </h3>
-                    <button onclick="refreshActivities()" style="background: #29b6f6; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                </div>
-                <div id="activitiesList" style="max-height: 400px; overflow-y: auto;">
-                    <div style="text-align: center; padding: 40px; color: #666;">
-                        <i class="fas fa-spinner fa-spin" style="font-size: 2em; margin-bottom: 15px;"></i>
-                        <p>Carregando atividades...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Clientes em Destaque -->
-            <div class="clients-highlight" style="background: rgba(179, 229, 252, 0.95); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2);">
-                <h3 style="margin: 0 0 20px 0; color: #000; font-size: 1.4em;">
-                    <i class="fas fa-star" style="margin-right: 10px; color: #ffc107;"></i>
-                    Clientes em Destaque
-                </h3>
-                <div id="clientsCarousel" style="display: flex; overflow-x: auto; gap: 20px; padding: 10px 0; scroll-behavior: smooth;">
-                    <div style="text-align: center; padding: 40px; color: #666; min-width: 100%;">
-                        <i class="fas fa-spinner fa-spin" style="font-size: 2em; margin-bottom: 15px;"></i>
-                        <p>Carregando clientes...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Resumo -->
-    <div class="charts-section" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 40px;">
-        <div style="background: rgba(179, 229, 252, 0.95); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2);">
-            <h3 style="margin: 0 0 20px 0; color: #000; font-size: 1.4em;">
-                <i class="fas fa-chart-bar" style="margin-right: 10px; color: #29b6f6;"></i>
-                Homologações por Mês
-            </h3>
-            <canvas id="homologacoesChart" width="400" height="200"></canvas>
-        </div>
-        
-        <div style="background: rgba(179, 229, 252, 0.95); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2);">
-            <h3 style="margin: 0 0 20px 0; color: #000; font-size: 1.4em;">
-                <i class="fas fa-chart-pie" style="margin-right: 10px; color: #29b6f6;"></i>
-                Releases por Tipo
-            </h3>
-            <canvas id="releasesChart" width="400" height="200"></canvas>
-        </div>
-    </div>
+    <script>
+   
+    </script>
 </div>
 
 <div class="content-section" id="gestao">
@@ -693,7 +788,7 @@ Salvar Alterações
 
 <!-- Nova Seção: Nova Implantação -->
 <div class="content-section" id="nova-implantacao">
-    <div style="background: linear-gradient(135deg, #29b6f6 0%, #29b6f6 100%); padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: white; box-shadow: 0 8px 25px #b3e5fc(156, 39, 176, 0.3);">
+    <div style="padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: rgb(0, 0, 0); box-shadow: 0 8px 25px #b3e5fc(156, 39, 176, 0.3);">
         <h2 style="margin: 0; font-size: 2.5em; margin-bottom: 10px;">
             <i class="fas fa-cogs" style="margin-right: 15px;"></i>
             Projetos
@@ -762,7 +857,7 @@ Salvar Alterações
             </div>
             
             <div style="display: flex; gap: 15px; margin-top: 30px;">
-                <button type="button" onclick="showTab('documents')" style="background-color: #6c757d; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; transition: background-color 0.3s ease; flex: 1;">
+                <button type="button" onclick="showTab('documents')" style="background-color: #d6d6d6; color: rgb(0, 0, 0); border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; transition: background-color 0.3s ease; flex: 1;">
                     <i class="fas fa-arrow-left" style="margin-right: 8px;"></i>
                     Voltar
                 </button>
@@ -780,7 +875,7 @@ Salvar Alterações
 
     <!-- Seção de Filtros e Lista de Implantações -->
     <div style="max-width: 1200px; margin: 50px auto 0; padding: 0 20px;">
-        <div style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%); padding: 25px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: white; box-shadow: 0 8px 25px rgba(41, 182, 246, 0.3);">
+        <div style=" padding: 25px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: rgb(0, 0, 0); ">
             <h3 style="margin: 0; font-size: 1.8em; margin-bottom: 10px;">
                 <i class="fas fa-list" style="margin-right: 10px;"></i>
                 Projetos Registrados
@@ -791,7 +886,7 @@ Salvar Alterações
         </div>
 
         <!-- Filtros -->
-        <div style="background-color: rgba(179, 229, 252, 0.95); padding: 25px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2);">
+        <div style="padding: 25px; border-radius: 15px; margin-bottom: 25px;">
             <h4 style="color: #4fc3f7; margin-bottom: 20px; font-size: 1.3em;">
                 <i class="fas fa-filter" style="margin-right: 10px;"></i>
                 Filtros
@@ -846,7 +941,7 @@ Salvar Alterações
 
 <!-- Seção: Treinamento -->
 <div class="content-section" id="treinamento">
-    <div style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%); padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: white; box-shadow: 0 8px 25px rgba(41, 182, 246, 0.3);">
+    <div style="padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: rgb(0, 0, 0);">
         <h2 style="margin: 0; font-size: 2.5em; margin-bottom: 10px;">
             <i class="fas fa-graduation-cap" style="margin-right: 15px;"></i>
             Centro de Treinamento
@@ -858,8 +953,8 @@ Salvar Alterações
 
     <div style="display: grid; grid-template-columns: 300px 1fr; gap: 30px; min-height: 600px;">
         <!-- Sidebar de Produtos -->
-        <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
-            <h3 style="color: #4fc3f7; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
+        <div style="background-color: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
+            <h3 style="color: #0066ccbf; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
                 <i class="fas fa-list" style="margin-right: 10px;"></i>Produtos
             </h3>
             
@@ -888,19 +983,19 @@ Salvar Alterações
             </div>
             
             <!-- Botão Adicionar Produto -->
-            <button onclick="showAddProductModal()" style="width: 100%; background: #29b6f6; color: white; border: none; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: background 0.3s ease;">
+            <button onclick="showAddProductModal()" style="width: 100%; background: #0066ccbf; color: white; border: none; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: background 0.3s ease;">
                 <i class="fas fa-plus" style="margin-right: 8px;"></i>Adicionar Produto
             </button>
         </div>
 
         <!-- Área Principal de Conteúdo -->
-        <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
+        <div style="background-color: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
             <!-- Cabeçalho da Área de Conteúdo -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                <h3 id="currentProductTitle" style="color: #4fc3f7; margin: 0; font-size: 1.8em;">
+                <h3 id="currentProductTitle" style="color: #0066ccbf; margin: 0; font-size: 1.8em;">
                     <i class="fas fa-desktop" style="margin-right: 10px;"></i>Treinamentos - Sing
                 </h3>
-                <button id="addVideoBtn" onclick="showAddVideoModal()" style="background: #4caf50; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.3s ease;">
+                <button id="addVideoBtn" onclick="showAddVideoModal()" style="background: #0066ccbf; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.3s ease;">
                     <i class="fas fa-video"></i>
                     Adicionar Vídeo
                 </button>
@@ -980,7 +1075,7 @@ Salvar Alterações
 <!-- Modal para Adicionar Produto -->
 <div class="modal-overlay" id="addProductModal">
     <div class="modal-content" style="max-width: 500px;">
-        <h3 style="color: #4fc3f7; margin-bottom: 20px;">
+        <h3 style="color: #0066ccbf; margin-bottom: 20px;">
             <i class="fas fa-plus" style="margin-right: 10px;"></i>
             Adicionar Novo Produto
         </h3>
@@ -1022,7 +1117,7 @@ Salvar Alterações
 </div>
 <div class="client-tab-content" id="view-clients" style="display: block;">
 <h3 style="margin-bottom: 20px;">Lista de Clientes</h3>
-<div style="background-color: rgba(179, 229, 252, 0.95); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+<div style="background-color: rgb(255 255 255 / 95%); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
     <div class="form-row">
         <div class="form-group">
             <label for="filterClientGroup">Filtrar por Grupo</label>
@@ -1386,10 +1481,10 @@ Salvar Alterações
 </div>
 <div class="tabs">
 <button class="tab-button active" onclick="openHomologacaoTab(event, 'formularioHomologacao')">
-                        📝 Formulário de Registro
+                         Formulário de Registro
                     </button>
 <button class="tab-button" onclick="openHomologacaoTab(event, 'listaHomologacoes')">
-                        📚 Homologações Registradas
+                         Homologações Registradas
                     </button>
 </div>
 <div class="tab-content active" id="formularioHomologacao">
@@ -1640,7 +1735,7 @@ Salvar Alterações
 </div>
 <!-- Seção: Painel do Setor -->
 <div class="content-section" id="painel-setor">
-    <div style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%); padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: white; box-shadow: 0 8px 25px rgba(41, 182, 246, 0.3);">
+    <div style="padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: rgb(0, 0, 0);">
         <h2 style="margin: 0; font-size: 2.5em; margin-bottom: 10px;">
             <i class="fas fa-chart-pie" style="margin-right: 15px;"></i>
             Painel do Setor
@@ -1654,8 +1749,8 @@ Salvar Alterações
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
         
         <!--  Esquerda: Tarefas -->
-        <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
-            <h3 style="color: #4fc3f7; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
+        <div style="border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgb(0 0 0 / 30%);">
+            <h3 style="color: #0066ccbf; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
                 <i class="fas fa-tasks" style="margin-right: 10px;"></i>TAREFAS
             </h3>
             
@@ -1672,8 +1767,8 @@ Salvar Alterações
         </div>
 
         <!-- Coluna Direita: Time -->
-        <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
-            <h3 style="color: #4fc3f7; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
+            <div style="border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgb(0 0 0 / 30%);">
+            <h3 style="color: #0066ccbf; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
                 <i class="fas fa-users" style="margin-right: 10px;"></i>TIME
             </h3>
             
@@ -1690,15 +1785,15 @@ Salvar Alterações
     </div>
 
     <!-- Projetos em Andamento -->
-    <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
-        <h3 style="color: #4fc3f7; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
+    <div style="background-color: rgb(255 255 255 / 95%); border-radius: 15px; padding: 25px; margin-bottom: 30px; box-shadow: 0 4px 15px rgb(0 0 0 / 30%);">
+        <h3 style="color: #0066ccbf; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
             <i class="fas fa-project-diagram" style="margin-right: 10px;"></i>PROJETOS EM ANDAMENTO
         </h3>
         
         <!-- Tabela de Projetos -->
         <div style="overflow-x: auto;">
             <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <thead style="background: #4fc3f7; color: white;">
+                <thead style="background: #d6d6d6; color: rgb(0, 0, 0);">
                     <tr>
                             <th style="padding: 15px; text-align: left; font-weight: bold;">Projeto</th>
                             <th style="padding: 15px; text-align: left; font-weight: bold;">Empresa</th>
@@ -1726,8 +1821,8 @@ Salvar Alterações
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
         
         <!-- Visitas com Mapa -->
-        <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
-            <h3 style="color: #4fc3f7; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
+        <div style="background-color: rgb(255 255 255 / 95%); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgb(0 0 0 / 30%);">
+            <h3 style="color: #0066ccbf; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
                 <i class="fas fa-map-marker-alt" style="margin-right: 10px;"></i>VISITAS
             </h3>
             
@@ -1759,14 +1854,14 @@ Salvar Alterações
         </div>
 
         <!-- Entregas -->
-        <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
-            <h3 style="color: #4fc3f7; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
-                <i class="fas fa-calendar" style="margin-right: 10px;"></i>ENTREGAS
+        <div style="background-color: rgb(255 255 255 / 95%); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgb(0 0 0 / 30%);">
+            <h3 style="color: #0066ccbf; margin-bottom: 20px; font-size: 1.5em; text-align: center;">
+                <i class="fas fa-calendar" style="margin-right: 10px;"></i>SLA
             </h3>
             
             <!-- Tabela de Entregas por Mês -->
-            <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <div style="background: #4fc3f7; color: white; padding: 15px; text-align: center; font-weight: bold;">
+            <div style="background: #d6d6d6; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <div style="background: #d6d6d6; color: rgb(0, 0, 0); padding: 15px; text-align: center; font-weight: bold;">
                     SLA Por Mês
                 </div>
                 
@@ -1788,7 +1883,7 @@ Salvar Alterações
     </div>
 
     <!-- Rodapé com Tags -->
-    <div style="text-align: center; margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%); border-radius: 15px; color: white;">
+    <div style="text-align: center; margin-top: 30px; padding: 20px; background: #d6d6d6; border-radius: 15px; color: rgb(0, 0, 0);">
         <div style="display: flex; justify-content: center; align-items: center; gap: 30px; font-size: 1.2em; font-weight: bold;">
             <span><i class="fas fa-shield-alt" style="margin-right: 8px;"></i>+ segurança</span>
             <span><i class="fas fa-chart-line" style="margin-right: 8px;"></i>+ eficiência</span>
@@ -1799,7 +1894,7 @@ Salvar Alterações
 
 <!-- Nova Seção: Gerenciar Logins -->
 <div class="content-section" id="gerenciar-logins">
-    <div style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%); padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: #333333; box-shadow: 0 8px 25px rgba(41, 182, 246, 0.3);">
+    <div style="padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: #000000;">
         <h2 style="margin: 0; font-size: 2.5em; margin-bottom: 10px;">
             <i class="fas fa-user-shield" style="margin-right: 15px;"></i>
             Gerenciar Logins
@@ -1811,7 +1906,7 @@ Salvar Alterações
 
     <!-- Formulário para Adicionar Usuário -->
     <div class="form-container">
-        <h3 style="margin-bottom: 20px; color: #333333;">Adicionar ou Editar Usuário</h3>
+        <h3 style="margin-bottom: 20px; color: #0066ccbf;">Adicionar ou Editar Usuário</h3>
         <div class="form-row">
             <div class="form-group">
                 <label for="usuarioNome">Nome Completo</label>
@@ -2160,7 +2255,7 @@ Salvar Alterações
 
     <!-- Formulário para Criar Login de Cliente -->
     <div class="form-container" style="margin-top: 30px;">
-        <h3 style="margin-bottom: 20px; color: #333333;">Criar Login para Cliente</h3>
+        <h3 style="margin-bottom: 20px; color: #0066ccbf;">Criar Login para Cliente</h3>
         <div class="form-row">
             <div class="form-group">
                 <label for="clienteSelect">Cliente *</label>
@@ -2285,7 +2380,7 @@ Salvar Alterações
     </div>
 
     <!-- Lista de Usuários -->
-    <div style="background-color: rgba(179, 229, 252, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3);">
+    <div style="border-radius: 15px; padding: 25px;">
         <h3 style="color: #333333; margin-bottom: 20px; font-size: 1.5em;">
             <i class="fas fa-users" style="margin-right: 10px;"></i>
             Usuários Cadastrados
@@ -2310,7 +2405,7 @@ Salvar Alterações
 
         <!-- Tabela de Usuários -->
         <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 10px;">
                 <thead style="background: #4fc3f7; color: white;">
                     <tr>
                         <th style="padding: 15px; text-align: left; font-weight: bold;">Nome</th>
@@ -2342,7 +2437,7 @@ Salvar Alterações
 <!--  Seção: Relatório de Visita -->
 <div class="content-section" id="relatorioVisita">
 <div class="form-container">
-<h3 style="margin-bottom: 20px; color: var(--accent-color);">Relatório de Visita</h3>
+<h3 style="margin-bottom: 20px; color:#0066ccbf;">Relatório de Visita</h3>
 <div class="form-row">
 <div class="form-group">
 <label>Cliente</label>
@@ -2671,7 +2766,7 @@ Salvar Alterações
 <!-- Seção de Avaliações -->
 <div class="content-section" id="evaluations">
     <div class="form-container">
-        <h3 style="margin-bottom: 20px; color: var(--accent-color);">
+        <h3 style="margin-bottom: 20px; color:#0066ccbf;">
             <i class="fas fa-star" style="margin-right: 10px;"></i>
             Avaliações de Visitas
         </h3>
@@ -2703,15 +2798,15 @@ Salvar Alterações
         
         <!-- Estatísticas -->
         <div class="stats-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
-            <div class="stat-card" style="background: linear-gradient(135deg, #4fc3f7, #29b6f6); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+            <div class="stat-card" style="background: linear-gradient(135deg, #0066ccbf, #0066ccbf); color: white; padding: 20px; border-radius: 10px; text-align: center;">
                 <h4 style="margin: 0; font-size: 2em;" id="totalEvaluations">0</h4>
                 <p style="margin: 5px 0 0 0;">Total de Avaliações</p>
             </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #66bb6a, #4caf50); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+            <div class="stat-card" style="background: linear-gradient(135deg, #0066ccbf, #0066ccbf); color: white; padding: 20px; border-radius: 10px; text-align: center;">
                 <h4 style="margin: 0; font-size: 2em;" id="averageRating">0.0</h4>
                 <p style="margin: 5px 0 0 0;">Avaliação Média</p>
             </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #ffa726, #ff9800); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+            <div class="stat-card" style="background: linear-gradient(135deg, #0066ccbf, #0066ccbf); color: white; padding: 20px; border-radius: 10px; text-align: center;">
                 <h4 style="margin: 0; font-size: 2em;" id="lastMonthEvaluations">0</h4>
                 <p style="margin: 5px 0 0 0;">Último Mês</p>
             </div>
@@ -2731,16 +2826,19 @@ Salvar Alterações
 <!-- Seção de CS (Customer Service) -->
 <div class="content-section" id="cs">
     <div class="form-container">
-        <h3 style="margin-bottom: 20px; color: var(--accent-color);">
+        <h3 style="margin-bottom: 20px; color:#0066ccbf;">
             <i class="fas fa-headset" style="margin-right: 10px;"></i>
             Customer Service (CS)
         </h3>
         
         <!-- Formulário de Contato CS -->
         <div class="form-row" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <div class="form-group">
+            <div class="form-group" style="position: relative;">
                 <label for="csClientName">Nome do Cliente:</label>
-                <input type="text" id="csClientName" placeholder="Digite o nome do cliente" required>
+                <select id="csClientName" required>
+                    <option value="">Selecione um cliente...</option>
+                </select>
+                <input type="hidden" id="csEditingId" value="">
             </div>
             <div class="form-group">
                 <label for="csContactType">Tipo de Contato:</label>
@@ -2761,11 +2859,12 @@ Salvar Alterações
                 <label for="csObservation">Observações:</label>
                 <textarea id="csObservation" rows="4" placeholder="Digite as observações sobre o contato com o cliente..." required></textarea>
             </div>
-            <div class="form-group" style="grid-column: 1 / -1; text-align: center;">
-                <button onclick="salvarContatoCS()" style="background: #4fc3f7; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 1.1em; cursor: pointer; transition: background 0.3s ease;">
+            <div class="form-group" style="grid-column: 1 / -1; text-align: center; display:flex; justify-content:center; gap:10px; align-items:center;">
+                <button id="csSaveButton" onclick="salvarContatoCS()" style="background: #0066ccbf; color: white; border: none; padding: 12px 26px; border-radius: 8px; font-size: 1.05em; cursor: pointer; transition: background 0.3s ease;">
                     <i class="fas fa-save" style="margin-right: 8px;"></i>
                     Salvar Contato
                 </button>
+                <button id="csCancelEditButton" onclick="cancelEditContato()" style="display:none; background:#6c757d; color:white; border:none; padding:12px 16px; border-radius:8px; cursor:pointer;">Cancelar</button>
             </div>
         </div>
         
@@ -2790,19 +2889,26 @@ Salvar Alterações
                 <label for="filterCSDate">Filtrar por Data:</label>
                 <input type="date" id="filterCSDate" onchange="filtrarContatosCS()">
             </div>
+            <div class="form-group">
+                <label for="csSortOrder">Ordenação por Data:</label>
+                <select id="csSortOrder" onchange="filtrarContatosCS()">
+                    <option value="desc">Decrescente (mais recente → mais antiga)</option>
+                    <option value="asc">Crescente (mais antiga → mais recente)</option>
+                </select>
+            </div>
         </div>
         
         <!-- Estatísticas -->
         <div class="stats-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
-            <div class="stat-card" style="background: linear-gradient(135deg, #4fc3f7, #29b6f6); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+            <div class="stat-card" style="background: linear-gradient(135deg, #0066ccbf, #0066ccbf); color: white; padding: 20px; border-radius: 10px; text-align: center;">
                 <h4 style="margin: 0; font-size: 2em;" id="totalContatos">0</h4>
                 <p style="margin: 5px 0 0 0;">Total de Contatos</p>
             </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #66bb6a, #4caf50); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+            <div class="stat-card" style="background: linear-gradient(135deg, #0066ccbf, #0066ccbf); color: white; padding: 20px; border-radius: 10px; text-align: center;">
                 <h4 style="margin: 0; font-size: 2em;" id="contatosHoje">0</h4>
                 <p style="margin: 5px 0 0 0;">Contatos Hoje</p>
             </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #ffa726, #ff9800); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+            <div class="stat-card" style="background: linear-gradient(135deg, #0066ccbf, #0066ccbf); color: white; padding: 20px; border-radius: 10px; text-align: center;">
                 <h4 style="margin: 0; font-size: 2em;" id="contatosSemana">0</h4>
                 <p style="margin: 5px 0 0 0;">Esta Semana</p>
             </div>
@@ -2816,6 +2922,8 @@ Salvar Alterações
                 <p>Os contatos com clientes aparecerão aqui quando forem registrados.</p>
             </div>
         </div>
+    <!-- Controles de paginação -->
+    <div id="csPagination" class="cs-pagination" style="margin-top:12px; text-align:center;"></div>
     </div>
 </div>
 <!-- Seção de Gerenciamento de Logins -->
@@ -3026,6 +3134,7 @@ Salvar Alterações
 
 <script src="portal.js"></script>
 <script src="SING-Service/consultar_integracao_IDCliente.js"></script>
+    <script src="supabase_data_loader.js"></script>
 <script src="SING-Service/obter-token.js"></script>
 </body>
 </html>
