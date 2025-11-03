@@ -9761,12 +9761,12 @@ function renderizarImplantacoes(implantacoes) {
         
         return `
             <div style="
-                background-color: rgba(179, 229, 252, 0.95); 
+                background-color: rgba(255, 255, 255, 0.95); 
                 border-radius: 15px; 
                 padding: 25px; 
                 margin-bottom: 20px; 
-                box-shadow: 0 4px 15px rgba(41, 182, 246, 0.2); 
-                border-left: 5px solid #4fc3f7;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
+                border-left: 5px solid #0066ccbf;
                 overflow: hidden;
                 word-wrap: break-word;
                 word-break: break-word;
@@ -9782,7 +9782,7 @@ function renderizarImplantacoes(implantacoes) {
                 ">
                     <div style="flex: 1; min-width: 0; margin-right: 10px;">
                         <h4 style="
-                            color: #4fc3f7; 
+                            color: #0066ccbf; 
                             margin: 0 0 5px 0; 
                             font-size: 1.3em;
                             word-wrap: break-word;
@@ -9802,7 +9802,7 @@ function renderizarImplantacoes(implantacoes) {
                     </div>
                     <div style="flex-shrink: 0;">
                         <span style="
-                            background-color: #4fc3f7; 
+                            background-color: #0066ccbf; 
                             color: white; 
                             padding: 5px 12px; 
                             border-radius: 20px; 
@@ -9822,7 +9822,7 @@ function renderizarImplantacoes(implantacoes) {
                     margin-bottom: 15px;
                 ">
                     <div style="min-width: 0;">
-                        <strong style="color: #4fc3f7;">Especialista:</strong><br>
+                        <strong style="color: #0066ccbf;">Especialista:</strong><br>
                         <span style="
                             color: #333;
                             word-wrap: break-word;
@@ -9830,25 +9830,25 @@ function renderizarImplantacoes(implantacoes) {
                         ">${implantacao.especialista}</span>
                     </div>
                     <div style="min-width: 0;">
-                        <strong style="color: #4fc3f7;">Data de Atualização:</strong><br>
+                        <strong style="color: #0066ccbf;">Data de Atualização:</strong><br>
                         <span style="color: #333;">${dataFormatada}</span>
                     </div>
                     <div style="min-width: 0;">
-                        <strong style="color: #4fc3f7;">Data de Início:</strong><br>
+                        <strong style="color: #0066ccbf;">Data de Início:</strong><br>
                         <span style="color: #333;">${formatDateOnlyBR(implantacao.data_inicio)}</span>
                     </div>
                     <div style="min-width: 0;">
-                        <strong style="color: #4fc3f7;">Data de Término:</strong><br>
+                        <strong style="color: #0066ccbf;">Data de Término:</strong><br>
                         <span style="color: #333;">${formatDateOnlyBR(implantacao.data_termino)}</span>
                     </div>
                     <div style="min-width: 0;">
-                        <strong style="color: #4fc3f7;">Tickets Pendentes:</strong><br>
+                        <strong style="color: #0066ccbf;">Tickets Pendentes:</strong><br>
                         <span style="color: #333; font-weight: bold;">${implantacao.tickets_pendentes || 0}</span>
                     </div>
                 </div>
                 
                 <div style="margin-bottom: 15px;">
-                    <strong style="color: #4fc3f7;">Resumo:</strong><br>
+                    <strong style="color: #0066ccbf;">Resumo:</strong><br>
                     <p style="
                         color: #333; 
                         margin: 5px 0 0 0; 
@@ -9881,7 +9881,7 @@ function renderizarImplantacoes(implantacoes) {
                     
                     <div style="display: flex; gap: 8px;">
                         <button onclick="editarImplantacao('${implantacao.id}')" style="
-                            background-color: #ff9800; 
+                            background-color: #d6d6d6; 
                             color: white; 
                             border: none; 
                             padding: 8px 15px; 
@@ -9893,13 +9893,13 @@ function renderizarImplantacoes(implantacoes) {
                             display: flex;
                             align-items: center;
                             gap: 5px;
-                        " onmouseover="this.style.backgroundColor='#f57c00'" onmouseout="this.style.backgroundColor='#ff9800'">
+                        " onmouseover="this.style.backgroundColor='#afafaf'" onmouseout="this.style.backgroundColor='#ff9800'">
                             <i class="fas fa-edit"></i>
                             Editar
                         </button>
 
                             <button onclick="excluirImplantacao('${implantacao.id}', \'${implantacao.projeto}\', \'${implantacao.cliente}\')" style="
-                            background-color: #f44336; 
+                            background-color: #d6d6d6; 
                             color: white; 
                             border: none; 
                             padding: 8px 15px; 
@@ -9911,7 +9911,7 @@ function renderizarImplantacoes(implantacoes) {
                             display: flex;
                             align-items: center;
                             gap: 5px;
-                        " onmouseover="this.style.backgroundColor='#d32f2f'" onmouseout="this.style.backgroundColor='#f44336'">
+                        " onmouseover="this.style.backgroundColor='#afafaf'" onmouseout="this.style.backgroundColor='#f44336'">
                             <i class="fas fa-trash"></i>
                             Excluir
                         </button>
@@ -11618,5 +11618,4 @@ async function loadDocuments() {
     // Debug: Log final
     console.log('Documentos exibidos na tela:', documentosFiltrados.length);
 }
-
   
