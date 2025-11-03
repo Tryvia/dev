@@ -11618,4 +11618,5 @@ async function loadDocuments() {
     // Debug: Log final
     console.log('Documentos exibidos na tela:', documentosFiltrados.length);
 }
+
   
