@@ -3813,3 +3813,47 @@ select {
 .modal-editar-usuario-content::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+/* -----------------------------
+   Reuniões: limitar tamanho
+   dos cards e permitir scroll
+   ----------------------------- */
+#listaReunioes {
+    /* Limita a altura total da lista de reuniões e adiciona scroll quando necessário */
+    max-height: 560px;
+    overflow-y: auto;
+    padding-right: 8px; /* espaço para a scrollbar sem sobrepor o conteúdo */
+}
+
+#listaReunioes .reuniao-card,
+#listaReunioes .reuniao-item {
+    /* Limita a altura de cada card e permite rolagem interna do conteúdo */
+    max-height: 220px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Caso os cards possuam cabeçalho/ações fixas (separar em .reuniao-header/.reuniao-body no futuro),
+   garantir que a área de conteúdo role corretamente. Se esses wrappers não existirem,
+   a regra acima ainda faz o card inteiro rolar. */
+#listaReunioes .reuniao-card .reuniao-body,
+#listaReunioes .reuniao-item .reuniao-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+@media (max-width: 768px) {
+    /* Em telas pequenas, volta ao comportamento normal (sem altura fixa) para melhor UX */
+    #listaReunioes {
+        max-height: none;
+        overflow: visible;
+    }
+    #listaReunioes .reuniao-card,
+    #listaReunioes .reuniao-item {
+        max-height: none;
+        overflow: visible;
+    }
+}
