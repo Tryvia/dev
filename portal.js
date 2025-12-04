@@ -3303,10 +3303,10 @@ const { data, error } = await query;
 
         
         async function filtrarHomologacoes() {
-    const sistemaFiltro = document.getElementById('filtroSistema').value.toLowerCase();
-    const especialistaFiltro = document.getElementById('filtroEspecialista').value.toLowerCase();
-    const dataInicio = document.getElementById('filtroDataInicio')?.value;
-    const dataFim = document.getElementById('filtroDataFim')?.value;
+            const sistemaFiltro = (document.getElementById('filtroSistemaHomologacao')?.value || '').toLowerCase();
+            const especialistaFiltro = (document.getElementById('filtroEspecialistaHomologacao')?.value || '').toLowerCase();
+            const dataInicio = document.getElementById('filtroDataInicioHomologacao')?.value;
+            const dataFim = document.getElementById('filtroDataFimHomologacao')?.value;
 
     const { data, error } = await releaseClient
         .from('homologacoes')
@@ -3871,9 +3871,89 @@ async function carregarReleases() {
         return;
     }
 
+    // armazenar em cache para filtragem no cliente
+    window.todasReleases = data;
+
     data.forEach(d => {
         exibirRelease(d, d.file_url);
     });
+}
+
+// Filtrar releases no servidor usando os campos da UI
+async function filtrarReleases() {
+    const sistema = (document.getElementById('filtroSistema')?.value || '').trim();
+    // normalizar value do select para lowercase (quick-fix quando options podem ter valores com maiúsculas)
+    const tipoElem = document.getElementById('filtroTipo');
+    if (tipoElem && typeof tipoElem.value === 'string') {
+        tipoElem.value = tipoElem.value.trim().toLowerCase();
+    }
+    const tipo = (document.getElementById('filtroTipo')?.value || '').trim();
+    console.debug('filtrarReleases: filtro tipo after normalize:', tipo);
+    // Se temos releases em cache, filtrar no cliente — mais rápido e evita discrepâncias
+    const container = document.getElementById('releaseList');
+    container.innerHTML = '';
+
+    const cache = window.todasReleases || null;
+    if (cache && cache.length > 0) {
+        const sistemaLower = sistema.toLowerCase();
+        const tipoLower = tipo.toLowerCase();
+
+        // montar array diagnóstico com informações e matches por item
+        const diag = cache.map(r => {
+            const sistemaVal = (r.sistema || '').toString();
+            const tipoRaw = r.tipo === null || r.tipo === undefined ? '' : r.tipo;
+            let tipoStr;
+            if (typeof tipoRaw === 'string') tipoStr = tipoRaw;
+            else {
+                try { tipoStr = JSON.stringify(tipoRaw); }
+                catch (e) { tipoStr = String(tipoRaw); }
+            }
+            const tipoLowerField = (tipoStr || '').toLowerCase();
+            const matchSistema = !sistema || sistemaVal.toLowerCase().includes(sistemaLower);
+            const matchTipo = !tipo || tipoLowerField.includes(tipoLower);
+            return { id: r.id, sistema: sistemaVal, tipoOrig: r.tipo, tipoStr, tipoLowerField, matchSistema, matchTipo, match: matchSistema && matchTipo };
+        });
+        console.debug('filtrarReleases: diagnóstico por item', diag);
+
+        const filtradas = diag.filter(d => d.match).map(d => cache.find(r => r.id === d.id));
+
+        if (!filtradas || filtradas.length === 0) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-state-icon"></div><p>Nenhum release salvo</p></div>`;
+            return;
+        }
+
+        filtradas.forEach(d => exibirRelease(d, d.file_url));
+        console.debug('filtrarReleases: filtragem cliente retornou', filtradas.length);
+        return;
+    }
+
+    // fallback: filtrar no servidor
+    let query = releaseClient.from('releases').select('*').order('data_liberacao', { ascending: false });
+    if (sistema) query = query.ilike('sistema', `%${sistema}%`);
+    if (tipo) {
+        try { query = query.ilike('tipo', `%${tipo}%`); }
+        catch (e) { query = query.eq('tipo', tipo); }
+    }
+
+    console.debug('filtrarReleases: executando query servidor com', { sistema, tipo });
+    const { data, error } = await query;
+    if (error || !data || data.length === 0) {
+        console.debug('filtrarReleases: resultado servidor vazio ou erro', error);
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon"></div><p>Nenhum release salvo</p></div>`;
+        return;
+    }
+    // atualizar cache e renderizar
+    window.todasReleases = data;
+    data.forEach(d => exibirRelease(d, d.file_url));
+}
+
+// Limpar filtros da tela de releases e recarregar
+function limparFiltrosRelease() {
+    const s = document.getElementById('filtroSistema');
+    const t = document.getElementById('filtroTipo');
+    if (s) s.value = '';
+    if (t) t.value = '';
+    carregarReleases();
 }
 
 
@@ -9926,9 +10006,9 @@ function renderizarImplantacoes(implantacoes) {
 
 // Função para filtrar implantações
 function filtrarImplantacoes() {
-    const filtroEspecialista = document.getElementById('filtroEspecialista').value;
-    const filtroCliente = document.getElementById('filtroCliente').value;
-    const filtroTipo = document.getElementById('filtroTipo').value;
+    const filtroEspecialista = document.getElementById('filtroEspecialistaImplantacao')?.value || '';
+    const filtroCliente = document.getElementById('filtroCliente')?.value || '';
+    const filtroTipo = document.getElementById('filtroTipoImplantacao')?.value || '';
     
     let implantacoesFiltradas = todasImplantacoes.filter(implantacao => {
         const matchEspecialista = !filtroEspecialista || implantacao.especialista === filtroEspecialista;
@@ -9943,9 +10023,12 @@ function filtrarImplantacoes() {
 
 // Função para limpar filtros
 function limparFiltros() {
-    document.getElementById('filtroEspecialista').value = '';
-    document.getElementById('filtroCliente').value = '';
-    document.getElementById('filtroTipo').value = '';
+    const fe = document.getElementById('filtroEspecialistaImplantacao');
+    const fc = document.getElementById('filtroCliente');
+    const ft = document.getElementById('filtroTipoImplantacao');
+    if (fe) fe.value = '';
+    if (fc) fc.value = '';
+    if (ft) ft.value = '';
     
     renderizarImplantacoes(todasImplantacoes);
 }
