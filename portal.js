@@ -2803,6 +2803,7 @@ if (editingIntegrations.length > 0) {
 
                 const { data, error } = await releaseClient
   .from('client_documents')
+                    console.log('SUPABASE URL:', RELEASE_SUPABASE_URL)
   .insert(`
     id,
     created_at,
