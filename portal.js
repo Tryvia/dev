@@ -2803,16 +2803,15 @@ if (editingIntegrations.length > 0) {
 
                 const { data, error } = await releaseClient
   .from('client_documents')
-    console.log('SUPABASE URL:', RELEASE_SUPABASE_URL)
-  .insert(`
-    id,
-    created_at,
-    client_id,
-    title,
-    type,
-    file_url,
-    file_path
-  `);
+  .insert([
+    {
+      client_id: clientId,
+      title: title,
+      type: type,
+      file_url: publicURL,
+      file_path: filePath
+    }
+  ]);
            if (error) {
                     console.error('Erro ao adicionar documento do cliente no banco de dados:', error.message);
                     showAlert('Erro', 'Erro ao adicionar documento do cliente. Verifique as permissões da tabela.');
