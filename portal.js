@@ -11620,4 +11620,3 @@ async function loadDocuments() {
     console.log('Documentos exibidos na tela:', documentosFiltrados.length);
 }
 
-
