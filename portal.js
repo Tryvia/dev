@@ -2801,17 +2801,18 @@ if (editingIntegrations.length > 0) {
 
                 const publicURL = `${RELEASE_SUPABASE_URL}/storage/v1/object/public/clientdocumentfiles/${filePath}`;
 
-                  const { data, error } = await releaseClient
-                    .from('client_documents') 
-                   .select(`
-    id, name, email, phone, bi_link, cnpj, group_id, status_id, logo_id, subgroup_id,
-    client_groups:group_id(id, name, parent_group_id),
-    client_statuses:status_id(name),
-    client_logos:logo_id(id, url, path),
-    products_cliente(id, name, quantity),
-    integrations_cliente(id, type, system)
+                const { data, error } = await releaseClient
+  .from('client_documents')
+  .select(`
+    id,
+    created_at,
+    client_id,
+    title,
+    type,
+    file_url,
+    file_path
   `);
-                if (error) {
+           if (error) {
                     console.error('Erro ao adicionar documento do cliente no banco de dados:', error.message);
                     showAlert('Erro', 'Erro ao adicionar documento do cliente. Verifique as permissões da tabela.');
                 } else {
