@@ -8514,6 +8514,7 @@ function carregarPermissoesEdicao(permissoesUsuario) {
         
         { id: 'salvarReuniao', label: 'Salvar Reunião', categoria: 'Reuniões' },
         { id: 'excluirReuniao', label: 'Excluir Reunião', categoria: 'Reuniões' },
+        { id: 'formEditarReuniao', label: 'Editar Reunião', categoria: 'Reuniões' },
         
         { id: 'alterarQuantidade', label: 'Alterar Quantidade nas tarefas', categoria: 'Painel do Setor' },
         { id: 'saveTasks', label: 'Salvar Tarefas', categoria: 'Painel do Setor' },
@@ -11062,6 +11063,7 @@ let permissoesDisponiveis = [
     {"id": "deleteRelease", "nome": "Excluir Release", "descricao": "Excluir Release"},
     {"id": "salvarReuniao", "nome": "Salvar Reunião", "descricao": "Salvar Reunião"},
     {"id": "ExcluirReuniao", "nome": "Excluir Reunião", "descricao": "Excluir Reunião"},
+    {"id": "formEditarReuniao", "nome": "Editar Reunião", "descricao": "Editar Reunião"},
     {"id": "showAddVideoModal", "nome": "Adicionar Video", "descricao": "Adicionar Video"},
     {"id": "showAddProductModal", "nome": "Adicionar Produto", "descricao": "Adicionar Produto"},
     {"id": "deleteTrainingVideo", "nome": "Excluir Video", "descricao": "Excluir Video"},
