@@ -2803,7 +2803,7 @@ if (editingIntegrations.length > 0) {
 
                 const { data, error } = await releaseClient
   .from('client_documents')
-  .select(`
+  .insert(`
     id,
     created_at,
     client_id,
