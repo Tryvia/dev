@@ -3320,7 +3320,7 @@ const { data, error } = await query;
 
     const filtradas = data.filter(h => {
         let matchSistema = !sistemaFiltro || h.sistema.toLowerCase().includes(sistemaFiltro);
-        let matchEspecialista = especialistaFiltro === '' || h.especialista.toLowerCase().includes(especialistaFiltro);
+        let matchEspecialista = !especialistaFiltro || h.especialista.toLowerCase().includes(especialistaFiltro);
         let matchData = true;
         if (dataInicio) {
             matchData = matchData && h.data_liberacao >= dataInicio;
@@ -3857,48 +3857,6 @@ c.innerHTML = `
 document.getElementById("releaseList").appendChild(c);
 }
 
-async function filtrarReleases() {
-    const sistemaFiltro = document.getElementById('filtroReleaseSistema').value.toLowerCase();
-    const analistaFiltro = document.getElementById('filtroReleaseAnalista').value.toLowerCase();
-    const dataInicio = document.getElementById('filtroReleaseDataInicio')?.value;
-    const dataFim = document.getElementById('filtroReleaseDataFim')?.value;
-
-    const { data, error } = await releaseClient
-        .from('releases')
-        .select('*')
-        .order('data_liberacao', { ascending: false });
-
-    if (error || !data) {
-        console.error("Erro ao filtrar releases:", error);
-        return;
-    }
-
-    const filtradas = data.filter(r => {
-        let matchSistema = !sistemaFiltro || r.sistema.toLowerCase().includes(sistemaFiltro);
-        let matchAnalista = !analistaFiltro || r.analista.toLowerCase().includes(analistaFiltro);
-        let matchData = true;
-        if (dataInicio) {
-            matchData = matchData && r.data_liberacao >= dataInicio;
-        }
-        if (dataFim) {
-            matchData = matchData && r.data_liberacao <= dataFim;
-        }
-        return matchSistema && matchAnalista && matchData;
-    });
-
-    const container = document.getElementById("releaseList");
-    container.innerHTML = "";
-
-    if (filtradas.length === 0) {
-        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon"></div><p>Nenhum release encontrado para os filtros aplicados</p></div>`;
-        return;
-    }
-
-    filtradas.forEach(d => {
-        exibirRelease(d, d.file_url);
-    });
-}
-
 async function carregarReleases() {
     const { data, error } = await releaseClient
         .from('releases')
@@ -3913,7 +3871,9 @@ async function carregarReleases() {
         return;
     }
 
-    filtrarReleases();
+    data.forEach(d => {
+        exibirRelease(d, d.file_url);
+    });
 }
 
 
