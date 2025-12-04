@@ -893,8 +893,8 @@ Salvar Alterações
             </h4>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; align-items: end;">
                 <div class="implantacao-form-group">
-                    <label for="filtroEspecialista">Especialista</label>
-                    <select id="filtroEspecialista" onchange="filtrarImplantacoes()">
+                    <label for="filtroEspecialistaImplantacao">Especialista</label>
+                    <select id="filtroEspecialistaImplantacao" onchange="filtrarImplantacoes()">
                         <option value="">Todos os especialistas</option>
                     </select>
                 </div>
@@ -905,8 +905,8 @@ Salvar Alterações
                     </select>
                 </div>
                 <div class="implantacao-form-group">
-                    <label for="filtroTipo">Tipo</label>
-                    <select id="filtroTipo" onchange="filtrarImplantacoes()">
+                    <label for="filtroTipoImplantacao">Tipo</label>
+                    <select id="filtroTipoImplantacao" onchange="filtrarImplantacoes()">
                         <option value="">Todos os tipos</option>
                         <option value="Implantação Inicial">Implantação Inicial</option>
                         <option value="Migração">Migração</option>
@@ -1559,7 +1559,7 @@ Salvar Alterações
   <div class="form-row">
     <div class="form-group">
       <label for="filtroSistema">Filtrar por Sistema</label>
-      <select id="filtroSistema" onchange="filtrarHomologacoes()">
+    <select id="filtroSistemaHomologacao" onchange="filtrarHomologacoes()">
         <option value="">Todos os sistemas</option>
         <option value="Sing">Sing</option>
         <option value="Telemetria">Telemetria</option>
@@ -1570,16 +1570,16 @@ Salvar Alterações
       </select>
     </div>
     <div class="form-group">
-      <label for="filtroEspecialista">Filtrar por Especialista</label>
-      <input id="filtroEspecialista" onkeyup="filtrarHomologacoes()" placeholder="Nome do especialista" type="text"/>
+    <label for="filtroEspecialistaHomologacao">Filtrar por Especialista</label>
+    <input id="filtroEspecialistaHomologacao" onkeyup="filtrarHomologacoes()" placeholder="Nome do especialista" type="text"/>
     </div>
     <div class="form-group">
       <label for="filtroDataInicio">Data início</label>
-      <input id="filtroDataInicio" type="date" onchange="filtrarHomologacoes()" />
+    <input id="filtroDataInicioHomologacao" type="date" onchange="filtrarHomologacoes()" />
     </div>
     <div class="form-group">
       <label for="filtroDataFim">Data fim</label>
-      <input id="filtroDataFim" type="date" onchange="filtrarHomologacoes()" />
+    <input id="filtroDataFimHomologacao" type="date" onchange="filtrarHomologacoes()" />
     </div>
   </div>
 </div>
@@ -1685,9 +1685,9 @@ Salvar Alterações
 <button class="btn-primary" onclick="salvarRelease()">Salvar Release</button>
 </div>
 <div class="form-row" style="margin-top: 40px; align-items: flex-end;">
-<div class="form-group"><label for="filtroSistema"> Sistema</label><input id="filtroSistema" type="text"/></div>
+<div class="form-group"><label for="filtroSistema"> Sistema</label><input id="filtroSistema" type="text" onchange="filtrarReleases()"/></div>
 <div class="form-group"><label for="filtroTipo"> Tipo</label>
-<select id="filtroTipo">
+<select id="filtroTipo" onchange="filtrarReleases()">
 <option value="">Todos</option>
 <option value="bug">Bug</option>
 <option value="melhoria">Melhoria</option>
@@ -1695,7 +1695,7 @@ Salvar Alterações
 <option value="outro">Outro</option>
 </select>
 </div>
-<div class="form-group"><button class="btn-secondary" onclick="limparFiltros()">Limpar</button></div>
+<div class="form-group"><button class="btn-secondary" onclick="limparFiltrosRelease()">Limpar</button></div>
 </div>
 <h3 style="margin-top: 20px;">Releases Salvos</h3>
 <div class="documents-grid" id="releaseList">
