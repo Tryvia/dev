@@ -1515,9 +1515,18 @@ async function updateDocumentAuthorsSelect() {
          
         
         if (!window.supabaseClient) {
-            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            } else {
+                // supabase library may be loaded elsewhere; keep null placeholder
+                window.supabaseClient = window.supabaseClient || null;
+            }
         }
-        const supabase = window.supabaseClient;
+        // Ensure global `window.supabase` points to the client so existing code that
+        // references `supabase` (global) continues to work without redeclaring the identifier.
+        if (!window.supabase) {
+            window.supabase = window.supabaseClient;
+        }
 
         
         const tipoMap = {
@@ -7568,7 +7577,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function logoutTryvia() {
     sessionStorage.removeItem('tryvia_logged');
     localStorage.removeItem('username');
-    window.location.href = 'https://tryvia.github.io/dev/tryvia_portal_dev.html';
+    window.location.href = 'https://tryvia.github.io/dev/tryvia_portal_dev.html'; 
 }
 
 // ===== FUNÇÕES PARA GERENCIAR USUÁRIOS =====
