@@ -1,1 +1,0 @@
-// Removido - função showInicioTab movida para tabs.js

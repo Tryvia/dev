@@ -1520,52 +1520,9 @@ function showConfirm(title, message) {
         const confirmButton = buttonsContainer.querySelector('.confirm');
         const cancelButton = buttonsContainer.querySelector('.cancel');
 
-<<<<<<< Updated upstream
-                confirmButton.onclick = () => {
-                    modal.classList.remove('visible');
-                    resolveModalPromise(true);
-                };
-                cancelButton.onclick = () => {
-                    modal.classList.remove('visible');
-                    resolveModalPromise(false);
-                };
-                modal.classList.add('visible');
-            });
-        }
-
-         
-        
-        if (!window.supabaseClient) {
-            if (window.supabase && typeof window.supabase.createClient === 'function') {
-                window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            } else {
-                // supabase library may be loaded elsewhere; keep null placeholder
-                window.supabaseClient = window.supabaseClient || null;
-            }
-        }
-        // Ensure global `window.supabase` points to the client so existing code that
-        // references `supabase` (global) continues to work without redeclaring the identifier.
-        if (!window.supabase) {
-            window.supabase = window.supabaseClient;
-        }
-
-        
-        const tipoMap = {
-            'suprimentos': 'suprimentos',
-            'projetos': 'projetos',
-            'tickets': 'tickets',
-            'treinamentos': 'treinamento',
-            'migracoes': 'migracao',
-            'reunioes': 'reuniao',
-            'mvp': 'mvp',
-            'homologacoes': 'homologacao',
-            'acompanhamentos': 'acompanhamento',
-            'implantacoes': 'implantacao'
-=======
         confirmButton.onclick = () => {
             modal.classList.remove('visible');
             resolveModalPromise(true);
->>>>>>> Stashed changes
         };
         cancelButton.onclick = () => {
             modal.classList.remove('visible');
@@ -7576,11 +7533,7 @@ document.addEventListener('DOMContentLoaded', function () {
 function logoutTryvia() {
     sessionStorage.removeItem('tryvia_logged');
     localStorage.removeItem('username');
-<<<<<<< Updated upstream
-    window.location.href = 'https://tryvia.github.io/dev/tryvia_portal_dev.html'; 
-=======
     window.location.href = 'login/index.html';
->>>>>>> Stashed changes
 }
 
 // ===== FUNÇÕES PARA GERENCIAR USUÁRIOS =====
@@ -12069,138 +12022,3 @@ function showBITab(section) {
     }
 }
 
-// --- Carregamento dinâmico da aba metricascs ---
-let _metricasCSLoaded = false;
-async function loadMetricasCS(){
-    const iframe = document.getElementById('metricascs-iframe');
-    if(!iframe) return;
-    if(_metricasCSLoaded) return;
-    try{
-        // Use iframe to isolate styles and scripts and avoid conflicts with portal
-        iframe.src = 'metricascs.html';
-        // aguardar load do iframe (timeout para evitar pendurar)
-        await new Promise((resolve) => {
-            const onload = async () => {
-                iframe.removeEventListener('load', onload);
-                try{
-                    const doc = iframe.contentDocument || iframe.contentWindow.document;
-                    // Aguarda um pequeno delay para scripts internos renderizarem elementos
-                    await new Promise(r => setTimeout(r, 120));
-
-                    // Tenta localizar o container principal da aba (várias opções)
-                    const selectors = ['.container', '#container', 'main', 'body > .container', 'body'];
-                    let target = null;
-                    for(const s of selectors){
-                        try{ target = doc.querySelector(s); }catch(e){ target = null; }
-                        if(target) break;
-                    }
-
-                    if(target && target !== doc.body){
-                        // esconder outros elementos para mostrar apenas o painel desejado,
-                        // mas preservar elementos de filtros/toolbar que podem estar fora do container
-                        const allow = new Set();
-                        allow.add(target);
-                        // preservar elementos que possuam classes/ids relacionados a filtros
-                        const potentialSelectors = ['[class*="filter"]', '[class*="Filter"]', '[id*="filter"]', '[id*="Filter"]', '.floating-filters', '.filters-bar', '.filters-actions', '.filters-left', '.planilha-box', '#graficosIndividuais'];
-                        for(const sel of potentialSelectors){
-                            try{
-                                doc.querySelectorAll(sel).forEach(el => allow.add(el));
-                            }catch(e){}
-                        }
-
-                        // preservar botões cujo texto contenha 'Filtro' ou 'Filtros'
-                        Array.from(doc.querySelectorAll('button, a, div')).forEach(el => {
-                            try{
-                                const txt = (el.textContent||'').toLowerCase();
-                                if(txt.includes('filtro') || txt.includes('filtros')){
-                                    // adicionar o elemento e seus ancestrais até body
-                                    let cur = el;
-                                    while(cur && cur !== doc.body){ allow.add(cur); cur = cur.parentElement; }
-                                }
-                            }catch(e){}
-                        });
-
-                        Array.from(doc.body.children).forEach(ch => {
-                            if(!allow.has(ch)) ch.style.display = 'none';
-                        });
-                        // ajustar estilo do target para ocupar o iframe sem margens
-                        target.style.margin = '0';
-                        target.style.padding = '0';
-                        target.style.width = '100%';
-                        target.style.maxWidth = '100%';
-                        target.style.boxSizing = 'border-box';
-                        // remover sombras/bordas que causavam o contorno vermelho na captura
-                        target.style.boxShadow = 'none';
-                        target.style.border = 'none';
-                        // tornar fundo transparente para combinar com portal
-                        doc.documentElement.style.background = 'transparent';
-                        doc.body.style.background = 'transparent';
-
-                        // ajustar altura do iframe para o conteúdo do target
-                        // deixar o ajuste de altura para a função externa que calcula a área disponível
-                        // mas aplica um valor mínimo enquanto isso
-                        iframe.style.height = Math.max(600, target.offsetHeight) + 'px';
-                    } else {
-                        // fallback: altura padrão
-                        iframe.style.height = '72vh';
-                    }
-                }catch(e){
-                    console.warn('Erro ao manipular documento do iframe:', e);
-                }
-                resolve();
-            };
-            iframe.addEventListener('load', onload);
-            // timeout de 8s para não pendurar indefinidamente
-            setTimeout(resolve, 8000);
-        });
-        _metricasCSLoaded = true;
-    } catch(err){
-        console.error('Erro ao carregar metricascs via iframe', err);
-        const container = document.getElementById('metricascs-container');
-        if(container) container.innerHTML = '<div style="color:#c00">Erro ao carregar Métricas CS no iframe. Verifique o console.</div>';
-    }
-}
-
-// Calcula e aplica a altura do iframe para preencher a área interna do portal
-function adjustMetricasIframeHeight(){
-    const iframe = document.getElementById('metricascs-iframe');
-    const section = document.getElementById('metricascs');
-    if(!iframe || !section) return;
-
-    // espaço disponível abaixo do topo do content-section até o final da janela
-    const sectionRect = section.getBoundingClientRect();
-    const header = document.querySelector('header');
-    const headerRect = header ? header.getBoundingClientRect() : { bottom: 0 };
-
-    // calcular padding interno do section
-    const style = window.getComputedStyle(section);
-    const paddingBottom = parseFloat(style.paddingBottom) || 12;
-    const paddingTop = parseFloat(style.paddingTop) || 0;
-
-    const available = window.innerHeight - sectionRect.top - paddingBottom - 20; // 20px margem de segurança
-    const minH = 480;
-    const finalH = Math.max(minH, available);
-    iframe.style.height = finalH + 'px';
-}
-
-// Ajustar ao redimensionar a janela e quando a aba for ativada
-window.addEventListener('resize', () => {
-    const metricSection = document.getElementById('metricascs');
-    if(metricSection && metricSection.style.display !== 'none') adjustMetricasIframeHeight();
-});
-
-
-// Envoltorio para disparar carregamento quando a aba for aberta
-(function(){
-    const originalShowTab = window.showTab;
-    window.showTab = function(tabId){
-        if(typeof originalShowTab === 'function'){
-            try{ originalShowTab(tabId); }catch(e){ console.warn('Erro no showTab original', e); }
-        }
-        if(tabId === 'metricascs'){
-            const el = document.getElementById('metricascs');
-            if(el) el.style.display = '';
-            loadMetricasCS().then(() => adjustMetricasIframeHeight());
-        }
-    };
-})()
