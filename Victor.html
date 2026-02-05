@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <link rel="icon" type="image/png" href="tryvia.png" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Funcionário 1 - Especialista SING e E-trip</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+</head>
+<body>
+    <script>
+
+async function salvarModificacoes() {
+    const nome = document.getElementById("nome").value;
+    const cargo = document.getElementById("cargo").value;
+    const link = document.getElementById("link").value;
+    const foto = document.getElementById("foto").value;
+
+    const { data, error } = await supabaseClient.from("especialistas").insert([{
+        nome: nome,
+        funcao: cargo,
+        foto_url: foto,
+        link: link
+    }]);
+
+    if (error) {
+        alert("Erro ao salvar: " + error.message);
+    } else {
+        alert("Salvo com sucesso!");
+    }
+}
+</script>
+
+</script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: "Arial", sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+        
+        .profile-photo {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: 6px solid #00d4ff;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .profile-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .profile-photo-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 60px;
+        }
+        
+        .name-section h1 {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .name-section p {
+            color: #4a90e2;
+            font-size: 16px;
+            text-decoration: underline;
+            margin-bottom: 30px;
+        }
+        
+        .stats-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .stat-item h3 {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .stat-item .number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            display: inline-block;
+            min-width: 40px;
+        }
+        
+        .stat-item .icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+        }
+        
+        .edit-button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 8px;
+        }
+        
+        .edit-button:hover {
+            background: #357abd;
+        }
+        
+        .treinamentos { color: #4a90e2; }
+        .reunioes { color: #ff6b6b; }
+        .homologacoes { color: #ffc107; }
+        .projetos { color: #28a745; }
+        
+        .performance {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        
+        .performance h3 {
+            font-size: 14px;
+            margin-bottom: 5px;
+            opacity: 0.9;
+        }
+        
+        .performance .percentage {
+            font-size: 48px;
+            font-weight: bold;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: #4a90e2;
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .date-info {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            flex: 1;
+        }
+        
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .projects-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .projects-section h2 {
+            color: #4a90e2;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .projects-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .projects-table th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            color: #333;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .projects-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .projects-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .company-tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .tag-gasparzinho { background: #ffebee; color: #c62828; }
+        .tag-andorinha { background: #e8f5e8; color: #2e7d32; }
+        .tag-viacao { background: #e3f2fd; color: #1565c0; }
+        .tag-capital { background: #f3e5f5; color: #7b1fa2; }
+        .tag-grupo { background: #fff3e0; color: #ef6c00; }
+        .tag-rio { background: #e0f2f1; color: #00695c; }
+        .tag-transmoretti { background: #fce4ec; color: #ad1457; }
+        .tag-top { background: #e8eaf6; color: #3f51b5; }
+        
+        .bottom-sections {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .info-section {
+            background: #e3f2fd;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .info-section h3 {
+            color: #4a90e2;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .info-section ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .info-section li {
+            padding: 8px 0;
+            color: #666;
+            border-bottom: 1px solid rgba(74, 144, 226, 0.1);
+        }
+        
+        .info-section li:last-child {
+            border-bottom: none;
+        }
+        
+        .mvp-section {
+            background: #f5f5f5;
+        }
+        
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .visits-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .visits-section h2 {
+            color: #4a90e2;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .map-container {
+            width: 100%;
+            height: 400px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #e9ecef;
+            position: relative;
+        }
+        
+        .brazil-map {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        /* Botão para ocultar/exibir formulário */
+        .toggle-form-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-form-button:hover {
+            background: #357abd;
+            transform: translateY(-2px);
+        }
+        
+        .toggle-form-button i {
+            margin-right: 5px;
+        }
+        
+        .clients-list {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 250px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .clients-list.hidden {
+            transform: translateX(100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .client-item {
+            margin-bottom: 8px;
+            padding: 8px;
+            background: #e3f2fd;
+            border-radius: 5px;
+            border-left: 3px solid #4a90e2;
+        }
+        
+        .client-item input {
+            border: 1px solid #ddd;
+            background: white;
+            font-size: 11px;
+            width: 100%;
+            margin-bottom: 4px;
+            padding: 4px;
+            border-radius: 3px;
+        }
+        
+        .client-item .remove-client {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            float: right;
+            margin-top: 2px;
+        }
+        
+        .map-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(255,255,255,0.95);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .leaflet-popup-content {
+            font-size: 12px !important;
+        }
+        
+        .custom-marker {
+            background-color: #4a90e2;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .visited-marker {
+            background-color: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .map-legend {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.9);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #333;
+            z-index: 1001;
+        }
+        
+        .editable {
+            background: #f8f9fa;
+            border: 1px dashed #ccc;
+            padding: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .map-legend button.add-button {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .editable:hover {
+            background: #e9ecef;
+            border-color: #4a90e2;
+        }
+        
+        .editable:focus {
+            outline: none;
+            background: white;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+        
+        .add-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        
+        .add-button:hover {
+            background: #218838;
+        }
+        
+        .remove-button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+        
+        /* Estilo para marcadores de visita salvos */
+        .visit-marker {
+            background-color: #28a745;
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
+            /* animation: visitPulse 2s infinite; */
+        }
+        
+        @keyframes visitPulse {
+            0% { 
+                transform: scale(1);
+                box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
+            }
+            50% { 
+                transform: scale(1.2);
+                box-shadow: 0 4px 16px rgba(40, 167, 69, 0.6);
+            }
+            100% { 
+                transform: scale(1);
+                box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
+            }
+        }
+        
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .bottom-sections {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="profile-photo">
+                <div class="profile-photo-placeholder" onclick="changePhoto()">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+            
+            <div class="name-section">
+                <h1 contenteditable="true" class="editable">Funcionário 1</h1>
+                <p contenteditable="true" class="editable">Especialista SING e E-trip</p>
+            </div>
+            
+            <div class="stats-section">
+                <div class="stat-item">
+                    <h3>Time Implantação</h3>
+                    <div class="icon treinamentos"><i class="fas fa-users"></i></div>
+                </div>
+                
+                <div class="stat-item">
+                    <h3>Treinamentos</h3>
+                    <div class="number" id="treinamentos">03</div>
+                    <button class="edit-button" onclick="editStat('treinamentos')">✏️</button>
+                    <div class="icon treinamentos"><i class="fas fa-graduation-cap"></i></div>
+                </div>
+                
+                <div class="stat-item">
+                    <h3>Reuniões</h3>
+                    <div class="number" id="reunioes">27</div>
+                    <button class="edit-button" onclick="editStat('reunioes')">✏️</button>
+                    <div class="icon reunioes"><i class="fas fa-calendar"></i></div>
+                </div>
+                
+                <div class="stat-item">
+                    <h3>Homologações</h3>
+                    <div class="number" id="homologacoes">05</div>
+                    <button class="edit-button" onclick="editStat('homologacoes')">✏️</button>
+                    <div class="icon homologacoes"><i class="fas fa-check-circle"></i></div>
+                </div>
+                
+                <div class="stat-item">
+                    <h3>Projetos</h3>
+                    <div class="number" id="projetos">07</div>
+                    <button class="edit-button" onclick="editStat('projetos')">✏️</button>
+                    <div class="icon projetos"><i class="fas fa-project-diagram"></i></div>
+                </div>
+            </div>
+            
+            <div class="performance">
+                <h3>Média Mensal</h3>
+                <p style="font-size: 12px; opacity: 0.8;">Gestão à Vista</p>
+                <div class="percentage" id="performance">97%</div>
+                <button class="edit-button" onclick="editStat('performance')" style="background: rgba(255,255,255,0.2);">✏️</button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h2>TRYVIA</h2>
+                        <small>SUA FROTA MAIS INTELIGENTE</small>
+                    </div>
+                </div>
+                <div class="date-info">
+                    <div contenteditable="true" class="editable">Maio / 2025</div>
+                </div>
+            </div>
+            
+            <div class="content-grid">
+                <div class="left-panel">
+                    <div class="projects-section">
+                        <h2>Implantações e Projetos</h2>
+                        <table class="projects-table" id="projectsTable">
+                            <thead>
+                                <tr>
+                                    <th>Projetos</th>
+                                    <th>Empresa</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button class="add-button" onclick="addProject()">+ Adicionar Projeto</button>
+                    </div>
+                    
+                    <div class="bottom-sections">
+                        <div class="info-section">
+                            <h3>Acompanhamentos</h3>
+                            <ul id="acompanhamentos">
+                            </ul>
+                            <button class="add-button" onclick="addAcompanhamento()">+ Adicionar</button>
+                        </div>
+                        
+                        <div class="info-section mvp-section">
+                            <h3>MVP</h3>
+                            <ul id="mvp">
+                            </ul>
+                            <button class="add-button" onclick="addMVP()">+ Adicionar</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="right-panel">
+                    <div class="visits-section">
+                        <h2>Visitas</h2>
+                        <div class="map-container">
+                            
+<div class="brazil-map">
+    <div id="map"></div>
+    
+    <!-- Botão para ocultar/exibir formulário -->
+    <button class="toggle-form-button" onclick="toggleFormVisibility()">
+        <i class="fas fa-plus"></i>
+        <span id="toggleButtonText">Adicionar Cliente</span>
+    </button>
+    
+    <div class="clients-list" id="clientsList">
+        <div style="font-weight: bold; margin-bottom: 8px; color: #4a90e2;">Clientes Visitados:</div>
+    </div>
+    
+<div class="map-legend">
+    <div><strong>Total de Empresas:</strong> <span id="empresasCount">0</span></div>
+    <button class="add-button" onclick="addClient()">+ Cliente</button>
+    <button class="add-button" onclick="salvarVisitas()" style="margin-top: 10px; background-color: #007bff;">💾 Salvar Visitas</button>
+</div>
+</div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <input type="file" id="photoInput" accept="image/*" style="display: none;">
+    
+    <script>
+        // Variáveis globais para o mapa
+        let map;
+        let visitMarkers = [];
+        let isFormVisible = true;
+        
+        // Inicializar o mapa
+        function initMap() {
+            map = L.map("map").setView([-14.2350, -51.9253], 4);
+            
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: "© OpenStreetMap contributors"
+            }).addTo(map);
+            
+            // Adicionar evento de clique no mapa
+            map.on("click", function(e) {
+                if (isFormVisible) {
+                    const lat = e.latlng.lat;
+                    const lng = e.latlng.lng;
+                    
+                    // Solicitar informações do cliente
+                    const clientName = prompt("Nome do Cliente:");
+                    if (clientName) {
+                        const location = prompt("Local/Estado:");
+                        if (location) {
+                            addClientToList(clientName, location, lat, lng);
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Função para alternar visibilidade do formulário
+        function toggleFormVisibility() {
+            const clientsList = document.getElementById("clientsList");
+            const toggleButton = document.getElementById("toggleButtonText");
+            
+            if (isFormVisible) {
+                clientsList.classList.add("hidden");
+                toggleButton.textContent = "Mostrar Formulário";
+                isFormVisible = false;
+            } else {
+                clientsList.classList.remove("hidden");
+                toggleButton.textContent = "Ocultar Formulário";
+                isFormVisible = true;
+            }
+        }
+        
+        // Função para adicionar cliente à lista
+        function addClientToList(name, location, lat, lng) {
+            const clientsList = document.getElementById("clientsList");
+            const clientDiv = document.createElement("div");
+            clientDiv.className = "client-item";
+            clientDiv.dataset.lat = lat;
+            clientDiv.dataset.lng = lng;
+            clientDiv.innerHTML = `
+                <input type="text" value="${name}" onchange="updateClientCount()">
+                <input type="text" value="${location}" onchange="updateClientCount()">
+                <button class="remove-client" onclick="removeClient(this)">×</button>
+            `;
+            clientsList.appendChild(clientDiv);
+            updateClientCount();
+        }
+        
+        function changePhoto() {
+            document.getElementById("photoInput").click();
+        }
+        
+        document.getElementById("photoInput").addEventListener("change", function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const placeholder = document.querySelector(".profile-photo-placeholder");
+                    placeholder.innerHTML = `<img src="${e.target.result}" alt="Foto do perfil">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        function addProject() {
+            const table = document.getElementById("projectsTable").getElementsByTagName("tbody")[0];
+            const newRow = table.insertRow();
+            newRow.innerHTML = `
+                <td contenteditable="true">Novo Projeto</td>
+                <td><span class="company-tag tag-gasparzinho" contenteditable="true">Nova Empresa</span></td>
+                <td><button class="remove-button" onclick="removeRow(this)">×</button></td>
+            `;
+        }
+        
+        function removeRow(button) {
+            button.closest("tr").remove();
+        }
+        
+        function addAcompanhamento() {
+            const ul = document.getElementById("acompanhamentos");
+            const li = document.createElement("li");
+            li.contentEditable = true;
+            li.textContent = "Novo Acompanhamento";
+            ul.appendChild(li);
+        }
+        
+        function addMVP() {
+            const ul = document.getElementById("mvp");
+            const li = document.createElement("li");
+            li.contentEditable = true;
+            li.textContent = "Novo MVP";
+            ul.appendChild(li);
+        }
+        
+        function editStat(statId) {
+            const element = document.getElementById(statId);
+            const currentValue = element.textContent;
+            const newValue = prompt(`Digite o novo valor para ${statId}:`, currentValue);
+            
+            if (newValue !== null && newValue !== "") {
+                element.textContent = newValue;
+                
+                // Adicionar animação
+                element.style.transform = "scale(1.2)";
+                element.style.color = "#28a745";
+                setTimeout(() => {
+                    element.style.transform = "scale(1)";
+                    element.style.color = statId === "performance" ? "white" : "#333";
+                }, 300);
+            }
+        }
+        
+        function addClient() {
+            const clientsList = document.getElementById("clientsList");
+            const clientDiv = document.createElement("div");
+            clientDiv.className = "client-item";
+            clientDiv.innerHTML = `
+                <input type="text" placeholder="Nome do Cliente">
+                <input type="text" placeholder="Local/Estado">
+                <button class="remove-client" onclick="removeClient(this)">×</button>
+            `;
+            clientsList.appendChild(clientDiv);
+            updateClientCount();
+        }
+        
+        function removeClient(button) {
+            button.parentElement.remove();
+            updateClientCount();
+        }
+        
+        function updateClientCount() {
+            const clientItems = document.querySelectorAll(".client-item");
+            document.getElementById("empresasCount").textContent = clientItems.length;
+        }
+        
+        // Função para salvar visitas e adicionar marcadores no mapa
+        async function salvarVisitas() {
+            // Limpar marcadores existentes
+            visitMarkers.forEach(marker => {
+                map.removeLayer(marker);
+            });
+            visitMarkers = [];
+            
+            // Obter todos os clientes
+            const clientItems = document.querySelectorAll(".client-item");
+            const clientsData = [];
+            
+            clientItems.forEach(clientItem => {
+                const nameInput = clientItem.querySelector("input[placeholder='Nome do Cliente']");
+                const locationInput = clientItem.querySelector("input[placeholder='Local/Estado']");
+                
+                // Verificar se os elementos existem antes de tentar acessar suas propriedades
+                if (nameInput && locationInput) {
+                    const name = nameInput.value.trim();
+                    const location = locationInput.value.trim();
+                    
+                    if (name && location) {
+                        // Se tem coordenadas salvas, usar elas
+                        if (clientItem.dataset.lat && clientItem.dataset.lng) {
+                            const lat = parseFloat(clientItem.dataset.lat);
+                            const lng = parseFloat(clientItem.dataset.lng);
+                            addVisitMarker(lat, lng, name, location);
+                            clientsData.push({ name, location, lat, lng });
+                        } else {
+                            // Caso contrário, usar coordenadas aproximadas baseadas no estado/local
+                            const coords = getApproximateCoordinates(location);
+                            if (coords) {
+                                addVisitMarker(coords.lat, coords.lng, name, location);
+                                clientsData.push({ name, location, lat: coords.lat, lng: coords.lng });
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Salvar dados no localStorage
+            localStorage.setItem('visitasClientes', JSON.stringify(clientsData));
+// Agora salvando no Supabase também
+const especialistaId = 2;
+for (const client of clientsData) {
+    const { name, location, lat, lng } = client;
+    const dataAtual = new Date().toISOString();
+
+    const { error } = await supabaseClient.from("visitas_especialista").insert([{
+        especialista_id: especialistaId,
+        cliente: name,
+        local: location,
+        lat: lat,
+        lng: lng,
+        data: dataAtual
+    }]);
+
+    if (error) {
+        console.error("Erro ao salvar visita:", error.message);
+        alert("Erro ao salvar alguma visita: " + error.message);
+        return;
+    }
+}
+
+            
+            alert(`${visitMarkers.length} visitas salvas com sucesso no Supabase!`);
+        }
+        
+        // Função para adicionar marcador de visita no mapa
+        function addVisitMarker(lat, lng, name, location) {
+            const marker = L.circleMarker([lat, lng], {
+                radius: 8,
+                fillColor: "#28a745",
+                color: "white",
+                weight: 3,
+                opacity: 1,
+                fillOpacity: 0.8,
+                className: "visit-marker"
+            }).addTo(map);
+            
+            marker.bindPopup(`
+                <div style="text-align: center;">
+                    <strong>${name}</strong><br>
+                    <small>${location}</small>
+                </div>
+            `);
+            
+            visitMarkers.push(marker);
+        }
+        
+        // Função para obter coordenadas aproximadas baseadas no estado/cidade
+        function getApproximateCoordinates(location) {
+            const coordinates = {
+                "São Paulo": { lat: -23.5505, lng: -46.6333 },
+                "Rio de Janeiro": { lat: -22.9068, lng: -43.1729 },
+                "Belo Horizonte": { lat: -19.9167, lng: -43.9345 },
+                "Salvador": { lat: -12.9714, lng: -38.5014 },
+                "Brasília": { lat: -15.8267, lng: -47.9218 },
+                "Fortaleza": { lat: -3.7319, lng: -38.5267 },
+                "Manaus": { lat: -3.1190, lng: -60.0217 },
+                "Curitiba": { lat: -25.4284, lng: -49.2733 },
+                "Recife": { lat: -8.0476, lng: -34.8770 },
+                "Porto Alegre": { lat: -30.0346, lng: -51.2177 },
+                "Goiânia": { lat: -16.6869, lng: -49.2648 },
+                "Belém": { lat: -1.4558, lng: -48.5044 },
+                "Guarulhos": { lat: -23.4538, lng: -46.5333 },
+                "Campinas": { lat: -22.9099, lng: -47.0626 },
+                "São Luís": { lat: -2.5387, lng: -44.2825 },
+                "São Gonçalo": { lat: -22.8267, lng: -43.0537 },
+                "Maceió": { lat: -9.6658, lng: -35.7353 },
+                "Duque de Caxias": { lat: -22.7856, lng: -43.3117 },
+                "Natal": { lat: -5.7945, lng: -35.2110 }
+            };
+            
+            // Procurar por correspondência exata ou parcial
+            for (const [city, coords] of Object.entries(coordinates)) {
+                if (location.toLowerCase().includes(city.toLowerCase()) || 
+                    city.toLowerCase().includes(location.toLowerCase())) {
+                    return coords;
+                }
+            }
+            
+            // Se não encontrar, retornar coordenadas do centro do Brasil
+            return { lat: -14.2350, lng: -51.9253 };
+        }
+        
+        // Função para carregar visitas salvas do localStorage
+        
+async function carregarVisitasSalvas() {
+    const especialistaId = 2; // ajustar conforme necessário
+
+    const { data: visitas, error } = await supabaseClient
+        .from("visitas_especialista")
+        .select("*")
+        .eq("especialista_id", especialistaId);
+
+    if (error) {
+        console.error("Erro ao carregar visitas:", error.message);
+        return;
+    }
+
+    // Limpar marcadores existentes
+    visitMarkers.forEach(marker => {
+        map.removeLayer(marker);
+    });
+    visitMarkers = [];
+
+    // Limpar lista de clientes
+    const clientsList = document.getElementById("clientsList");
+    const clientItems = clientsList.querySelectorAll(".client-item");
+    clientItems.forEach(item => item.remove());
+
+    // Recriar clientes e marcadores
+    visitas.forEach(client => {
+        addClientToList(client.cliente, client.local, client.lat, client.lng);
+        addVisitMarker(client.lat, client.lng, client.cliente, client.local);
+    });
+
+    updateClientCount();
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+            initMap();
+            carregarVisitasSalvas(); // Carregar visitas salvas
+        });
+    </script>
+
+        <button id="salvarBtn" onclick="salvarModificacoes()">Salvar Modificações</button>
+        
+        
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://mzjdmhgkrroajmsfwryu.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMzMwMzUsImV4cCI6MjA2MzgwOTAzNX0.tQCwUfFCV7sD-IexQviU0XEPcbn9j5uK9NSUbH-OeBc";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+window.onload = async function () {
+    const { data, error } = await supabaseClient
+        .from("especialista__")
+        .select("*")
+        .eq("id", 3)
+        .single();
+
+    if (data) {
+        document.querySelector(".name-section h1").innerText = data.nome || "";
+        document.querySelector(".name-section p").innerText = data.funcao || "";
+        document.getElementById("treinamentos").innerText = data.treinamentos || 0;
+        document.getElementById("reunioes").innerText = data.reunioes || 0;
+        document.getElementById("homologacoes").innerText = data.homologacoes || 0;
+        document.getElementById("projetos").innerText = data.projetos || 0;
+        document.getElementById("performance").innerText = data.performance || "0%";
+         const tbody = document.querySelector("#projectsTable tbody");
+        tbody.innerHTML = "";
+        if (data.projetos_lista && Array.isArray(data.projetos_lista)) {
+            data.projetos_lista.forEach(proj => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td contenteditable="true">${proj.nome}</td>
+                    <td><span class="company-tag tag-gasparzinho" contenteditable="true">${proj.empresa}</span></td>
+                    <td><button class="remove-button" onclick="removeRow(this)">×</button></td>
+                `;
+            });
+        }
+        // Acompanhamentos
+        const ulAcomp = document.getElementById("acompanhamentos");
+        ulAcomp.innerHTML = "";
+        if (data.acompanhamentos && Array.isArray(data.acompanhamentos)) {
+            data.acompanhamentos.forEach(item => {
+                const li = document.createElement("li");
+                li.contentEditable = true;
+                li.textContent = item;
+                ulAcomp.appendChild(li);
+            });
+        }
+
+        // MVP
+        const ulMvp = document.getElementById("mvp");
+        ulMvp.innerHTML = "";
+        if (data.mvp && Array.isArray(data.mvp)) {
+            data.mvp.forEach(item => {
+                const li = document.createElement("li");
+                li.contentEditable = true;
+                li.textContent = item;
+                ulMvp.appendChild(li);
+            });
+        }
+
+        
+        
+        // Foto
+        if (data.foto_url) {
+            const placeholder = document.querySelector(".profile-photo-placeholder");
+            placeholder.innerHTML = `<img src="${data.foto_url}" alt="Foto do perfil">`;
+        }
+    }
+};
+
+
+async function salvarModificacoes() {
+    const nome = document.querySelector(".name-section h1").innerText;
+    const cargo = document.querySelector(".name-section p").innerText;
+    const treinamentos = parseInt(document.getElementById("treinamentos").innerText);
+    const reunioes = parseInt(document.getElementById("reunioes").innerText);
+    const homologacoes = parseInt(document.getElementById("homologacoes").innerText);
+    const performance = document.getElementById("performance").innerText;
+
+    // Coletar projetos da tabela
+    const projetos = [];
+    const rows = document.querySelectorAll("#projectsTable tbody tr");
+    rows.forEach(row => {
+        const nomeProjeto = row.cells[0]?.innerText || "";
+        const empresa = row.cells[1]?.innerText || "";
+        if (nomeProjeto && empresa) {
+            projetos.push({ nome: nomeProjeto, empresa: empresa });
+        }
+    });
+
+    // Coletar acompanhamentos
+    const acompanhamentos = [];
+    const acompItems = document.querySelectorAll("#acompanhamentos li");
+    acompItems.forEach(item => {
+        if (item.innerText.trim()) {
+            acompanhamentos.push(item.innerText.trim());
+        }
+    });
+
+    // Coletar MVP
+    const mvp = [];
+    const mvpItems = document.querySelectorAll("#mvp li");
+    mvpItems.forEach(item => {
+        if (item.innerText.trim()) {
+            mvp.push(item.innerText.trim());
+        }
+    });
+
+    const { data, error } = await supabaseClient.from("especialista__").upsert([{
+        id: 3,
+        nome: nome,
+        funcao: cargo,
+        treinamentos: treinamentos,
+        reunioes: reunioes,
+        homologacoes: homologacoes,
+        projetos: projetos.length,
+        performance: performance,
+        projetos_lista: projetos,
+        acompanhamentos: acompanhamentos,
+        mvp: mvp
+    }]);
+
+    if (error) {
+        alert("Erro ao salvar: " + error.message);
+    } else {
+        alert("Salvo com sucesso!");
+    }
+}
+</script>
+</body>
+</html>
+

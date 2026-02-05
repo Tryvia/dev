@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <link rel="icon" type="image/png" href="tryvia.png" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Viagens dos Especialistas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        :root {
+            --primary-color: #b3e5fc;
+            --secondary-color: #71d2fd;
+            --accent-color: #00b0ff;
+            --hover-color: #0091ea;
+            --dark-bg: #0a2b59;
+            --error-color: #f44336;
+            --success-color: #4caf50;
+            --text-color: #ffffff;
+            --text-dark: #333333;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: var(--text-color);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px var(--shadow-color);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px var(--shadow-color);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text-dark);
+        }
+
+        input, select {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(0, 176, 255, 0.3);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            color: var(--text-color);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 145, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: var(--text-dark);
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+
+        .map-container {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px var(--shadow-color);
+            height: 600px;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .legend {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }
+
+        .legend h3 {
+            margin-bottom: 10px;
+            color: var(--text-dark);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .popup-content {
+            font-family: inherit;
+        }
+
+        .popup-title {
+            font-weight: bold;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 4px;
+        }
+
+        .popup-info {
+            margin-bottom: 4px;
+        }
+
+        .popup-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-planejada { background: #ffd700; color: var(--text-dark); }
+        .status-em-andamento { background: var(--success-color); color: var(--text-color); }
+        .status-concluida { background: var(--secondary-color); color: var(--text-color); }
+        .status-cancelada { background: var(--error-color); color: var(--text-color); }
+
+        .empty-state {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            margin-top: 20px;
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+
+        /* Modal para lista de viagens */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px var(--shadow-color);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+
+        .modal-header h2 {
+            color: var(--text-dark);
+            margin: 0;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: var(--error-color);
+        }
+
+        .viagem-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .viagem-item h4 {
+            margin: 0 0 10px 0;
+            color: var(--text-dark);
+        }
+
+        .viagem-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .viagem-info span {
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2rem; }
+            .form-row { grid-template-columns: 1fr; }
+            .controls { padding: 15px; }
+            .modal-content { width: 95%; margin: 2% auto; }
+        }
+    
+
+.btn-voltar {
+    position: fixed !important;
+    top: 20px !important;
+    left: 20px !important;
+    background: linear-gradient(135deg, #1976d2, #00b0ff);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 30px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0, 145, 234, 0.4);
+    z-index: 9999 !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-voltar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 145, 234, 0.5);
+}
+
+
+</style>
+    <script>
+        
+        (function() {
+            // Verificar se o usuário veio da página Portal.html
+           const referrerPermitido = 'Portal.html';
+           const paginaLogin = 'login/index.html';
+            
+            // Obter o referrer atual
+            const referrerAtual = document.referrer;
+            
+            // Verificar se o referrer está vazio (acesso direto) ou não é o permitido
+            if (!referrerAtual || !referrerAtual.includes(referrerPermitido)) {
+                // Verificar se não estamos já na página de login para evitar loop infinito
+                if (window.location.href !== paginaLogin) {
+                    // Redirecionar para a página de login
+                    window.location.replace(paginaLogin);
+                }
+            }
+        })();
+       
+    </script>
+</head>
+<body>
+    <a href="https://tryvia.github.io/TryviaBI/Portal.html" class="btn-voltar">⬅️ Voltar ao Portal</a>
+    <div class="container">
+        <div class="header">
+            <h1>🗺️ Mapa de Viagens dos Especialistas</h1>
+            <p>Visualize e gerencie as viagens da sua equipe em tempo real</p>
+        </div>
+
+        <div class="controls">
+            <h3 style="margin-bottom: 15px; color: var(--text-dark);">📋 Adicionar Nova Viagem</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="especialista">Nome do Especialista</label>
+                    <input type="text" id="especialista" placeholder="Ex: João Silva">
+                </div>
+                <div class="form-group">
+                    <label for="destino">Cidade de Destino</label>
+                    <input type="text" id="destino" placeholder="Ex: São Paulo, SP">
+                </div>
+                <div class="form-group">
+                    <label for="proposito">Propósito da Viagem</label>
+                    <select id="proposito">
+                        <option value="">Selecione...</option>
+                        <option value="Consultoria">Consultoria</option>
+                        <option value="Treinamento">Treinamento</option>
+                        <option value="Auditoria">Auditoria</option>
+                        <option value="Conferência">Conferência</option>
+                        <option value="Reunião Cliente">Reunião Cliente</option>
+                        <option value="Suporte Técnico">Suporte Técnico</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select id="status">
+                        <option value="Planejada">Planejada</option>
+                        <option value="Em Andamento">Em Andamento</option>
+                        <option value="Concluída">Concluída</option>
+                        <option value="Cancelada">Cancelada</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="dataInicio">Data de Início</label>
+                    <input type="date" id="dataInicio">
+                </div>
+                <div class="form-group">
+                    <label for="dataFim">Data de Fim</label>
+                    <input type="date" id="dataFim">
+                </div>
+                <div class="form-group">
+                    <label for="empresa">Empresa/Cliente</label>
+                    <input type="text" id="empresa" placeholder="Nome da empresa">
+                </div>
+                
+<div class="form-group">
+    <label for="setor">Setor</label>
+    <select id="setor">
+        <option value="">Selecione...</option>
+        <option value="Técnico">Técnico</option>
+        <option value="Comercial">Comercial</option>
+        <option value="CS">CS</option>
+        <option value="Time de implantação">Time de implantação</option>
+    </select>
+</div>
+
+<div class="form-group" style="display: flex; align-items: end; gap: 10px;">
+                    <button class="btn btn-primary" id="btnAdicionarViagem">➕ Adicionar Viagem</button>
+                    <button class="btn btn-secondary" id="btnLimparFormulario">🗑️ Limpar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <h3 style="margin-bottom: 15px; color: var(--text-dark);">🔍 Filtros do Mapa</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="filtroEspecialista">Filtrar por Especialista</label>
+                    <select id="filtroEspecialista" onchange="aplicarFiltros()">
+                        <option value="">Todos os Especialistas</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filtroStatus">Filtrar por Status</label>
+                    <select id="filtroStatus" onchange="aplicarFiltros()">
+                        <option value="">Todos os Status</option>
+                        <option value="Planejada">Planejada</option>
+                        <option value="Em Andamento">Em Andamento</option>
+                        <option value="Concluída">Concluída</option>
+                        <option value="Cancelada">Cancelada</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filtroProposito">Filtrar por Propósito</label>
+                    <select id="filtroProposito" onchange="aplicarFiltros()">
+                        <option value="">Todos os Propósitos</option>
+                        <option value="Consultoria">Consultoria</option>
+                        <option value="Treinamento">Treinamento</option>
+                        <option value="Auditoria">Auditoria</option>
+                        <option value="Conferência">Conferência</option>
+                        <option value="Reunião Cliente">Reunião Cliente</option>
+                        <option value="Suporte Técnico">Suporte Técnico</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+    <label for="filtroSetor">Filtrar por Setor</label>
+    <select id="filtroSetor" onchange="aplicarFiltros()">
+        <option value="">Todos os Setores</option>
+        <option value="Técnico">Técnico</option>
+        <option value="Comercial">Comercial</option>
+        <option value="CS">CS</option>
+        <option value="Time de implantação">Time de implantação</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="filtroDataInicio">Data de Início (De)</label>
+    <input type="date" id="filtroDataInicio" onchange="aplicarFiltros()">
+</div>
+
+<div class="form-group">
+    <label for="filtroDataFim">Data de Início (Até)</label>
+    <input type="date" id="filtroDataFim" onchange="aplicarFiltros()">
+</div>
+
+
+
+
+<div class="form-group" style="display: flex; align-items: end; gap: 10px;">
+                    <button class="btn btn-secondary" id="btnLimparFiltros">🔄 Limpar Filtros</button>
+                    <button class="btn btn-primary" id="btnCentralizarMapa">🎯 Centralizar Mapa</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card" onclick="exibirListaViagens()" style="cursor: pointer;">
+                <div class="stat-number" id="totalViagens">0</div>
+                <div class="stat-label">Total de Viagens</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="viagensPlanejadas">0</div>
+                <div class="stat-label">Viagens Planejadas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="viagensRealizadas">0</div>
+                <div class="stat-label">Viagens Realizadas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="viagensCanceladas">0</div>
+                <div class="stat-label">Viagens Canceladas</div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>📍 Legenda dos Status</h3>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ffd700;"></div>
+                <span>Planejada</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--success-color);"></div>
+                <span>Em Andamento</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--secondary-color);"></div>
+                <span>Concluída</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--error-color);"></div>
+                <span>Cancelada</span>
+            </div>
+        </div>
+
+        <div class="empty-state">
+            <h3>Comece adicionando sua primeira viagem!</h3>
+            <p>Preencha o formulário acima para adicionar viagens ao mapa e acompanhar os deslocamentos da sua equipe.</p>
+        </div>
+    </div>
+
+    <!-- Modal para lista de viagens -->
+    <div id="modalListaViagens" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📋 Lista de Todas as Viagens</h2>
+                <span class="close" onclick="fecharModal()">&times;</span>
+            </div>
+            <div id="listaViagensContent">
+                <!-- Conteúdo será preenchido dinamicamente -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+
+    <script>
+        (function() {
+            let map;
+            let viagens = [];
+            let markers = [];
+
+            const supabaseUrl = "https://obwgegvrtxrlombmkaej.supabase.co";
+            const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9id2dlZ3ZydHhybG9tYm1rYWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NDcxOTMsImV4cCI6MjA2NDAyMzE5M30.0Ng21Ywqrm6eDqbclFyeOhARpJCyWvX7b-0dJLE1QwM";
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Inicializar mapa
+        function initMap() {
+            map = L.map('map').setView([-14.2350, -51.9253], 4); // Centro do Brasil
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(map);
+        }
+
+        // Cores por status
+        const coresStatus = {
+            'Planejada': '#ffd700',
+            'Em Andamento': 'var(--success-color)',
+            'Concluída': 'var(--secondary-color)',
+            'Cancelada': 'var(--error-color)'
+        };
+
+        // Função para adicionar um marcador ao mapa
+        function adicionarMarcador(viagem) {
+            // Remover marcador existente se for uma atualização
+            if (viagem.marker) {
+                viagem.marker.remove();
+            }
+
+            const cor = coresStatus[viagem.status] || '#999'; // Cor padrão
+
+            const customIcon = L.divIcon({
+                className: 'custom-icon',
+                html: `<div style="background-color: ${cor}; width: 25px; height: 25px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);"></div>`,
+                iconSize: [25, 25],
+                iconAnchor: [12, 25],
+                popupAnchor: [0, -20]
+            });
+
+            const marker = L.marker([viagem.latitude, viagem.longitude], { icon: customIcon }).addTo(map);
+
+            // Importante: Usar os nomes de propriedade corretos para exibição no popup, que são os mesmos que vêm do Supabase
+            const popupContent = `
+                <div class="popup-content">
+                    <div class="popup-title">${viagem.destino}</div>
+                    <div class="popup-info">Especialista: <strong>${viagem.especialista}</strong></div>
+                    <div class="popup-info">Propósito: ${viagem.proposito}</div>
+                    <div class="popup-info">Empresa: ${viagem.empresa || 'N/A'}</div>
+                    <div class="popup-info">Setor: ${viagem.setor || 'N/A'}</div>
+                    <div class="popup-info">Período: ${viagem.data_inicio} a ${viagem.data_fim}</div> <div class="popup-info">Status: <span class="popup-status status-${viagem.status.replace(/\s/g, '-').toLowerCase()}">${viagem.status}</span></div>
+                    <br>
+                    <button class="btn btn-primary btn-sm" onclick="editarViagem('${viagem.id}')">Editar</button>
+                    <button class="btn btn-secondary btn-sm" onclick="deletarViagem('${viagem.id}')">Deletar</button>
+                </div>
+            `;
+            marker.bindPopup(popupContent);
+
+            viagem.marker = marker; // Armazenar a referência do marcador na viagem
+            markers.push(marker); // Adicionar ao array de marcadores para gerenciamento
+
+            return marker;
+        }
+
+        // Função para limpar todos os marcadores do mapa
+        function limparMarcadores() {
+            markers.forEach(marker => marker.remove());
+            markers = [];
+        }
+
+        // Função para adicionar uma nova viagem
+        async function adicionarViagem() {
+            const especialista = document.getElementById('especialista').value;
+            const destino = document.getElementById('destino').value;
+            const proposito = document.getElementById('proposito').value;
+            const status = document.getElementById('status').value;
+            const dataInicio = document.getElementById('dataInicio').value; // Valor vindo do input HTML
+            const dataFim = document.getElementById('dataFim').value;     // Valor vindo do input HTML
+            const empresa = document.getElementById('empresa').value;
+            const setor = document.getElementById('setor').value;
+
+            if (!especialista || !destino || !proposito || !dataInicio || !dataFim) {
+                alert('Por favor, preencha todos os campos obrigatórios!');
+                return;
+            }
+
+            const [latitude, longitude] = await geocodificar(destino);
+
+            // Montando o objeto para Supabase com os nomes de coluna corretos (snake_case para datas)
+            const novaViagem = {
+                // Removido 'id: Date.now()' - Supabase deve gerar o ID automaticamente se configurado como auto-incremento
+                especialista: especialista,
+                destino: destino,
+                proposito: proposito,
+                status: status,
+                data_inicio: dataInicio, // <--- CORREÇÃO AQUI: Mudado para 'data_inicio'
+                data_fim: dataFim,       // <--- CORREÇÃO AQUI: Mudado para 'data_fim'
+                empresa: empresa,
+                setor: setor,
+                latitude: latitude,
+                longitude: longitude
+            };
+
+            // --- CONSOLE.LOGS PARA DEBUG ---
+            console.log('Objeto novaViagem a ser enviado:', novaViagem);
+            console.log('Tipos dos dados:', {
+                especialista: typeof novaViagem.especialista,
+                destino: typeof novaViagem.destino,
+                proposito: typeof novaViagem.proposito,
+                status: typeof novaViagem.status,
+                data_inicio: typeof novaViagem.data_inicio, // Mudado aqui
+                data_fim: typeof novaViagem.data_fim,       // Mudado aqui
+                empresa: typeof novaViagem.empresa,
+                latitude: typeof novaViagem.latitude,
+                longitude: typeof novaViagem.longitude
+            });
+            // ----------------------------------------
+
+            const { data, error } = await supabase
+                .from('mapa_viagens')
+                .insert([novaViagem])
+                .select(); // Adicionado .select() para retornar os dados inseridos, incluindo o ID gerado pelo Supabase
+
+            if (error) {
+                console.error('Erro ao salvar viagem no Supabase:', error);
+                alert('Erro ao salvar viagem. Verifique o console para mais detalhes.');
+                console.log('Detalhes completos do erro Supabase:', error);
+                return;
+            }
+
+            // O Supabase retorna o objeto inserido (com o ID gerado) dentro do 'data'
+            // Se 'data' for um array, pegamos o primeiro elemento
+            const viagemInserida = data && data.length > 0 ? data[0] : null;
+
+            if (viagemInserida) {
+                viagens.push(viagemInserida); // Adicionar a viagem com o ID real do banco de dados
+                adicionarMarcador(viagemInserida);
+                limparFormulario();
+                aplicarFiltros();
+                atualizarEstatisticas();
+                document.querySelector('.empty-state').style.display = 'none';
+            } else {
+                console.error('Nenhum dado retornado após a inserção no Supabase.');
+                alert('Viagem salva, mas não foi possível obter os dados de retorno. Recarregue a página.');
+            }
+        }
+
+        // Função para limpar o formulário
+        function limparFormulario() {
+            document.getElementById('especialista').value = '';
+            document.getElementById('destino').value = '';
+            document.getElementById('proposito').value = '';
+            document.getElementById('status').value = 'Planejada';
+            document.getElementById('dataInicio').value = '';
+            document.getElementById('dataFim').value = '';
+            document.getElementById('empresa').value = '';
+            document.getElementById('setor').value = '';
+        }
+
+        // Função para editar uma viagem existente
+        async function editarViagem(id) {
+            const viagemParaEditar = viagens.find(v => v.id == id);
+            if (!viagemParaEditar) return;
+
+            // Preencher o formulário com os dados da viagem (usando os nomes de propriedade como vêm do DB)
+            document.getElementById('especialista').value = viagemParaEditar.especialista;
+            document.getElementById('destino').value = viagemParaEditar.destino;
+            document.getElementById('proposito').value = viagemParaEditar.proposito;
+            document.getElementById('status').value = viagemParaEditar.status;
+            document.getElementById('dataInicio').value = viagemParaEditar.data_inicio; // <--- CORREÇÃO AQUI
+            document.getElementById('dataFim').value = viagemParaEditar.data_fim;     // <--- CORREÇÃO AQUI
+            document.getElementById('empresa').value = viagemParaEditar.empresa;
+
+            // Mudar o botão "Adicionar" para "Atualizar"
+            const btnAdicionar = document.getElementById('btnAdicionarViagem');
+            btnAdicionar.textContent = '💾 Atualizar Viagem';
+            // Clonar o botão para remover todos os event listeners antigos e adicionar um novo
+            const newBtnAdicionar = btnAdicionar.cloneNode(true);
+            btnAdicionar.parentNode.replaceChild(newBtnAdicionar, btnAdicionar);
+
+            newBtnAdicionar.addEventListener('click', async () => {
+                await atualizarViagem(id);
+                // Voltar o botão para "Adicionar" após a atualização
+                newBtnAdicionar.textContent = '➕ Adicionar Viagem';
+                // Restaurar listener original de adicionar viagem
+                const originalBtn = newBtnAdicionar.cloneNode(true);
+                newBtnAdicionar.parentNode.replaceChild(originalBtn, newBtnAdicionar);
+                originalBtn.addEventListener('click', adicionarViagem);
+            });
+        }
+
+        // Função para realmente atualizar a viagem no Supabase e no array local
+        async function atualizarViagem(id) {
+            const index = viagens.findIndex(v => v.id == id);
+            if (index === -1) return;
+
+            const especialista = document.getElementById('especialista').value;
+            const destino = document.getElementById('destino').value;
+            const proposito = document.getElementById('proposito').value;
+            const status = document.getElementById('status').value;
+            const dataInicio = document.getElementById('dataInicio').value; // Valor vindo do input HTML
+            const dataFim = document.getElementById('dataFim').value;     // Valor vindo do input HTML
+            const empresa = document.getElementById('empresa').value;
+            const setor = document.getElementById('setor').value;
+
+            if (!especialista || !destino || !proposito || !dataInicio || !dataFim) {
+                alert('Por favor, preencha todos os campos obrigatórios!');
+                return;
+            }
+
+            const [latitude, longitude] = await geocodificar(destino);
+
+            // Montando o objeto para Supabase com os nomes de coluna corretos (snake_case para datas)
+            const viagemAtualizada = {
+                // Não é necessário passar o 'id' aqui se ele for auto-incrementado,
+                // mas é seguro incluí-lo para operações de 'update' com '.eq('id', id)'
+                especialista: especialista,
+                destino: destino,
+                proposito: proposito,
+                status: status,
+                data_inicio: dataInicio, // <--- CORREÇÃO AQUI: Mudado para 'data_inicio'
+                data_fim: dataFim,       // <--- CORREÇÃO AQUI: Mudado para 'data_fim'
+                empresa: empresa,
+                setor: setor,
+                latitude: latitude,
+                longitude: longitude
+            };
+
+            const { data, error } = await supabase
+                .from('mapa_viagens')
+                .update(viagemAtualizada)
+                .eq('id', id)
+                .select(); // Adicionado .select() para retornar os dados atualizados
+
+            if (error) {
+                console.error('Erro ao atualizar viagem no Supabase:', error);
+                alert('Erro ao atualizar viagem. Verifique o console para mais detalhes.');
+                console.log('Detalhes completos do erro Supabase (atualização):', error);
+                return;
+            }
+
+            // Remover marcador antigo
+            if (viagens[index].marker) {
+                viagens[index].marker.remove();
+            }
+
+            // O Supabase retorna o objeto atualizado dentro do 'data'
+            const viagemRetornada = data && data.length > 0 ? data[0] : null;
+
+            if (viagemRetornada) {
+                viagens[index] = viagemRetornada; // Atualiza o array local com os dados atualizados do DB
+                adicionarMarcador(viagemRetornada); // Adiciona o novo marcador
+                limparFormulario();
+                aplicarFiltros();
+                atualizarEstatisticas();
+            } else {
+                console.error('Nenhum dado retornado após a atualização no Supabase.');
+                alert('Viagem atualizada, mas não foi possível obter os dados de retorno. Recarregue a página.');
+            }
+        }
+
+        // Função para deletar uma viagem
+        async function deletarViagem(id) {
+            if (!confirm('Tem certeza que deseja deletar esta viagem?')) {
+                return;
+            }
+
+            const { error } = await supabase
+                .from('mapa_viagens')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                console.error('Erro ao deletar viagem no Supabase:', error);
+                alert('Erro ao deletar viagem. Verifique o console para mais detalhes.');
+                console.log('Detalhes completos do erro Supabase (deleção):', error);
+                return;
+            }
+
+            // Remover do array local e do mapa
+            const index = viagens.findIndex(v => v.id == id);
+            if (index !== -1) {
+                if (viagens[index].marker) {
+                    viagens[index].marker.remove();
+                }
+                viagens.splice(index, 1);
+            }
+
+            aplicarFiltros(); // Reaplicar filtros para atualizar a exibição
+            atualizarEstatisticas();
+            if (viagens.length === 0) {
+                document.querySelector('.empty-state').style.display = 'block';
+            }
+        }
+
+        // Carregar viagens salvas e recriar marcadores
+        async function carregarViagens() {
+            const viagensSalvas = await carregarDadosDoSupabase();
+            viagens = viagensSalvas;
+
+            // Recriar marcadores para cada viagem
+            viagens.forEach(viagem => {
+                adicionarMarcador(viagem);
+            });
+
+            // Atualizar interface
+            atualizarFiltroEspecialistas();
+            atualizarEstatisticas();
+
+            // Controlar exibição da mensagem de estado vazio
+            const emptyState = document.querySelector('.empty-state');
+            if (viagens.length > 0) {
+                emptyState.style.display = 'none';
+            } else {
+                emptyState.style.display = 'block';
+            }
+        }
+
+        // Função para carregar dados do Supabase
+        async function carregarDadosDoSupabase() {
+            const { data, error } = await supabase
+                .from('mapa_viagens')
+                .select('*');
+
+            if (error) {
+                console.error('Erro ao carregar dados do Supabase:', error);
+                console.log('Detalhes completos do erro Supabase (carregamento):', error);
+                return [];
+            }
+            return data;
+        }
+
+        // Função para atualizar as estatísticas
+        function atualizarEstatisticas(dados = viagens) {
+            document.getElementById('totalViagens').textContent = dados.length;
+
+            const viagensPlanejadas = dados.filter(v => v.status === 'Planejada').length;
+            document.getElementById('viagensPlanejadas').textContent = viagensPlanejadas;
+
+            const viagensRealizadas = dados.filter(v => v.status === 'Concluída').length;
+            document.getElementById('viagensRealizadas').textContent = viagensRealizadas;
+
+            const viagensCanceladas = dados.filter(v => v.status === 'Cancelada').length;
+            document.getElementById('viagensCanceladas').textContent = viagensCanceladas;
+        }
+
+        // Função para atualizar o filtro de especialistas
+        function atualizarFiltroEspecialistas() {
+            const filtroEspecialista = document.getElementById('filtroEspecialista');
+            const especialistasUnicos = [...new Set(viagens.map(v => v.especialista))];
+
+            filtroEspecialista.innerHTML = '<option value="">Todos os Especialistas</option>';
+            especialistasUnicos.forEach(especialista => {
+                const option = document.createElement('option');
+                option.value = especialista;
+                option.textContent = especialista;
+                filtroEspecialista.appendChild(option);
+            });
+        }
+
+        // Função para aplicar os filtros no mapa
+        function aplicarFiltros() {
+            limparMarcadores();
+            const filtroEspecialista = document.getElementById('filtroEspecialista').value;
+            const filtroStatus = document.getElementById('filtroStatus').value;
+            const filtroProposito = document.getElementById('filtroProposito').value;
+            const filtroSetor = document.getElementById('filtroSetor').value;
+            const filtroDataInicio = document.getElementById('filtroDataInicio').value;
+            const filtroDataFim = document.getElementById('filtroDataFim').value;
+
+            const viagensFiltradas = viagens.filter(viagem => {
+                const matchEspecialista = !filtroEspecialista || viagem.especialista === filtroEspecialista;
+                const matchStatus = !filtroStatus || viagem.status === filtroStatus;
+                const matchProposito = !filtroProposito || viagem.proposito === filtroProposito;
+                const matchSetor = !filtroSetor || viagem.setor === filtroSetor;
+                
+                // Filtro por data
+                let matchData = true;
+                if (filtroDataInicio) {
+                    matchData = matchData && new Date(viagem.data_inicio) >= new Date(filtroDataInicio);
+                }
+                if (filtroDataFim) {
+                    matchData = matchData && new Date(viagem.data_inicio) <= new Date(filtroDataFim);
+                }
+                
+                return matchEspecialista && matchStatus && matchProposito && matchSetor && matchData;
+            });
+
+            viagensFiltradas.forEach(viagem => adicionarMarcador(viagem));
+            
+            // Atualizar estatísticas com os dados filtrados
+            atualizarEstatisticas(viagensFiltradas);
+        }
+
+        // Função para limpar todos os filtros
+        function limparFiltros() {
+            document.getElementById('filtroEspecialista').value = '';
+            document.getElementById('filtroStatus').value = '';
+            document.getElementById('filtroProposito').value = '';
+            document.getElementById('filtroSetor').value = '';
+            document.getElementById('filtroDataInicio').value = '';
+            document.getElementById('filtroDataFim').value = '';
+            aplicarFiltros();
+            
+            // Atualizar estatísticas com todos os dados após limpar filtros
+            atualizarEstatisticas(viagens);
+        }
+
+        // Função para centralizar o mapa
+        function centralizarMapa() {
+            if (markers.length > 0) {
+                const group = new L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1)); // Adiciona um pequeno padding
+            } else {
+                // Se não houver marcadores, centralize no Brasil (ou no local padrão)
+                map.setView([-14.2350, -51.9253], 4);
+            }
+        }
+
+        // Função para geocodificar endereço (expandida)
+        async function geocodificar(cidade) {
+            // Normalizar entrada (remover acentos e converter para minúsculo)
+            const cidadeNormalizada = cidade.toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .trim();
+
+            // Coordenadas de cidades brasileiras (busca flexível)
+            const coordenadas = {
+                // Capitais e principais cidades
+                'sao paulo': [-23.5505, -46.6333], 'sp': [-23.5505, -46.6333],
+                'rio de janeiro': [-22.9068, -43.1729], 'rj': [-22.9068, -43.1729],
+                'brasilia': [-15.8267, -47.9218], 'df': [-15.8267, -47.9218],
+                'salvador': [-12.9714, -38.5014], 'ba': [-12.9714, -38.5014],
+                'fortaleza': [-3.7319, -38.5267], 'ce': [-3.7319, -38.5267],
+                'belo horizonte': [-19.9191, -43.9386], 'mg': [-19.9191, -43.9386],
+                'manaus': [-3.1190, -60.0217], 'am': [-3.1190, -60.0217],
+                'curitiba': [-25.4244, -49.2654], 'pr': [-25.4244, -49.2654],
+                'recife': [-8.0476, -34.8770], 'pe': [-8.0476, -34.8770],
+                'porto alegre': [-30.0346, -51.2177], 'rs': [-30.0346, -51.2177],
+                'goiania': [-16.6869, -49.2648], 'go': [-16.6869, -49.2648],
+                'belem': [-1.4558, -48.5044], 'pa': [-1.4558, -48.5044],
+                'guarulhos': [-23.4538, -46.5333],
+                'campinas': [-22.9099, -47.0626],
+                'sao luis': [-2.5297, -44.3028], 'ma': [-2.5297, -44.3028],
+                'sao goncalo': [-22.8268, -43.0535],
+                'maceio': [-9.6658, -35.7353], 'al': [-9.6658, -35.7353],
+                'duque de caxias': [-22.7858, -43.3117],
+                'natal': [-5.7945, -35.2110], 'rn': [-5.7945, -35.2110],
+                'teresina': [-5.0892, -42.8019], 'pi': [-5.0892, -42.8019],
+                'campo grande': [-20.4486, -54.6295], 'ms': [-20.4486, -54.6295],
+                'joao pessoa': [-7.1195, -34.8450], 'pb': [-7.1195, -34.8450],
+                'aracaju': [-10.9472, -37.0731], 'se': [-10.9472, -37.0731],
+                'florianopolis': [-27.5954, -48.5480], 'sc': [-27.5954, -48.5480],
+                'cuiaba': [-15.6014, -56.0979], 'mt': [-15.6014, -56.0979],
+                'vitoria': [-20.3155, -40.3128], 'es': [-20.3155, -40.3128],
+                'macapa': [0.0389, -51.0664], 'ap': [0.0389, -51.0664],
+                'boa vista': [2.8235, -60.6758], 'rr': [2.8235, -60.6758],
+                'rio branco': [-9.9750, -67.8243], 'ac': [-9.9750, -67.8243],
+                'palmas': [-10.1689, -48.3317], 'to': [-10.1689, -48.3317],
+                // Outras cidades importantes
+                'uberlandia': [-18.9113, -48.2622], 'sorocaba': [-23.5015, -47.4526],
+                'santos': [-23.9618, -46.3322], 'ribeirao preto': [-21.1775, -47.8100],
+                'osasco': [-23.5329, -46.7918], 'santo andre': [-23.6558, -46.5339],
+                'sao bernardo do campo': [-23.6939, -46.5445], 'campos dos goytacazes': [-21.7648, -41.3370],
+                'nova iguacu': [-22.7592, -43.4513], 'sao joao de meriti': [-22.8047, -43.3719],
+                'betim': [-19.9681, -44.1982], 'contagem': [-19.9317, -44.0538],
+                'londrina': [-23.3045, -51.1696], 'joinville': [-26.3044, -48.8487],
+                'aparecida de goiania': [-16.8173, -49.2437], 'ananindeua': [-1.3656, -48.3722],
+                'porto velho': [-8.7612, -63.9039], 'serra': [-20.1288, -40.3085],
+                'niteroi': [-22.8831, -43.1036], 'caxias do sul': [-29.1678, -51.1794],
+                'vila velha': [-20.3297, -40.2925], 'florianopolis': [-27.5969, -48.5495],
+                'maua': [-23.6678, -46.4614], 'carapicuiba': [-23.5226, -46.8357],
+                'canoas': [-29.9177, -51.1804], 'olinda': [-8.0089, -34.8553]
+            };
+
+            // Buscar coordenadas exatas
+            let coord = coordenadas[cidadeNormalizada];
+            if (coord) return coord;
+
+            // Buscar por correspondência parcial
+            for (let [key, value] of Object.entries(coordenadas)) {
+                if (cidadeNormalizada.includes(key) || key.includes(cidadeNormalizada)) {
+                    return value;
+                }
+            }
+
+            // Se não encontrar, retornar Brasília como padrão
+            return [-15.8267, -47.9218];
+        }
+
+        // Função para exibir a lista de viagens no modal
+        function exibirListaViagens() {
+            const modal = document.getElementById('modalListaViagens');
+            const content = document.getElementById('listaViagensContent');
+            
+            // Aplicar os mesmos filtros que são usados no mapa
+            const filtroEspecialista = document.getElementById('filtroEspecialista').value;
+            const filtroStatus = document.getElementById('filtroStatus').value;
+            const filtroProposito = document.getElementById('filtroProposito').value;
+            const filtroSetor = document.getElementById('filtroSetor').value;
+            const filtroDataInicio = document.getElementById('filtroDataInicio').value;
+            const filtroDataFim = document.getElementById('filtroDataFim').value;
+
+            const viagensFiltradas = viagens.filter(viagem => {
+                const matchEspecialista = !filtroEspecialista || viagem.especialista === filtroEspecialista;
+                const matchStatus = !filtroStatus || viagem.status === filtroStatus;
+                const matchProposito = !filtroProposito || viagem.proposito === filtroProposito;
+                const matchSetor = !filtroSetor || viagem.setor === filtroSetor;
+                
+                // Filtro por data
+                let matchData = true;
+                if (filtroDataInicio) {
+                    matchData = matchData && new Date(viagem.data_inicio) >= new Date(filtroDataInicio);
+                }
+                if (filtroDataFim) {
+                    matchData = matchData && new Date(viagem.data_inicio) <= new Date(filtroDataFim);
+                }
+                
+                return matchEspecialista && matchStatus && matchProposito && matchSetor && matchData;
+            });
+            
+            if (viagensFiltradas.length === 0) {
+                content.innerHTML = '<p style="text-align: center; color: #666;">Nenhuma viagem encontrada com os filtros aplicados.</p>';
+            } else {
+                let html = '';
+                viagensFiltradas.forEach(viagem => {
+                    const statusClass = `status-${viagem.status.replace(/\s/g, '-').toLowerCase()}`;
+                    html += `
+                        <div class="viagem-item">
+                            <h4>${viagem.destino} - ${viagem.especialista}</h4>
+                            <div class="viagem-info">
+                                <div><strong>Propósito:</strong> <span>${viagem.proposito}</span></div>
+                                <div><strong>Empresa:</strong> <span>${viagem.empresa || 'N/A'}</span></div>
+                                <div><strong>Setor:</strong> <span>${viagem.setor || 'N/A'}</span></div>
+                                <div><strong>Período:</strong> <span>${viagem.data_inicio} a ${viagem.data_fim}</span></div>
+                                <div><strong>Status:</strong> <span class="popup-status ${statusClass}">${viagem.status}</span></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                content.innerHTML = html;
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        // Função para fechar o modal
+        function fecharModal() {
+            document.getElementById('modalListaViagens').style.display = 'none';
+        }
+
+        // Fechar modal ao clicar fora dele
+        window.onclick = function(event) {
+            const modal = document.getElementById('modalListaViagens');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Inicializar quando a página carregar
+        window.onload = function() {
+            initMap();
+            carregarViagens(); // Carregar viagens salvas
+
+            // Adicionar event listeners para os botões após o DOM estar pronto
+            document.getElementById('btnAdicionarViagem').addEventListener('click', adicionarViagem);
+            document.getElementById('btnLimparFormulario').addEventListener('click', limparFormulario);
+            document.getElementById('btnLimparFiltros').addEventListener('click', limparFiltros);
+            document.getElementById('btnCentralizarMapa').addEventListener('click', centralizarMapa);
+        };
+
+        // Expor funções no escopo global para acesso via onclick
+        window.editarViagem = editarViagem;
+        window.deletarViagem = deletarViagem;
+        window.fecharModal = fecharModal;
+        window.exibirListaViagens = exibirListaViagens;
+        window.aplicarFiltros = aplicarFiltros;
+        window.limparFiltros = limparFiltros;
+        window.centralizarMapa = centralizarMapa;
+        window.adicionarViagem = adicionarViagem;
+        window.limparFormulario = limparFormulario;
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,2024 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <link rel="icon" type="image/png" href="tryvia.png" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Funcionário 1 - Especialista SING e E-trip</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+</head>
+<body>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: "Arial", sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+        
+        .profile-photo {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: 6px solid #00d4ff;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .profile-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .profile-photo-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 60px;
+        }
+        
+        .name-section h1 {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .name-section p {
+            color: #4a90e2;
+            font-size: 16px;
+            text-decoration: underline;
+            margin-bottom: 30px;
+        }
+        
+        .stats-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .stat-item h3 {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .stat-item .number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            display: inline-block;
+            min-width: 40px;
+        }
+        
+        .stat-item .icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+        }
+        
+        .edit-button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 8px;
+        }
+        
+        .edit-button:hover {
+            background: #357abd;
+        }
+        
+        .treinamentos { color: #4a90e2; }
+        .reunioes { color: #ff6b6b; }
+        .homologacoes { color: #ffc107; }
+        .projetos { color: #28a745; }
+        
+        .performance {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        
+        .performance h3 {
+            font-size: 14px;
+            margin-bottom: 5px;
+            opacity: 0.9;
+        }
+        
+        .performance .percentage {
+            font-size: 48px;
+            font-weight: bold;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: #4a90e2;
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .date-info {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 500px;
+            gap: 20px;
+            flex: 1;
+        }
+        
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .projects-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .projects-section h2 {
+            color: #4a90e2;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .projects-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .projects-table th {
+            background: #f8f9fa;
+            padding: 18px 15px;
+            text-align: left;
+            font-weight: bold;
+            color: #333;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .projects-table td {
+            padding: 18px 15px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: top;
+        }
+        
+        .projects-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .company-tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .tag-gasparzinho { background: #ffebee; color: #c62828; }
+        .tag-andorinha { background: #e8f5e8; color: #2e7d32; }
+        .tag-viacao { background: #e3f2fd; color: #1565c0; }
+        .tag-capital { background: #f3e5f5; color: #7b1fa2; }
+        .tag-grupo { background: #fff3e0; color: #ef6c00; }
+        .tag-rio { background: #e0f2f1; color: #00695c; }
+        .tag-transmoretti { background: #fce4ec; color: #ad1457; }
+        .tag-top { background: #e8eaf6; color: #3f51b5; }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-concluido { background: #d4edda; color: #155724; }
+        .status-andamento { background: #d1ecf1; color: #0c5460; }
+        .status-pendente { background: #fff3cd; color: #856404; }
+        .status-pausado { background: #f8d7da; color: #721c24; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .loading i {
+            font-size: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .refresh-button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 20px;
+            transition: background 0.3s ease;
+        }
+        
+        .refresh-button:hover {
+            background: #357abd;
+        }
+        
+        .refresh-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .project-details {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .gestor-info {
+            font-size: 11px;
+            color: #888;
+            font-style: italic;
+        }
+        
+        .sistema-info {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .mvp-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .mvp-item:hover {
+            background: #e9ecef;
+            border-color: #4a90e2;
+        }
+        
+        .mvp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .mvp-empresa {
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .mvp-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .mvp-details {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .mvp-sistema {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .mvp-resumo {
+            font-size: 11px;
+            color: #555;
+            font-style: italic;
+            margin-top: 5px;
+        }
+        
+        .acomp-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .acomp-item:hover {
+            background: #e9ecef;
+            border-color: #4a90e2;
+        }
+        
+        .acomp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .acomp-cliente {
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .acomp-tipo {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .tipo-implantacao { background: #e3f2fd; color: #1565c0; }
+        .tipo-suporte { background: #fff3e0; color: #ef6c00; }
+        .tipo-treinamento { background: #e8f5e8; color: #2e7d32; }
+        .tipo-manutencao { background: #fce4ec; color: #ad1457; }
+        
+        .acomp-details {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .acomp-projeto {
+            background: #f3e5f5;
+            color: #7b1fa2;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .acomp-tickets {
+            background: #ffebee;
+            color: #c62828;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .acomp-resumo {
+            font-size: 11px;
+            color: #555;
+            font-style: italic;
+            margin-top: 5px;
+        }
+        
+        .acomp-setor {
+            background: #e0f2f1;
+            color: #00695c;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        
+        /* Estilo para container de acompanhamentos com rolamento */
+        .acompanhamentos-container {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 5px;
+            margin-bottom: 15px;
+        }
+        
+        /* Estilo personalizado para a barra de rolamento */
+        .acompanhamentos-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .acompanhamentos-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .acompanhamentos-container::-webkit-scrollbar-thumb {
+            background: #4a90e2;
+            border-radius: 3px;
+        }
+        
+        .acompanhamentos-container::-webkit-scrollbar-thumb:hover {
+            background: #357abd;
+        }
+        
+        /* Estilo para container de MVPs com rolamento */
+        .mvps-container {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .mvps-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .mvps-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .mvps-container::-webkit-scrollbar-thumb {
+            background: #4a90e2;
+            border-radius: 3px;
+        }
+        
+        .mvps-container::-webkit-scrollbar-thumb:hover {
+            background: #357abd;
+        }
+        
+        /* Estilo específico para a tabela de implantações */
+        #implantacoes-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        #implantacoes-table th {
+            background: #f8f9fa;
+            padding: 18px 15px;
+            text-align: left;
+            font-weight: bold;
+            color: #333;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        #implantacoes-table td {
+            padding: 18px 15px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: top;
+        }
+        
+        #implantacoes-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        /* Estilo para container de implantações com rolamento */
+        .implantacoes-container {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 5px;
+            margin-bottom: 15px;
+        }
+        
+        /* Estilo personalizado para a barra de rolamento das implantações */
+        .implantacoes-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .implantacoes-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .implantacoes-container::-webkit-scrollbar-thumb {
+            background: #4a90e2;
+            border-radius: 3px;
+        }
+        
+        .implantacoes-container::-webkit-scrollbar-thumb:hover {
+            background: #357abd;
+        }
+        
+        .bottom-sections {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .info-section {
+            background: #e3f2fd;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .info-section h3 {
+            color: #4a90e2;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .info-section ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .info-section li {
+            padding: 8px 0;
+            color: #666;
+            border-bottom: 1px solid rgba(74, 144, 226, 0.1);
+        }
+        
+        .info-section li:last-child {
+            border-bottom: none;
+        }
+        
+        .mvp-section {
+            background: #f5f5f5;
+        }
+        
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .visits-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .visits-section h2 {
+            color: #4a90e2;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .map-container {
+            width: 100%;
+            height: 400px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #e9ecef;
+            position: relative;
+        }
+        
+        .brazil-map {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        /* Botão para ocultar/exibir formulário */
+        .toggle-form-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-form-button:hover {
+            background: #357abd;
+            transform: translateY(-2px);
+        }
+        
+        .toggle-form-button i {
+            margin-right: 5px;
+        }
+        
+        .clients-list {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 250px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .clients-list.hidden {
+            transform: translateX(100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .client-item {
+            margin-bottom: 8px;
+            padding: 8px;
+            background: #e3f2fd;
+            border-radius: 5px;
+            border-left: 3px solid #4a90e2;
+        }
+        
+        .client-item input {
+            border: 1px solid #ddd;
+            background: white;
+            font-size: 11px;
+            width: 100%;
+            margin-bottom: 4px;
+            padding: 4px;
+            border-radius: 3px;
+        }
+        
+        .client-item .remove-client {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            float: right;
+            margin-top: 2px;
+        }
+        
+        .map-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(255,255,255,0.95);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .leaflet-popup-content {
+            font-size: 12px !important;
+        }
+        
+        .custom-marker {
+            background-color: #4a90e2;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .visited-marker {
+            background-color: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .map-legend {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.9);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #333;
+            z-index: 1001;
+        }
+        
+        .editable {
+            background: #f8f9fa;
+            border: 1px dashed #ccc;
+            padding: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .map-legend button.add-button {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .editable:hover {
+            background: #e9ecef;
+            border-color: #4a90e2;
+        }
+        
+        .editable:focus {
+            outline: none;
+            background: white;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+        
+        .add-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        
+        .add-button:hover {
+            background: #218838;
+        }
+        
+        .remove-button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+        
+        /* Estilo para marcadores de visita salvos */
+        .visit-marker {
+            background-color: #28a745;
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
+        }
+        
+        @keyframes visitPulse {
+            0% { 
+                transform: scale(1);
+                box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
+            }
+            50% { 
+                transform: scale(1.2);
+                box-shadow: 0 4px 16px rgba(40, 167, 69, 0.6);
+            }
+            100% { 
+                transform: scale(1);
+                box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
+            }
+        }
+
+        /* Estilo para notificações */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background-color: #28a745;
+        }
+
+        .notification.error {
+            background-color: #dc3545;
+        }
+
+        .notification.warning {
+            background-color: #ffc107;
+            color: #333;
+        }
+        
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .bottom-sections {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="profile-photo">
+                <div class="profile-photo-placeholder" onclick="changePhoto()">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+            
+            <div class="name-section">
+                <h1 contenteditable="true" class="editable">Funcionário 1</h1>
+                <p contenteditable="true" class="editable">Especialista SING e E-trip</p>
+            </div>
+            
+            <div class="stats-section">
+                <div class="stat-item">
+                    <h3>Time Implantação</h3>
+                    <div class="icon treinamentos"><i class="fas fa-users"></i></div>
+                </div>
+                
+                <div class="stat-item">
+                    <h3>Treinamentos</h3>
+                    <div class="number" id="treinamentos">03</div>
+                    <button class="edit-button" onclick="editStat('treinamentos')">✏️</button>
+                    <div class="icon treinamentos"><i class="fas fa-graduation-cap"></i></div>
+                </div>
+                
+                <div class="stat-item">
+                    <h3>Reuniões</h3>
+                    <div class="number" id="reunioes">27</div>
+                    <button class="edit-button" onclick="editStat('reunioes')">✏️</button>
+                    <div class="icon reunioes"><i class="fas fa-calendar"></i></div>
+                </div>
+                
+                <div class="stat-item">
+                    <h3>Homologações</h3>
+                    <div class="number" id="homologacoes">05</div>
+                    <button class="edit-button" onclick="editStat('homologacoes')">✏️</button>
+                    <div class="icon homologacoes"><i class="fas fa-check-circle"></i></div>
+                </div>
+                
+                <div class="stat-item">
+                    <h3>Projetos</h3>
+                    <div class="number" id="projetos">07</div>
+                    <button class="edit-button" onclick="editStat('projetos')">✏️</button>
+                    <div class="icon projetos"><i class="fas fa-project-diagram"></i></div>
+                </div>
+            </div>
+            
+            <div class="performance">
+                <h3>Média Mensal</h3>
+                <p style="font-size: 12px; opacity: 0.8;">Gestão à Vista</p>
+                <div class="percentage" id="performance">97%</div>
+                <button class="edit-button" onclick="editStat('performance')" style="background: rgba(255,255,255,0.2);">✏️</button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h2>TRYVIA</h2>
+                        <small>SUA FROTA MAIS INTELIGENTE</small>
+                    </div>
+                </div>
+                <div class="date-info">
+                    <input type="month" id="mesAno" class="editable" value="2025-05" style="border: none; background: transparent; font-size: 14px; color: #666; cursor: pointer;">
+                </div>
+            </div>
+            
+            <div class="content-grid">
+                <div class="left-panel">
+                    <div class="projects-section">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h2>Implantações</h2>
+                                              <button class="refresh-button" onclick="carregarImplantacoes()" id="refresh-btn">
+                            <i class="fas fa-sync-alt"></i> Atualizar
+                        </button>
+                    </div>
+                    
+                    <div id="loading-message" class="loading" style="display: none;">
+                        <i class="fas fa-spinner"></i>
+                        <p>Carregando implantações...</p>
+                    </div>
+                    
+                    <div id="error-message" class="error" style="display: none;"></div>
+                    
+                    <div class="implantacoes-container">
+                        <div class="table-container">
+                            <table id="implantacoes-table">
+                                <thead>
+                                    <tr>
+                                        <th>Empresa</th>
+                                        <th>Projetos</th>
+                                        <th>Sistema</th>
+                                        <th>%</th>
+                                        <th>Data de Início</th>
+                                        <th>Data Fim (Previsão)</th>
+                                        <th>Status</th>
+                                        <th>Gestor</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="projects-tbody">
+                                    <!-- Os dados serão carregados aqui via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    </div>
+                    
+                    <div class="bottom-sections">
+                        <div class="info-section">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <h3>Projetos</h3>
+                                <button class="refresh-button" onclick="carregarAcompanhamentos()" id="refresh-acomp-btn" style="padding: 5px 10px; font-size: 12px;">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            
+                            <div id="loading-acomp-message" class="loading" style="display: none; padding: 20px;">
+                                <i class="fas fa-spinner" style="font-size: 16px;"></i>
+                                <p style="font-size: 12px;">Carregando acompanhamentos...</p>
+                            </div>
+                            
+                            <div id="error-acomp-message" class="error" style="display: none; font-size: 12px;"></div>
+                            
+                            <div class="acompanhamentos-container">
+                                <ul id="acompanhamentos">
+                                    <!-- Os dados serão carregados aqui via JavaScript -->
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section mvp-section">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <h3>MVPs</h3>
+                                <button class="refresh-button" onclick="carregarMVPs()" id="refresh-mvp-btn" style="padding: 5px 10px; font-size: 12px;">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            
+                            <div id="loading-mvp-message" class="loading" style="display: none; padding: 20px;">
+                                <i class="fas fa-spinner" style="font-size: 16px;"></i>
+                                <p style="font-size: 12px;">Carregando MVPs...</p>
+                            </div>
+                            
+                            <div id="error-mvp-message" class="error" style="display: none; font-size: 12px;"></div>
+                            
+                            <div class="mvps-container">
+                                <ul id="mvp">
+                                    <!-- Os dados serão carregados aqui via JavaScript -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="right-panel">
+                    <div class="visits-section">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h2>Visitas</h2>
+                            <button class="refresh-button" onclick="carregarVisitasRenata()" id="refresh-visitas-btn" style="padding: 5px 10px; font-size: 12px;">
+                                <i class="fas fa-sync-alt"></i> Atualizar
+                            </button>
+                        </div>
+                        <div class="map-container">
+                            
+<div class="brazil-map">
+    <div id="map"></div>
+    
+    <!-- Botão para ocultar/exibir formulário -->
+    <button class="toggle-form-button" onclick="toggleFormVisibility()">
+        <i class="fas fa-plus"></i>
+        <span id="toggleButtonText">Adicionar Cliente</span>
+    </button>
+    
+    <div class="clients-list" id="clientsList">
+        <div style="font-weight: bold; margin-bottom: 8px; color: #4a90e2;">Clientes Visitados:</div>
+    </div>
+    
+<div class="map-legend">
+    <div><strong>Total de Empresas:</strong> <span id="empresasCount">0</span></div>
+</div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <input type="file" id="photoInput" accept="image/*" style="display: none;">
+    
+    <!-- Div para notificações -->
+    <div id="notification" class="notification"></div>
+    
+    <script>
+        // Variáveis globais para o mapa
+        let map;
+        let visitMarkers = [];
+        let isFormVisible = true;
+        
+        // Função para mostrar notificações
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+        
+        // Função para formatar data
+        function formatDate(dateString) {
+            if (!dateString) return 'Data não informada';
+            return new Date(dateString).toLocaleDateString('pt-BR');
+        }
+        
+        // Função para obter cor do status
+        function getStatusClass(status) {
+            if (!status) return 'status-pendente';
+            
+            const statusLower = status.toLowerCase();
+            if (statusLower.includes('concluído') || statusLower.includes('concluido') || statusLower.includes('finalizado')) {
+                return 'status-concluido';
+            } else if (statusLower.includes('andamento')) {
+                return 'status-andamento';
+            } else if (statusLower.includes('pendente')) {
+                return 'status-pendente';
+            } else if (statusLower.includes('pausado')) {
+                return 'status-pausado';
+            }
+            return 'status-pendente';
+        }
+        
+        // Função para obter classe do tipo
+        function getTipoClass(tipo) {
+            if (!tipo) return 'tipo-implantacao';
+            
+            const tipoLower = tipo.toLowerCase();
+            if (tipoLower.includes('implantacao') || tipoLower.includes('implantação')) {
+                return 'tipo-implantacao';
+            } else if (tipoLower.includes('suporte')) {
+                return 'tipo-suporte';
+            } else if (tipoLower.includes('treinamento')) {
+                return 'tipo-treinamento';
+            } else if (tipoLower.includes('manutencao') || tipoLower.includes('manutenção')) {
+                return 'tipo-manutencao';
+            }
+            return 'tipo-implantacao';
+        }
+        
+        // Função principal para carregar acompanhamentos da Renata Braga
+        async function carregarAcompanhamentos() {
+            const loadingMessage = document.getElementById('loading-acomp-message');
+            const errorMessage = document.getElementById('error-acomp-message');
+            const refreshBtn = document.getElementById('refresh-acomp-btn');
+            const acompList = document.getElementById('acompanhamentos');
+            
+            try {
+                // Mostrar loading
+                loadingMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+                refreshBtn.disabled = true;
+                refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                // Configuração do Supabase (API diferente)
+                const SUPABASE_URL = "https://mzjdmhgkrroajmsfwryu.supabase.co";
+                const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMzMwMzUsImV4cCI6MjA2MzgwOTAzNX0.tQCwUfFCV7sD-IexQviU0XEPcbn9j5uK9NSUbH-OeBc";
+                
+                // Verificar se o Supabase está disponível
+                if (typeof supabase === 'undefined') {
+                    throw new Error('Biblioteca Supabase não carregada');
+                }
+                
+                const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                
+                // Buscar dados do Supabase
+                const { data, error } = await supabaseClient
+                    .from('status_projetos')
+                    .select('*')
+                    .eq('especialista', 'Renata Braga')
+                    .order('data', { ascending: false });
+
+                if (error) {
+                    throw error;
+                }
+
+                // Limpar lista
+                acompList.innerHTML = '';
+                
+                if (!data || data.length === 0) {
+                    acompList.innerHTML = `
+                        <li style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
+                            <i class="fas fa-inbox" style="font-size: 24px; margin-bottom: 5px; display: block;"></i>
+                            Nenhum acompanhamento encontrado para Renata Braga
+                        </li>
+                    `;
+                } else {
+                    // Preencher lista com dados
+                    data.forEach(acomp => {
+                        const li = document.createElement('li');
+                        li.className = 'acomp-item';
+                        li.style.listStyle = 'none';
+                        
+                        const tipoClass = getTipoClass(acomp.tipo);
+                        
+                        li.innerHTML = `
+                            <div class="acomp-header">
+                                <div class="acomp-cliente">${acomp.cliente || 'Cliente não informado'}</div>
+                                <span class="acomp-tipo ${tipoClass}">
+                                    ${acomp.tipo || 'Tipo não informado'}
+                                </span>
+                            </div>
+                            <div class="acomp-details">
+                                <span class="acomp-projeto">${acomp.projeto || 'Projeto não informado'}</span>
+                                ${acomp.tickets ? `<span class="acomp-tickets">${acomp.tickets} tickets</span>` : ''}
+                                ${acomp.tickets_pendentes ? `<span class="acomp-tickets">${acomp.tickets_pendentes} pendentes</span>` : ''}
+                                ${acomp.setor ? `<span class="acomp-setor">${acomp.setor}</span>` : ''}
+                                <div style="font-size: 10px; color: #888; margin-top: 4px;">
+                                    ${formatDate(acomp.data)}
+                                    ${acomp.data_inicio && acomp.data_termino ? 
+                                        ` | ${formatDate(acomp.data_inicio)} - ${formatDate(acomp.data_termino)}` : ''}
+                                </div>
+                            </div>
+                            ${acomp.resumo ? `<div class="acomp-resumo">${acomp.resumo}</div>` : ''}
+                        `;
+                        
+                        acompList.appendChild(li);
+                    });
+                    
+                    showNotification(`${data.length} acompanhamentos carregados com sucesso!`, 'success');
+                }
+                
+            } catch (error) {
+                console.error('Erro ao carregar acompanhamentos:', error);
+                errorMessage.textContent = `Erro ao carregar acompanhamentos: ${error.message}`;
+                errorMessage.style.display = 'block';
+                showNotification('Erro ao carregar acompanhamentos', 'error');
+            } finally {
+                loadingMessage.style.display = 'none';
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            }
+        }
+        
+        // Função principal para carregar MVPs da Renata Braga
+        async function carregarMVPs() {
+            const loadingMessage = document.getElementById('loading-mvp-message');
+            const errorMessage = document.getElementById('error-mvp-message');
+            const refreshBtn = document.getElementById('refresh-mvp-btn');
+            const mvpList = document.getElementById('mvp');
+            
+            try {
+                // Mostrar loading
+                loadingMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+                refreshBtn.disabled = true;
+                refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                // Configuração do Supabase
+                const SUPABASE_URL = "https://obwgegvrtxrlombmkaej.supabase.co";
+                const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9id2dlZ3ZydHhybG9tYm1rYWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NDcxOTMsImV4cCI6MjA2NDAyMzE5M30.0Ng21Ywqrm6eDqbclFyeOhARpJCyWvX7b-0dJLE1QwM";
+                
+                // Verificar se o Supabase está disponível
+                if (typeof supabase === 'undefined') {
+                    throw new Error('Biblioteca Supabase não carregada');
+                }
+                
+                const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                
+                // Buscar dados do Supabase
+                const { data, error } = await supabaseClient
+                    .from('mvps')
+                    .select('*')
+                    .eq('especialista', 'Renata Braga')
+                    .order('data_inicio', { ascending: false });
+
+                if (error) {
+                    throw error;
+                }
+
+                // Limpar lista
+                mvpList.innerHTML = '';
+                
+                if (!data || data.length === 0) {
+                    mvpList.innerHTML = `
+                        <li style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
+                            <i class="fas fa-inbox" style="font-size: 24px; margin-bottom: 5px; display: block;"></i>
+                            Nenhum MVP encontrado para Renata Braga
+                        </li>
+                    `;
+                } else {
+                    // Preencher lista com dados
+                    data.forEach(mvp => {
+                        const li = document.createElement('li');
+                        li.className = 'mvp-item';
+                        li.style.listStyle = 'none';
+                        
+                        const statusClass = getStatusClass(mvp.status);
+                        
+                        li.innerHTML = `
+                            <div class="mvp-header">
+                                <div class="mvp-empresa">${mvp.empresa || 'Empresa não informada'}</div>
+                                <span class="mvp-status ${statusClass}">
+                                    ${mvp.status || 'Pendente'}
+                                </span>
+                            </div>
+                            <div class="mvp-details">
+                                <span class="mvp-sistema">${mvp.sistema || 'Sistema não informado'}</span>
+                                <span style="font-size: 10px; color: #888;">
+                                    ${formatDate(mvp.data_inicio)} - ${formatDate(mvp.data_fim)}
+                                </span>
+                            </div>
+                            ${mvp.resumo ? `<div class="mvp-resumo">${mvp.resumo}</div>` : ''}
+                        `;
+                        
+                        mvpList.appendChild(li);
+                    });
+                    
+                    showNotification(`${data.length} MVPs carregados com sucesso!`, 'success');
+                }
+                
+            } catch (error) {
+                console.error('Erro ao carregar MVPs:', error);
+                errorMessage.textContent = `Erro ao carregar MVPs: ${error.message}`;
+                errorMessage.style.display = 'block';
+                showNotification('Erro ao carregar MVPs', 'error');
+            } finally {
+                loadingMessage.style.display = 'none';
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            }
+        }
+        
+        // Função principal para carregar implantações da Renata Braga
+        async function carregarImplantacoes() {
+            const loadingMessage = document.getElementById('loading-message');
+            const errorMessage = document.getElementById('error-message');
+            const refreshBtn = document.getElementById('refresh-btn');
+            const tbody = document.getElementById('projects-tbody');
+            
+            try {
+                // Mostrar loading
+                loadingMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+                refreshBtn.disabled = true;
+                refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Carregando...';
+                
+                // Configuração do Supabase
+                const SUPABASE_URL = "https://obwgegvrtxrlombmkaej.supabase.co";
+                const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9id2dlZ3ZydHhybG9tYm1rYWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NDcxOTMsImV4cCI6MjA2NDAyMzE5M30.0Ng21Ywqrm6eDqbclFyeOhARpJCyWvX7b-0dJLE1QwM";
+                
+                // Verificar se o Supabase está disponível
+                if (typeof supabase === 'undefined') {
+                    throw new Error('Biblioteca Supabase não carregada');
+                }
+                
+                const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                
+                // Buscar dados do Supabase
+                const { data, error } = await supabaseClient
+                    .from('painel_implantacoes')
+                    .select('*')
+                    .eq('especialista', 'Renata Braga')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    throw error;
+                }
+
+                // Limpar tabela
+                tbody.innerHTML = '';
+                
+                // Aplicar rolamento apenas se houver mais de 10 implantações
+                const container = document.querySelector('.implantacoes-container');
+                if (data && data.length > 10) {
+                    container.classList.add('with-scroll');
+                } else {
+                    container.classList.remove('with-scroll');
+                }
+                
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 40px; color: #666;">
+                                <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 10px; display: block;"></i>
+                                Nenhuma implantação encontrada para Renata Braga
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    // Preencher tabela com dados
+                    data.forEach(implantacao => {
+                        const row = document.createElement('tr');
+                        
+                        const progressoValue = implantacao.progresso || 0;
+                        const statusClass = getStatusClass(implantacao.status);
+                        
+                        row.innerHTML = `
+                            <td>
+                                <span class="company-tag tag-viacao">${implantacao.empresa}</span>
+                            </td>
+                            <td>${implantacao.projeto}</td>
+                            <td>
+                                <span class="sistema-info">${implantacao.sistema}</span>
+                            </td>
+                            <td>
+                                <div style="min-width: 60px;">
+                                    <div style="font-size: 12px; font-weight: bold; margin-bottom: 3px;">${progressoValue}%</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: ${progressoValue}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>${formatDate(implantacao.created_at)}</td>
+                            <td>${formatDate(implantacao.updated_at)}</td>
+                            <td>
+                                <span class="status-badge ${statusClass}">
+                                    ${implantacao.status || 'Pendente'}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="gestor-info">${implantacao.gestor}</div>
+                            </td>
+                        `;
+                        
+                        tbody.appendChild(row);
+                    });
+                    
+                    showNotification(`${data.length} implantações carregadas com sucesso!`, 'success');
+                }
+                
+            } catch (error) {
+                console.error('Erro ao carregar implantações:', error);
+                errorMessage.textContent = `Erro ao carregar implantações: ${error.message}`;
+                errorMessage.style.display = 'block';
+                showNotification('Erro ao carregar implantações', 'error');
+            } finally {
+                loadingMessage.style.display = 'none';
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar';
+            }
+        }
+        
+        // Inicializar o mapa
+        function initMap() {
+            map = L.map("map").setView([-14.2350, -51.9253], 4);
+            
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: "© OpenStreetMap contributors"
+            }).addTo(map);
+            
+            // Adicionar evento de clique no mapa
+            map.on("click", function(e) {
+                if (isFormVisible) {
+                    const lat = e.latlng.lat;
+                    const lng = e.latlng.lng;
+                    
+                    // Solicitar informações do cliente
+                    const clientName = prompt("Nome do Cliente:");
+                    if (clientName) {
+                        const location = prompt("Local/Estado:");
+                        if (location) {
+                            addClientToList(clientName, location, lat, lng);
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Função para alternar visibilidade do formulário
+        function toggleFormVisibility() {
+            const clientsList = document.getElementById("clientsList");
+            const toggleButton = document.getElementById("toggleButtonText");
+            
+            if (isFormVisible) {
+                clientsList.classList.add("hidden");
+                toggleButton.textContent = "Mostrar Formulário";
+                isFormVisible = false;
+            } else {
+                clientsList.classList.remove("hidden");
+                toggleButton.textContent = "Ocultar Formulário";
+                isFormVisible = true;
+            }
+        }
+        
+        // Função para adicionar cliente à lista
+        function addClientToList(name, location, lat, lng) {
+            const clientsList = document.getElementById("clientsList");
+            const clientDiv = document.createElement("div");
+            clientDiv.className = "client-item";
+            clientDiv.dataset.lat = lat;
+            clientDiv.dataset.lng = lng;
+            clientDiv.innerHTML = `
+                <input type="text" value="${name}" onchange="updateClientCount()">
+                <input type="text" value="${location}" onchange="updateClientCount()">
+                <button class="remove-client" onclick="removeClient(this)">×</button>
+            `;
+            clientsList.appendChild(clientDiv);
+            updateClientCount();
+        }
+        
+        function changePhoto() {
+            document.getElementById("photoInput").click();
+        }
+        
+        document.getElementById("photoInput").addEventListener("change", function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const placeholder = document.querySelector(".profile-photo-placeholder");
+                    placeholder.innerHTML = `<img src="${e.target.result}" alt="Foto do perfil">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        function addProject() {
+            const table = document.getElementById("projectsTable").getElementsByTagName("tbody")[0];
+            const newRow = table.insertRow();
+            newRow.innerHTML = `
+                <td><span class="company-tag tag-gasparzinho" contenteditable="true">Nova Empresa</span></td>
+                <td contenteditable="true">Novo Projeto</td>
+                <td contenteditable="true">Sistema</td>
+                <td contenteditable="true">0%</td>
+                <td contenteditable="true">Data Início</td>
+                <td contenteditable="true">Data Fim</td>
+                <td contenteditable="true">Status</td>
+                <td contenteditable="true">Gestor</td>
+                <td><button class="remove-button" onclick="removeRow(this)">×</button></td>
+            `;
+        }
+        
+        function removeRow(button) {
+            button.closest("tr").remove();
+        }
+        
+        function addAcompanhamento() {
+            const ul = document.getElementById("acompanhamentos");
+            const li = document.createElement("li");
+            li.contentEditable = true;
+            li.textContent = "Novo Acompanhamento";
+            ul.appendChild(li);
+        }
+        
+        function addMVP() {
+            const ul = document.getElementById("mvp");
+            const li = document.createElement("li");
+            li.contentEditable = true;
+            li.textContent = "Novo MVP";
+            ul.appendChild(li);
+        }
+        
+        function editStat(statId) {
+            const element = document.getElementById(statId);
+            const currentValue = element.textContent;
+            const newValue = prompt(`Digite o novo valor para ${statId}:`, currentValue);
+            
+            if (newValue !== null && newValue !== "") {
+                element.textContent = newValue;
+                
+                // Adicionar animação
+                element.style.transform = "scale(1.2)";
+                element.style.color = "#28a745";
+                setTimeout(() => {
+                    element.style.transform = "scale(1)";
+                    element.style.color = statId === "performance" ? "white" : "#333";
+                }, 300);
+                
+                // CORREÇÃO: Salvar automaticamente após editar
+                salvarModificacoes();
+            }
+        }
+        
+        function addClient() {
+            const clientsList = document.getElementById("clientsList");
+            const clientDiv = document.createElement("div");
+            clientDiv.className = "client-item";
+            clientDiv.innerHTML = `
+                <input type="text" placeholder="Nome do Cliente">
+                <input type="text" placeholder="Local/Estado">
+                <button class="remove-client" onclick="removeClient(this)">×</button>
+            `;
+            clientsList.appendChild(clientDiv);
+            updateClientCount();
+        }
+        
+        function removeClient(button) {
+            button.parentElement.remove();
+            updateClientCount();
+        }
+        
+        function updateClientCount() {
+            const clientItems = document.querySelectorAll(".client-item");
+            document.getElementById("empresasCount").textContent = clientItems.length;
+        }
+        
+        // Função para adicionar marcador de visita no mapa
+        function addVisitMarker(lat, lng, name, location) {
+            const marker = L.marker([lat, lng]).addTo(map);
+            marker.bindPopup(`<b>${name}</b><br>${location}`);
+            visitMarkers.push(marker);
+        }
+        
+        // Função para obter coordenadas aproximadas
+        function getApproximateCoordinates(location) {
+            const coordinates = {
+                "acre": { lat: -8.77, lng: -70.55 },
+                "alagoas": { lat: -9.71, lng: -35.73 },
+                "amapá": { lat: 1.41, lng: -51.77 },
+                "amazonas": { lat: -3.07, lng: -61.66 },
+                "bahia": { lat: -12.96, lng: -38.51 },
+                "ceará": { lat: -3.71, lng: -38.54 },
+                "distrito federal": { lat: -15.83, lng: -47.86 },
+                "espírito santo": { lat: -19.19, lng: -40.34 },
+                "goiás": { lat: -16.64, lng: -49.31 },
+                "maranhão": { lat: -2.55, lng: -44.30 },
+                "mato grosso": { lat: -12.64, lng: -55.42 },
+                "mato grosso do sul": { lat: -20.51, lng: -54.54 },
+                "minas gerais": { lat: -18.10, lng: -44.38 },
+                "pará": { lat: -5.53, lng: -52.29 },
+                "paraíba": { lat: -7.06, lng: -35.55 },
+                "paraná": { lat: -24.89, lng: -51.55 },
+                "pernambuco": { lat: -8.28, lng: -35.07 },
+                "piauí": { lat: -8.28, lng: -43.68 },
+                "rio de janeiro": { lat: -22.84, lng: -43.15 },
+                "rio grande do norte": { lat: -5.22, lng: -36.52 },
+                "rio grande do sul": { lat: -30.01, lng: -51.22 },
+                "rondônia": { lat: -11.22, lng: -62.80 },
+                "roraima": { lat: 1.89, lng: -61.22 },
+                "santa catarina": { lat: -27.33, lng: -49.44 },
+                "são paulo": { lat: -23.55, lng: -46.64 },
+                "sergipe": { lat: -10.90, lng: -37.07 },
+                "tocantins": { lat: -10.25, lng: -48.25 }
+            };
+            
+            const locationLower = location.toLowerCase();
+            for (const [state, coords] of Object.entries(coordinates)) {
+                if (locationLower.includes(state)) {
+                    return coords;
+                }
+            }
+            
+            // Coordenadas padrão (centro do Brasil)
+            return { lat: -14.2350, lng: -51.9253 };
+        }
+        
+        // Função para salvar visitas (mantida do código original)
+        async function salvarVisitas() {
+            try {
+                const clientItems = document.querySelectorAll(".client-item");
+                const clientsData = [];
+                
+                clientItems.forEach(item => {
+                    const inputs = item.querySelectorAll("input");
+                    const name = inputs[0]?.value?.trim();
+                    const location = inputs[1]?.value?.trim();
+                    const lat = parseFloat(item.dataset.lat) || -14.2350;
+                    const lng = parseFloat(item.dataset.lng) || -51.9253;
+                    
+                    if (name && location) {
+                        clientsData.push({ name, location, lat, lng });
+                    }
+                });
+                
+                if (clientsData.length === 0) {
+                    showNotification("Nenhuma visita para salvar. Adicione clientes primeiro.", "warning");
+                    return;
+                }
+                
+                // Salvar dados no localStorage como backup
+                localStorage.setItem('visitasClientes', JSON.stringify(clientsData));
+                
+                showNotification(`${clientsData.length} visitas salvas localmente!`, "success");
+                
+            } catch (error) {
+                console.error("Erro ao salvar visitas:", error);
+                showNotification("Erro ao salvar visitas.", "error");
+            }
+        }
+        
+        // Função para carregar visitas da Renata Braga do Supabase
+        async function carregarVisitasRenata() {
+            const refreshBtn = document.getElementById('refresh-visitas-btn');
+            
+            try {
+                // Mostrar loading no botão
+                if (refreshBtn) {
+                    refreshBtn.disabled = true;
+                    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Carregando...';
+                }
+                
+                // Configuração do Supabase para viagens
+                const SUPABASE_VIAGENS_URL = "https://obwgegvrtxrlombmkaej.supabase.co";
+                const SUPABASE_VIAGENS_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9id2dlZ3ZydHhybG9tYm1rYWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NDcxOTMsImV4cCI6MjA2NDAyMzE5M30.0Ng21Ywqrm6eDqbclFyeOhARpJCyWvX7b-0dJLE1QwM";
+                
+                // Verificar se o Supabase está disponível
+                if (typeof supabase === 'undefined') {
+                    throw new Error('Biblioteca Supabase não carregada');
+                }
+                
+                const supabaseViagensClient = supabase.createClient(SUPABASE_VIAGENS_URL, SUPABASE_VIAGENS_KEY);
+                
+                // Buscar visitas da Renata Braga
+                const { data, error } = await supabaseViagensClient
+                    .from('mapa_viagens')
+                    .select('*')
+                    .eq('especialista', 'Renata Braga')
+                    .order('data_inicio', { ascending: false });
+
+                if (error) {
+                    throw error;
+                }
+
+                // Limpar marcadores existentes
+                visitMarkers.forEach(marker => {
+                    map.removeLayer(marker);
+                });
+                visitMarkers = [];
+
+                // Limpar lista de clientes
+                const clientsList = document.getElementById("clientsList");
+                const clientItems = clientsList.querySelectorAll(".client-item");
+                clientItems.forEach(item => item.remove());
+
+                if (data && data.length > 0) {
+                    // Adicionar visitas do Supabase
+                    data.forEach(visita => {
+                        const empresa = visita.empresa || visita.destino || 'Empresa não informada';
+                        const destino = visita.destino || 'Destino não informado';
+                        const proposito = visita.proposito || '';
+                        const status = visita.status || 'Pendente';
+                        const setor = visita.setor || '';
+                        
+                        // Criar descrição completa
+                        let descricao = destino;
+                        if (proposito) descricao += ` - ${proposito}`;
+                        if (setor) descricao += ` (${setor})`;
+                        if (status) descricao += ` [${status}]`;
+                        
+                        // Adicionar à lista de clientes
+                        addClientToList(empresa, descricao, visita.latitude, visita.longitude);
+                        
+                        // Adicionar marcador no mapa com cor baseada no status
+                        const marker = L.marker([visita.latitude, visita.longitude]).addTo(map);
+                        
+                        // Popup com informações detalhadas
+                        const popupContent = `
+                            <div style="font-size: 12px;">
+                                <b>${empresa}</b><br>
+                                <strong>Destino:</strong> ${destino}<br>
+                                ${proposito ? `<strong>Propósito:</strong> ${proposito}<br>` : ''}
+                                ${setor ? `<strong>Setor:</strong> ${setor}<br>` : ''}
+                                <strong>Status:</strong> <span style="color: ${getStatusColor(status)}">${status}</span><br>
+                                ${visita.data_inicio ? `<strong>Data Início:</strong> ${formatDate(visita.data_inicio)}<br>` : ''}
+                                ${visita.data_fim ? `<strong>Data Fim:</strong> ${formatDate(visita.data_fim)}` : ''}
+                            </div>
+                        `;
+                        
+                        marker.bindPopup(popupContent);
+                        visitMarkers.push(marker);
+                    });
+                    
+                    showNotification(`${data.length} visitas da Renata Braga carregadas!`, "success");
+                } else {
+                    showNotification("Nenhuma visita encontrada para Renata Braga", "warning");
+                }
+
+                updateClientCount();
+                
+            } catch (error) {
+                console.error("Erro ao carregar visitas da Renata Braga:", error);
+                showNotification(`Erro ao carregar visitas: ${error.message}`, "error");
+                
+                // Fallback para localStorage se houver erro
+                carregarVisitasSalvas();
+            } finally {
+                // Restaurar botão
+                if (refreshBtn) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar';
+                }
+            }
+        }
+        
+        // Função para obter cor baseada no status
+        function getStatusColor(status) {
+            if (!status) return '#666';
+            
+            const statusLower = status.toLowerCase();
+            if (statusLower.includes('concluído') || statusLower.includes('concluido') || statusLower.includes('finalizado')) {
+                return '#28a745'; // Verde
+            } else if (statusLower.includes('andamento') || statusLower.includes('em andamento')) {
+                return '#007bff'; // Azul
+            } else if (statusLower.includes('pendente')) {
+                return '#ffc107'; // Amarelo
+            } else if (statusLower.includes('cancelado') || statusLower.includes('pausado')) {
+                return '#dc3545'; // Vermelho
+            }
+            return '#6c757d'; // Cinza padrão
+        }
+
+        // Função para carregar visitas salvas do localStorage
+        function carregarVisitasSalvas() {
+            try {
+                const visitasSalvas = localStorage.getItem('visitasClientes');
+                if (visitasSalvas) {
+                    const visitas = JSON.parse(visitasSalvas);
+                    
+                    // Limpar marcadores existentes
+                    visitMarkers.forEach(marker => {
+                        map.removeLayer(marker);
+                    });
+                    visitMarkers = [];
+
+                    // Limpar lista de clientes
+                    const clientsList = document.getElementById("clientsList");
+                    const clientItems = clientsList.querySelectorAll(".client-item");
+                    clientItems.forEach(item => item.remove());
+
+                    // Recriar clientes e marcadores
+                    if (visitas && visitas.length > 0) {
+                        visitas.forEach(client => {
+                            addClientToList(client.name, client.location, client.lat, client.lng);
+                            addVisitMarker(client.lat, client.lng, client.name, client.location);
+                        });
+                        showNotification(`${visitas.length} visitas carregadas!`, "success");
+                    }
+
+                    updateClientCount();
+                }
+            } catch (error) {
+                console.error("Erro ao carregar visitas:", error);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            initMap();
+            // Aguardar um pouco para o mapa carregar antes de carregar as visitas
+            setTimeout(() => {
+                carregarVisitasRenata(); // Carregar visitas da Renata Braga do Supabase
+            }, 1000);
+        });
+    </script>
+
+    <button id="salvarBtn" onclick="salvarModificacoes()">Salvar Modificações</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = "https://mzjdmhgkrroajmsfwryu.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMzMwMzUsImV4cCI6MjA2MzgwOTAzNX0.tQCwUfFCV7sD-IexQviU0XEPcbn9j5uK9NSUbH-OeBc";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        window.onload = async function () {
+            try {
+                const { data, error } = await supabaseClient
+                    .from("infor_funcionario")
+                    .select("*")
+                    .eq("id", 2)
+                    .single();
+
+                if (error) {
+                    console.error("Erro ao carregar dados do funcionário:", error);
+                    showNotification("Erro ao carregar dados do funcionário.", "error");
+                    return;
+                }
+
+                if (data) {
+                    document.querySelector(".name-section h1").innerText = data.nome || "";
+                    document.querySelector(".name-section p").innerText = data.funcao || "";
+                    document.getElementById("treinamentos").innerText = data.treinamentos || 0;
+                    document.getElementById("reunioes").innerText = data.reunioes || 0;
+                    document.getElementById("homologacoes").innerText = data.homologacoes || 0;
+                    document.getElementById("projetos").innerText = data.projetos || 0;
+                    document.getElementById("performance").innerText = data.performance || "0%";
+                    document.getElementById("mesAno").value = data.mes_ano || "2025-05";
+                    
+                    // Acompanhamentos
+                    const ulAcomp = document.getElementById("acompanhamentos");
+                    ulAcomp.innerHTML = "";
+                    if (data.acompanhamentos && Array.isArray(data.acompanhamentos)) {
+                        data.acompanhamentos.forEach(item => {
+                            const li = document.createElement("li");
+                            li.contentEditable = true;
+                            li.textContent = item;
+                            ulAcomp.appendChild(li);
+                        });
+                    }
+
+                    // MVP
+                    const ulMvp = document.getElementById("mvp");
+                    ulMvp.innerHTML = "";
+                    if (data.mvp && Array.isArray(data.mvp)) {
+                        data.mvp.forEach(item => {
+                            const li = document.createElement("li");
+                            li.contentEditable = true;
+                            li.textContent = item;
+                            ulMvp.appendChild(li);
+                        });
+                    }
+                    
+                    // Foto
+                    if (data.foto_url) {
+                        const placeholder = document.querySelector(".profile-photo-placeholder");
+                        placeholder.innerHTML = `<img src="${data.foto_url}" alt="Foto do perfil">`;
+                    }
+                }
+                
+                // Carregar implantações da Renata Braga após carregar dados do funcionário
+                carregarImplantacoes();
+                
+                // Carregar MVPs da Renata Braga
+                carregarMVPs();
+                
+                // Carregar acompanhamentos da Renata Braga
+                carregarAcompanhamentos();
+                
+            } catch (error) {
+                console.error("Erro inesperado:", error);
+                showNotification("Erro inesperado ao carregar dados.", "error");
+            }
+        };
+
+        async function salvarModificacoes() {
+            try {
+                const nome = document.querySelector(".name-section h1").innerText;
+                const cargo = document.querySelector(".name-section p").innerText;
+                const treinamentos = parseInt(document.getElementById("treinamentos").innerText);
+                const reunioes = parseInt(document.getElementById("reunioes").innerText);
+                const homologacoes = parseInt(document.getElementById("homologacoes").innerText);
+                const performance = document.getElementById("performance").innerText;
+                const mesAno = document.getElementById("mesAno").value;
+
+                // Coletar acompanhamentos
+                const acompanhamentos = [];
+                const acompItems = document.querySelectorAll("#acompanhamentos li");
+                acompItems.forEach(item => {
+                    if (item.innerText.trim()) {
+                        acompanhamentos.push(item.innerText.trim());
+                    }
+                });
+
+                // Coletar MVP
+                const mvp = [];
+                const mvpItems = document.querySelectorAll("#mvp li");
+                mvpItems.forEach(item => {
+                    if (item.innerText.trim()) {
+                        mvp.push(item.innerText.trim());
+                    }
+                });
+
+                const { data, error } = await supabaseClient.from("infor_funcionario").upsert([{
+                    id: 2,
+                    nome: nome,
+                    funcao: cargo,
+                    treinamentos: treinamentos,
+                    reunioes: reunioes,
+                    homologacoes: homologacoes,
+                    projetos: parseInt(document.getElementById("projetos").innerText), // CORREÇÃO: Ler valor do DOM
+                    performance: performance,
+                    mes_ano: mesAno,
+                    acompanhamentos: acompanhamentos,
+                    mvp: mvp
+                }]);
+
+                if (error) {
+                    showNotification("Erro ao salvar: " + error.message, "error");
+                } else {
+                    showNotification("Dados salvos com sucesso!", "success");
+                }
+            } catch (error) {
+                console.error("Erro inesperado:", error);
+                showNotification("Erro inesperado ao salvar dados.", "error");
+            }
+        }
+    </script>
+</body>
+</html>

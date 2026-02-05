@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <link rel="icon" type="image/png" href="tryvia.png" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Projetos - Implantação</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Script de controle de acesso -->
+    <script>
+        (function () {
+            // Verificar se o usuário veio da página Portal.html
+            const referrerPermitido = 'Portal.html';
+            const paginaLogin = 'login/index.html';
+
+            // Obter o referrer atual
+            const referrerAtual = document.referrer;
+
+            // Verificar se o referrer está vazio (acesso direto) ou não é o permitido
+            if (!referrerAtual || !referrerAtual.includes(referrerPermitido)) {
+                // Verificar se não estamos já na página de login para evitar loop infinito
+                if (window.location.href !== paginaLogin) {
+                    // Redirecionar para a página de login
+                    window.location.replace(paginaLogin);
+                }
+            }
+        })();
+    </script>
+</head>
+
+<body>
+    <!-- Tela Principal: Painel de Projetos -->
+    <div id="painel-projetos" class="container">
+        <header class="header">
+            <h1>Painel de Projetos - Implantação</h1>
+            <div class="logo">
+                <span class="logo-text">TRYVIA</span>
+                <span class="logo-subtitle">SUA FROTA MAIS INTELIGENTE</span>
+            </div>
+        </header>
+
+        <div class="controls">
+            <button id="btn-voltar-portal" class="btn-voltar-portal">Voltar para o portal</button>
+            <button id="btn-adicionar" class="btn-adicionar">+ Adicionar Nova Implantação</button>
+            <input type="text" id="filtro-busca" placeholder="Buscar por empresa, projeto ou sistema..."
+                class="filtro-busca">
+
+            <!-- Novo filtro por ano -->
+            <div class="filtro-ano-container">
+                <label for="filtro-ano">Ano:</label>
+                <select id="filtro-ano" class="filtro-ano">
+                    <!-- Opções serão adicionadas dinamicamente -->
+                </select>
+            </div>
+        </div>
+
+        <div class="tabela-container">
+            <table class="tabela-projetos">
+                <thead>
+                    <tr>
+                        <th>Empresa</th>
+                        <th>Projetos</th>
+                        <th>Sistema</th>
+                        <th>%</th>
+                        <th colspan="12" class="linha-tempo-header">Linha do Tempo - <span
+                                id="ano-selecionado">2024</span></th>
+                    </tr>
+                    <tr class="meses-header">
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th>Janeiro</th>
+                        <th>Fevereiro</th>
+                        <th>Março</th>
+                        <th>Abril</th>
+                        <th>Maio</th>
+                        <th>Junho</th>
+                        <th>Julho</th>
+                        <th>Agosto</th>
+                        <th>Setembro</th>
+                        <th>Outubro</th>
+                        <th>Novembro</th>
+                        <th>Dezembro</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-body">
+                    <!-- Dados serão inseridos dinamicamente via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="legenda">
+            <h3>Legenda</h3>
+            <div class="legenda-items">
+                <div class="legenda-item">
+                    <span class="cor-pendente"></span>
+                    <span>Aguardando</span>
+                </div>
+                <div class="legenda-item">
+                    <span class="cor-andamento"></span>
+                    <span>Em andamento</span>
+                </div>
+                <div class="legenda-item">
+                    <span class="cor-atrasado"></span>
+                    <span>Atrasado</span>
+                </div>
+                <div class="legenda-item">
+                    <span class="cor-concluido-prazo"></span>
+                    <span>Concluído dentro do prazo</span>
+                </div>
+                <div class="legenda-item">
+                    <span class="cor-concluido-fora"></span>
+                    <span>Concluído fora do prazo</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tela de Status de Implantação -->
+    <div id="status-implantacao" class="container hidden">
+        <header class="header">
+            <div class="header-content">
+                <button id="btn-voltar" class="btn-voltar">← Voltar</button>
+                <h1>Status de Implantação</h1>
+                <div class="header-actions">
+                    <button id="btn-editar-timeline" class="btn-action btn-editar">✏️ Editar Timeline</button>
+                    <button id="btn-excluir-implantacao" class="btn-action btn-excluir">🗑️ Excluir</button>
+                </div>
+            </div>
+            <div class="logo">
+                <span class="logo-text">TRYVIA</span>
+                <span class="logo-subtitle">SUA FROTA MAIS INTELIGENTE</span>
+            </div>
+        </header>
+
+        <div class="status-info">
+            <div class="empresa-info">
+                <div class="empresa-logo-container">
+                    <div class="empresa-logo" id="empresa-logo">
+                        <img id="logo-img" src="" alt="Logo" style="display: none;">
+                        <span id="logo-text">EMP</span>
+                    </div>
+                </div>
+                <div class="empresa-detalhes">
+                    <table class="info-table">
+                        <tr>
+                            <th>Empresa</th>
+                            <th>Sistema</th>
+                            <th>Gestor</th>
+                            <th>Especialista Responsável</th>
+                        </tr>
+                        <tr id="empresa-dados">
+                            <!-- Dados serão inseridos dinamicamente -->
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="progresso-container">
+                <h3>Avanço do Projeto</h3>
+                <div class="barra-progresso">
+                    <div class="progresso-fill" id="progresso-fill"></div>
+                </div>
+                <span class="progresso-texto" id="progresso-texto">0%</span>
+            </div>
+        </div>
+
+        <div class="linha-tempo-detalhada">
+            <h3 class="linha-tempo-titulo">Linha do Tempo</h3>
+            <div class="timeline-container">
+                <table class="timeline-table">
+                    <thead>
+                        <tr>
+                            <th>FASES</th>
+                            <th>Previsto</th>
+                            <th>Realizado</th>
+                        <tr id="meses-header">
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                        <tr id="dias-header">
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <!-- Dias serão inseridos dinamicamente -->
+                        </tr>
+                    </thead>
+                    <tbody id="timeline-body">
+                        <!-- Fases serão inseridas dinamicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="resumo-status">
+            <div class="resumo-operacional">
+                <h3>Resumo Operacional</h3>
+                <div id="resumo-conteudo">
+                    <div id="observacao-texto">Nenhuma observação cadastrada.</div>
+                    <button id="btn-editar-observacao" type="button">Editar Observação</button>
+                    <div id="observacao-edicao" style="display:none; margin-top:10px;">
+                        <textarea id="observacao-input" rows="3" style="width:100%;"></textarea>
+                        <button id="btn-salvar-observacao" type="button">Salvar</button>
+                        <button id="btn-cancelar-observacao" type="button">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+            <div class="status-final">
+                <h3>Status</h3>
+                <div class="status-badge" id="status-badge">
+                    <!-- Status será inserido dinamicamente -->
+                </div>
+            </div>
+        </div>
+
+        <div class="legenda">
+            <h3>Legenda</h3>
+            <div class="legenda-items">
+                <div class="legenda-item">
+                    <span class="cor-atrasado"></span>
+                    <span>Atrasado</span>
+                </div>
+                <div class="legenda-item">
+                    <span class="cor-concluido-prazo"></span>
+                    <span>Concluído dentro do prazo</span>
+                </div>
+                <div class="legenda-item">
+                    <span class="cor-concluido-fora"></span>
+                    <span>Concluído fora do prazo</span>
+                </div>
+                <div class="legenda-item">
+                    <span class="cor-reuniao"></span>
+                    <span>Reunião de alinhamento</span>
+                </div>
+                <div class="legenda-item">
+                    <span class="cor-final-semana"></span>
+                    <span>Aguardando</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Adicionar Nova Implantação -->
+    <div id="modal-adicionar" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Adicionar Nova Implantação</h2>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <form id="form-adicionar">
+                <div class="form-group">
+                    <label for="nova-empresa">Empresa:</label>
+                    <input type="text" id="nova-empresa" required>
+                </div>
+                <div class="form-group">
+                    <label for="novo-projeto">Projeto:</label>
+                    <input type="text" id="novo-projeto" required>
+                </div>
+                <div class="form-group">
+                    <label for="novo-sistema">Sistema:</label>
+                    <select id="novo-sistema" required>
+                        <option value="">Selecione um sistema</option>
+                        <option value="OPTZ">OPTZ</option>
+                        <option value="E-Clock">E-Clock</option>
+                        <option value="Telemetria">Telemetria</option>
+                        <option value="SING / Etrip">SING / Etrip</option>
+                        <option value="E-check">E-check</option>
+                        <option value="Sing Rastreamento">Sing Rastreamento</option>
+                        <option value="Videotelemetria">Videotelemetria</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="novo-gestor">Gestor:</label>
+                    <input type="text" id="novo-gestor" required>
+                </div>
+                <div class="form-group">
+                    <label for="especialista">Especialista Responsável:</label>
+                    <input type="text" id="especialista" name="especialista" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="logo-cliente">Logo do Cliente:</label>
+                    <input type="file" id="logo-cliente" name="logo-cliente" accept="image/*">
+                    <small>Formatos aceitos: JPG, PNG, GIF (máx. 2MB)</small>
+                </div>
+
+                <div class="form-buttons">
+                    <button type="button" class="btn-cancelar" id="btn-cancelar">Cancelar</button>
+                    <button type="submit" class="btn-salvar">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Timeline -->
+    <div id="modal-editar-timeline" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Editar Timeline - <span id="modal-empresa-nome"></span></h2>
+                <button class="modal-close" id="modal-editar-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="timeline-editor">
+                    <div class="editor-controls">
+                        <button id="btn-adicionar-fase" class="btn-adicionar-fase">+ Adicionar Fase</button>
+                        <button id="btn-salvar-timeline" class="btn-salvar-timeline">💾 Salvar Alterações</button>
+                    </div>
+                    <div id="fases-editor" class="fases-editor">
+                        <!-- Fases serão inseridas dinamicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Confirmar Exclusão -->
+    <div id="modal-confirmar-exclusao" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header modal-header-danger">
+                <h2>⚠️ Confirmar Exclusão</h2>
+                <button class="modal-close" id="modal-exclusao-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir a implantação <strong id="exclusao-empresa-nome"></strong>?</p>
+                <p class="warning-text">Esta ação não pode ser desfeita!</p>
+                <div class="form-buttons">
+                    <button type="button" class="btn-cancelar" id="btn-cancelar-exclusao">Cancelar</button>
+                    <button type="button" class="btn-excluir-confirmar" id="btn-confirmar-exclusao">Excluir
+                        Definitivamente</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase Client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <!-- Configuração do Supabase -->
+    <script src="supabase-config.js"></script>
+
+    <!-- Script principal -->
+    <script src="script_modificado.js"></script>
+</body>
+
+</html>

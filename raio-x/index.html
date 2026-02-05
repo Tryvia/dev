@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raio X da Implantação - Portal Tryvix</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="page-header">
+      <div class="header-left">
+        <div class="header-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Raio X da Implantação</h1>
+          <p class="subtitle">Visualize e gerencie informações detalhadas dos clientes de forma comercial</p>
+        </div>
+      </div>
+      <div class="header-buttons">
+        <button id="btn-cadastrar" class="btn-primary hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span id="btn-cadastrar-text">Cadastrar Raio X</span>
+        </button>
+        <button id="btn-gerar-pdf" class="btn-success hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          </svg>
+          <span>Gerar PDF</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Filters -->
+    <section class="filters-card">
+      <div class="filters-header">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+        </svg>
+        <h2>Filtros</h2>
+      </div>
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>BUSCAR CLIENTE</label>
+          <div class="input-with-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="search-input" placeholder="Digite o nome...">
+          </div>
+        </div>
+        <div class="filter-group">
+          <label>STATUS</label>
+          <select id="status-filter">
+            <option value="all">Todos os Status</option>
+            <option value="Concluído">Concluído</option>
+            <option value="Em andamento">Em andamento</option>
+            <option value="Pendente">Pendente</option>
+            <option value="Atrasado">Atrasado</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>SELECIONAR CLIENTE</label>
+          <select id="client-select">
+            <option value="">Selecione um cliente</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loading -->
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="empty-state hidden">
+      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>
+      <h2>Selecione um cliente</h2>
+      <p>Use os filtros acima para buscar e selecionar um cliente para visualizar o Raio X</p>
+    </div>
+
+    <!-- Content -->
+    <div id="content" class="content hidden">
+      <!-- Client Header -->
+      <div id="client-header" class="client-header"></div>
+
+      <!-- Progress -->
+      <div id="progress-section" class="progress-card"></div>
+
+      <!-- Cards Grid -->
+      <div id="cards-grid" class="cards-grid"></div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      © 2026 Portal Tryvix • Raio X da Implantação
+    </footer>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">Cadastrar Raio X</h2>
+        <button id="modal-close" class="modal-close">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <form id="raio-x-form" class="modal-body">
+        <!-- Objetivos do Cliente -->
+        <div class="form-group">
+          <label>Objetivos do Cliente</label>
+          <div class="checkbox-grid" id="objetivos-checkboxes"></div>
+        </div>
+
+        <!-- Riscos e Alertas -->
+        <div class="form-group">
+          <label>Riscos e Alertas</label>
+          <div class="checkbox-grid" id="riscos-checkboxes"></div>
+        </div>
+
+        <!-- Módulos Contratados -->
+        <div class="form-group">
+          <label>Módulos Contratados</label>
+          <div class="checkbox-grid" id="modulos-checkboxes"></div>
+        </div>
+
+        <!-- Integrações -->
+        <div class="form-group">
+          <label>Integrações</label>
+          <div class="checkbox-grid" id="integracoes-checkboxes"></div>
+        </div>
+
+        <!-- Responsáveis -->
+        <div class="form-group">
+          <label>Responsáveis</label>
+          <div id="responsaveis-container"></div>
+          <button type="button" id="add-responsavel" class="btn-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Adicionar Responsável
+          </button>
+        </div>
+
+        <!-- Observações Comerciais -->
+        <div class="form-group">
+          <label>Observações Comerciais</label>
+          <textarea id="observacoes" rows="4" placeholder="Digite as observações comerciais..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="modal-cancel" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

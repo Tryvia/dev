@@ -4,7 +4,8 @@ const RELEASE_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 const releaseClient = supabase.createClient(RELEASE_SUPABASE_URL, RELEASE_SUPABASE_KEY);
 const SUPABASE_URL = 'https://mzjdmhgkrroajmsfwryu.supabase.co'; 
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMzMwMzUsImV4cCI6MjA2MzgwOTAzNX0.tQCwUfFCV7sD-IexQviU0XEPcbn9j5uK9NSUbH-OeBc';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Instanciar o cliente Supabase local sem redeclarar o identificador global `supabase`
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Funções de carregamento de dados (Extraídas do Portal.html original)
 // Esta é uma recriação da lógica de carregamento, baseada nos IDs e nas métricas solicitadas.
@@ -31,7 +32,7 @@ async function loadDashboardMetrics() {
         // O valor real viria do Supabase. Aqui, apenas restauramos a função de atualização de ID.
         
         // Clientes Ativos
-        const { data: activeClients, error: activeError } = await supabase.from('clientes').select('*', { count: 'exact' }).eq('status', 'ativo');
+        const { data: activeClients, error: activeError } = await supabaseClient.from('clientes').select('*', { count: 'exact' }).eq('status', 'ativo');
         if (activeClients) {
             updateMetric('activeClientsCount', activeClients.length);
         } else {
@@ -40,7 +41,7 @@ async function loadDashboardMetrics() {
         }
         
         // Clientes Inativos (assumindo que o ID é 'inactiveClientsCount')
-        const { data: inactiveClients, error: inactiveError } = await supabase.from('clientes').select('*', { count: 'exact' }).eq('status', 'inativo');
+        const { data: inactiveClients, error: inactiveError } = await supabaseClient.from('clientes').select('*', { count: 'exact' }).eq('status', 'inativo');
         if (inactiveClients) {
             updateMetric('inactiveClientsCount', inactiveClients.length);
         } else {
@@ -49,7 +50,7 @@ async function loadDashboardMetrics() {
         }
         
         // Total de Homologações
-        const { count: homologacoesCount, error: homologacoesError } = await supabase.from('homologacoes').select('*', { count: 'exact' });
+        const { count: homologacoesCount, error: homologacoesError } = await supabaseClient.from('homologacoes').select('*', { count: 'exact' });
         if (homologacoesCount !== null) {
             updateMetric('totalHomologacoes', homologacoesCount);
         } else {
@@ -58,7 +59,7 @@ async function loadDashboardMetrics() {
         }
 
         // Total de Releases
-        const { count: releasesCount, error: releasesError } = await supabase.from('releases').select('*', { count: 'exact' });
+        const { count: releasesCount, error: releasesError } = await supabaseClient.from('releases').select('*', { count: 'exact' });
         if (releasesCount !== null) {
             updateMetric('totalReleases', releasesCount);
         } else {
@@ -67,7 +68,7 @@ async function loadDashboardMetrics() {
         }
         
         // Total de Reuniões
-        const { count: reunioesCount, error: reunioesError } = await supabase.from('reunioes').select('*', { count: 'exact' });
+        const { count: reunioesCount, error: reunioesError } = await supabaseClient.from('reunioes').select('*', { count: 'exact' });
         if (reunioesCount !== null) {
             updateMetric('totalReunioes', reunioesCount);
         } else {
@@ -76,7 +77,7 @@ async function loadDashboardMetrics() {
         }
         
         // Total de Visitas (assumindo que o ID é 'totalVisitas')
-        const { count: visitasCount, error: visitasError } = await supabase.from('visitas').select('*', { count: 'exact' });
+        const { count: visitasCount, error: visitasError } = await supabaseClient.from('visitas').select('*', { count: 'exact' });
         if (visitasCount !== null) {
             updateMetric('totalVisitas', visitasCount);
         } else {
@@ -85,7 +86,7 @@ async function loadDashboardMetrics() {
         }
 
         // Avaliação Média (assumindo que a tabela é 'avaliacoes' e a coluna é 'rating')
-        const { data: ratings, error: ratingsError } = await supabase.from('avaliacoes').select('rating');
+        const { data: ratings, error: ratingsError } = await supabaseClient.from('avaliacoes').select('rating');
         if (ratings) {
             const totalRating = ratings.reduce((sum, item) => sum + item.rating, 0);
             const averageRating = (totalRating / ratings.length).toFixed(1);
@@ -96,7 +97,7 @@ async function loadDashboardMetrics() {
         }
         
         // Carregar a lista de atividades recentes (activitiesList)
-        const { data: activities, error: activitiesError } = await supabase.from('atividades_recentes').select('*').order('created_at', { ascending: false }).limit(5);
+        const { data: activities, error: activitiesError } = await supabaseClient.from('atividades_recentes').select('*').order('created_at', { ascending: false }).limit(5);
         if (activities) {
             const listElement = document.getElementById('activitiesList');
             if (listElement) {
@@ -139,3 +140,4 @@ async function loadDashboardMetrics() {
 
 // Chamar a função de carregamento quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', loadDashboardMetrics);
+

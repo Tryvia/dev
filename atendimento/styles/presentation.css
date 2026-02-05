@@ -1,0 +1,137 @@
+/* ========================================
+   PRESENTATION MODE STYLES
+   ======================================== */
+
+.slide-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: #27272a;
+  border-radius: 12px;
+  cursor: move;
+  transition: all 0.2s;
+  border: 1px solid #3f3f46;
+  min-height: 80px;
+}
+
+.slide-item:hover {
+  background: #3f3f46;
+  border-color: #52525b;
+  transform: translateX(4px);
+}
+
+.slide-item.dragging {
+  opacity: 0.5;
+}
+
+.slide-item.drag-over {
+  border-top: 2px solid var(--accent-purple);
+}
+
+.slide-checkbox {
+  width: 20px;
+  height: 20px;
+  margin-right: 1rem;
+  cursor: pointer;
+  accent-color: var(--accent-purple);
+}
+
+.slide-preview {
+  width: 120px;
+  height: 60px;
+  margin-right: 1rem;
+  border-radius: 6px;
+  background: #18181b;
+  border: 1px solid #3f3f46;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.slide-preview canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.slide-preview-placeholder {
+  font-size: 24px;
+  opacity: 0.3;
+}
+
+.slide-preview-tooltip {
+  position: absolute;
+  top: -160px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  height: 160px;
+  background: #18181b;
+  border: 2px solid var(--accent-purple);
+  border-radius: 8px;
+  padding: 4px;
+  z-index: 1000;
+  display: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.slide-preview:hover .slide-preview-tooltip {
+  display: block;
+}
+
+.slide-preview-tooltip canvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.slide-title {
+  flex: 1;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.slide-handle {
+  color: var(--text-muted);
+  cursor: move;
+  font-size: 1.2rem;
+  padding: 0 0.5rem;
+  transition: color 0.2s;
+}
+
+.slide-handle:hover {
+  color: var(--text-secondary);
+}
+
+#presentationMode {
+  cursor: none;
+}
+
+#presentationMode.show-cursor {
+  cursor: default;
+}
+
+.presentation-slide {
+  width: 90vw;
+  height: 85vh;
+  background: #18181b;
+  border-radius: 12px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.presentation-slide canvas {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.pres-btn:hover {
+  transform: scale(1.05);
+}
