@@ -276,7 +276,7 @@ function carregarDadosLocais() {
 function configurarEventListeners() {
     // Botão voltar para o portal
     document.getElementById("btn-voltar-portal").addEventListener("click", function () {
-        window.location.href = "https://tryvia.github.io/TryviaBI/Portal.html";
+        window.location.href = "Portal.html";
     });
 
     // Botão adicionar nova implantação
