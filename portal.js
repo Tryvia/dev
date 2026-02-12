@@ -292,10 +292,10 @@ function formatDateTimeForDisplay(dateString) {
         timeZone: 'America/Sao_Paulo'
     });
 }
-// Função para popular responsáveis no formulário de nova reunião
-async function populateReuniaoResponsaveis() {
+// Função para popular responsáveis no formulário de nova reunião (aceita id do select)
+async function populateReuniaoResponsaveis(selectId = 'reuniaoResponsavel') {
     const setorUsuario = sessionStorage.getItem('setor');
-    const select = document.getElementById('reuniaoResponsavel');
+    const select = document.getElementById(selectId);
 
     if (!select) return;
 
@@ -572,10 +572,24 @@ async function carregarEntregas() {
     tableBody.innerHTML = tableRows;
 }
 // Função global para popular o select de clientes na aba reuniões
-function populateReuniaoClientes() {
-    const select = document.getElementById('reuniaoCliente');
+async function populateReuniaoClientes(selectId = 'reuniaoCliente') {
+    const select = document.getElementById(selectId);
     if (!select) return;
     select.innerHTML = '<option value="">Selecione um cliente...</option>';
+    // Se lista de clients não estiver carregada, buscar do Supabase
+    if (!window.clients || !Array.isArray(window.clients)) {
+        try {
+            const { data: clientsData, error } = await releaseClient.from('clients').select('id, name');
+            if (!error && Array.isArray(clientsData)) {
+                window.clients = clientsData;
+            } else {
+                console.warn('populateReuniaoClientes: não foi possível buscar clients do Supabase', error);
+            }
+        } catch (e) {
+            console.error('populateReuniaoClientes: erro ao buscar clients:', e);
+        }
+    }
+
     if (!window.clients || !Array.isArray(window.clients)) return;
     const sortedClients = [...window.clients].sort((a, b) => a.name.localeCompare(b.name));
     sortedClients.forEach(c => {
@@ -4293,13 +4307,44 @@ async function abrirModalEditarReuniao(reuniaoId) {
             return;
         }
 
+
+        // Popular selects antes de preencher valores (usar helpers que aceitam id)
+        await populateReuniaoClientes('editReuniaoCliente');
+        await populateReuniaoResponsaveis('editReuniaoResponsavel');
+
         // Preencher formulário de edição
-        document.getElementById('editReuniaoCliente').value = data.client_id || '';
+        const clienteSelect = document.getElementById('editReuniaoCliente');
+        if (clienteSelect) clienteSelect.value = data.client_id || '';
         document.getElementById('editReuniaoData').value = data.data || '';
         document.getElementById('editReuniaoHorario').value = data.horario || '';
         document.getElementById('editReuniaoTipo').value = data.tipo || '';
-        document.getElementById('editReuniaoResponsavel').value = data.responsavel || '';
+        const respSelect = document.getElementById('editReuniaoResponsavel');
+        if (respSelect) respSelect.value = data.responsavel || '';
         document.getElementById('editReuniaoParticipantes').value = data.participantes || '';
+
+        // Mostrar ata atual (se houver) e permitir exclusão
+        try {
+            const attachmentDiv = document.getElementById('existingReuniaoAttachment');
+            const deleteCheckbox = document.getElementById('deleteReuniaoAttachment');
+            if (attachmentDiv) {
+                if (data.file_url) {
+                    attachmentDiv.innerHTML = `<a href="${data.file_url}" target="_blank">Visualizar ata atual</a>`;
+                    // guardar caminho do arquivo atual para possível exclusão
+                    if (data.file_path) {
+                        document.getElementById('formEditarReuniao').dataset.existingFilePath = data.file_path;
+                    } else {
+                        delete document.getElementById('formEditarReuniao').dataset.existingFilePath;
+                    }
+                    if (deleteCheckbox) deleteCheckbox.checked = false;
+                } else {
+                    attachmentDiv.textContent = 'Nenhuma ata anexada.';
+                    if (deleteCheckbox) deleteCheckbox.checked = false;
+                    delete document.getElementById('formEditarReuniao').dataset.existingFilePath;
+                }
+            }
+        } catch (e) {
+            console.warn('Erro ao exibir ata atual:', e);
+        }
 
         // Armazenar ID da reunião no formulário
         document.getElementById('formEditarReuniao').dataset.reuniaoId = reuniaoId;
@@ -4315,9 +4360,18 @@ async function abrirModalEditarReuniao(reuniaoId) {
 
 // Função para fechar modal de edição de reunião
 function fecharModalEditarReuniao() {
-    document.getElementById('modalEditarReuniao').classList.remove('visible');
-    document.getElementById('formEditarReuniao').reset();
-    delete document.getElementById('formEditarReuniao').dataset.reuniaoId;
+    const modal = document.getElementById('modalEditarReuniao');
+    if (modal) modal.classList.remove('visible');
+    const form = document.getElementById('formEditarReuniao');
+    if (form) {
+        form.reset();
+        delete form.dataset.reuniaoId;
+        delete form.dataset.existingFilePath;
+    }
+    const attachmentDiv = document.getElementById('existingReuniaoAttachment');
+    if (attachmentDiv) attachmentDiv.innerHTML = '';
+    const deleteCheckbox = document.getElementById('deleteReuniaoAttachment');
+    if (deleteCheckbox) deleteCheckbox.checked = false;
 }
 
 // Função para atualizar reunião (chamada pelo formulário de edição)
@@ -4346,6 +4400,8 @@ async function atualizarReuniao() {
     const responsavel = document.getElementById("editReuniaoResponsavel").value;
     const participantes = document.getElementById("editReuniaoParticipantes").value;
     const file = document.getElementById("editReuniaoFile").files[0];
+    const existingFilePath = document.getElementById('formEditarReuniao').dataset.existingFilePath || null;
+    const deleteExisting = document.getElementById('deleteReuniaoAttachment')?.checked;
 
     // Obter o setor do usuário logado
     const setorUsuario = sessionStorage.getItem('setor') || 'Time de implantação';
@@ -4372,6 +4428,26 @@ async function atualizarReuniao() {
 
         updateData.file_url = `${RELEASE_SUPABASE_URL}/storage/v1/object/public/reuniaofiles/${file_path}`;
         updateData.file_path = file_path;
+
+        // depois de subir novo arquivo, remover o antigo se existir
+        if (existingFilePath) {
+            try {
+                await releaseClient.storage.from('reuniaofiles').remove([existingFilePath]);
+            } catch (e) {
+                console.warn('Erro ao remover arquivo antigo:', e);
+            }
+        }
+    } else if (deleteExisting && existingFilePath) {
+        // usuário pediu exclusão do arquivo existente
+        try {
+            await releaseClient.storage.from('reuniaofiles').remove([existingFilePath]);
+            updateData.file_url = null;
+            updateData.file_path = null;
+        } catch (e) {
+            console.warn('Erro ao remover arquivo existente:', e);
+            showAlert('Erro', 'Erro ao excluir ata existente.');
+            return;
+        }
     }
 
     // Obter dados de auditoria
@@ -7509,6 +7585,74 @@ function getCurrentClientId() {
     };
 })();
 
+// Versão unificada e final de abrirModalEditarReuniao para garantir comportamento consistente
+async function abrirModalEditarReuniao_unificado(reuniaoId) {
+    try {
+        const { data: reuniao, error } = await releaseClient.from('reunioes').select('*').eq('id', reuniaoId).single();
+        if (error) {
+            console.error('Erro ao buscar reunião (unificado):', error);
+            showAlert('Erro', 'Erro ao carregar dados da reunião.');
+            return;
+        }
+
+        // Definir variáveis compatíveis com implementações antigas
+        try { reuniaoEditandoId = reuniaoId; } catch (e) { /* ignore */ }
+        const form = document.getElementById('formEditarReuniao');
+        if (form) form.dataset.reuniaoId = reuniaoId;
+
+        // Popular selects
+        await populateReuniaoClientes('editReuniaoCliente');
+        await populateReuniaoResponsaveis('editReuniaoResponsavel');
+
+        // Preencher campos
+        const clienteInput = document.getElementById('editReuniaoCliente');
+        const dataInput = document.getElementById('editReuniaoData');
+        const horarioInput = document.getElementById('editReuniaoHorario');
+        const tipoInput = document.getElementById('editReuniaoTipo');
+        const responsavelInput = document.getElementById('editReuniaoResponsavel');
+        const participantesInput = document.getElementById('editReuniaoParticipantes');
+
+        if (clienteInput) clienteInput.value = reuniao.client_id || '';
+        if (dataInput) dataInput.value = reuniao.data || '';
+        if (horarioInput) horarioInput.value = reuniao.horario || '';
+        if (tipoInput) tipoInput.value = reuniao.tipo || '';
+        if (responsavelInput) responsavelInput.value = reuniao.responsavel || '';
+        if (participantesInput) participantesInput.value = reuniao.participantes || '';
+
+        // Exibir ata atual
+        const attachmentDiv = document.getElementById('existingReuniaoAttachment');
+        const deleteCheckbox = document.getElementById('deleteReuniaoAttachment');
+        if (attachmentDiv) {
+            if (reuniao.file_url) {
+                attachmentDiv.innerHTML = `<a href="${reuniao.file_url}" target="_blank">Visualizar ata atual</a>`;
+                if (reuniao.file_path) {
+                    if (form) form.dataset.existingFilePath = reuniao.file_path;
+                } else if (form) {
+                    delete form.dataset.existingFilePath;
+                }
+                if (deleteCheckbox) deleteCheckbox.checked = false;
+            } else {
+                attachmentDiv.textContent = 'Nenhuma ata anexada.';
+                if (deleteCheckbox) deleteCheckbox.checked = false;
+                if (form) delete form.dataset.existingFilePath;
+            }
+        }
+
+        // Mostrar modal
+        const modal = document.getElementById('modalEditarReuniao');
+        if (modal) {
+            modal.style.display = 'block';
+            modal.classList.add('visible');
+        }
+    } catch (e) {
+        console.error('Erro no abrirModalEditarReuniao_unificado:', e);
+        showAlert('Erro', 'Erro ao abrir modal de edição.');
+    }
+}
+
+// Garante que a chamada global use a versão unificada (sobrescreve duplicatas)
+window.abrirModalEditarReuniao = abrirModalEditarReuniao_unificado;
+
 
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -10320,7 +10464,7 @@ async function abrirModalEditarReuniao(reuniaoId) {
         // Armazenar ID da reunião sendo editada
         reuniaoEditandoId = reuniaoId;
 
-        // Popular os campos do modal
+        // Referências aos campos do modal
         const clienteInput = document.getElementById('editReuniaoCliente');
         const dataInput = document.getElementById('editReuniaoData');
         const horarioInput = document.getElementById('editReuniaoHorario');
@@ -10337,6 +10481,15 @@ async function abrirModalEditarReuniao(reuniaoId) {
             return;
         }
 
+        // Popular selects usando os helpers atualizados (que aceitam id)
+        try {
+            await populateReuniaoClientes('editReuniaoCliente');
+            await populateReuniaoResponsaveis('editReuniaoResponsavel');
+        } catch (e) {
+            console.error('[abrirModalEditarReuniao] Erro ao popular selects:', e);
+        }
+
+        // Preencher valores (definir value depois de popular as options garante seleção correta)
         clienteInput.value = reuniao.client_id || '';
         dataInput.value = reuniao.data || '';
         horarioInput.value = reuniao.horario || '';
@@ -10344,16 +10497,27 @@ async function abrirModalEditarReuniao(reuniaoId) {
         responsavelInput.value = reuniao.responsavel || '';
         participantesInput.value = reuniao.participantes || '';
 
-        // Popular dropdowns
+        // Exibir ata atual caso exista
         try {
-            populateEditReuniaoClientes();
+            const attachmentDiv = document.getElementById('existingReuniaoAttachment');
+            const deleteCheckbox = document.getElementById('deleteReuniaoAttachment');
+            if (attachmentDiv) {
+                if (reuniao.file_url) {
+                    attachmentDiv.innerHTML = `<a href="${reuniao.file_url}" target="_blank">Visualizar ata atual</a>`;
+                    if (reuniao.file_path) {
+                        document.getElementById('formEditarReuniao').dataset.existingFilePath = reuniao.file_path;
+                    } else {
+                        delete document.getElementById('formEditarReuniao').dataset.existingFilePath;
+                    }
+                    if (deleteCheckbox) deleteCheckbox.checked = false;
+                } else {
+                    attachmentDiv.textContent = 'Nenhuma ata anexada.';
+                    if (deleteCheckbox) deleteCheckbox.checked = false;
+                    delete document.getElementById('formEditarReuniao').dataset.existingFilePath;
+                }
+            }
         } catch (e) {
-            console.error('[abrirModalEditarReuniao] Erro em populateEditReuniaoClientes:', e);
-        }
-        try {
-            populateEditReuniaoResponsaveis();
-        } catch (e) {
-            console.error('[abrirModalEditarReuniao] Erro em populateEditReuniaoResponsaveis:', e);
+            console.warn('[abrirModalEditarReuniao] Erro ao exibir ata atual:', e);
         }
 
         // Mostrar modal
