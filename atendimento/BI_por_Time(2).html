@@ -8356,23 +8356,23 @@ window.testSupabase = async function() {
       }
     })();
 
-    /// (function() {
-    ///         // Verificar se o usuário veio da página Portal.html
-    ///        const referrerPermitido = 'https://tryvia.github.io/TryviaBI/Portal.html';
-    ///        const paginaLogin = 'https://tryvia.github.io/TryviaBI/tryvia_bi_login%20(1).html';
+     (function() {
+             // Verificar se o usuário veio da página Portal.html
+            const referrerPermitido = '/Portal.html';  
+            const paginaLogin = '/login/index.html';    
             
-    ///         // Obter o referrer atual
-    ///         const referrerAtual = document.referrer;
+             // Obter o referrer atual
+             const referrerAtual = document.referrer;
             
-    ///         // Verificar se o referrer está vazio (acesso direto) ou não é o permitido
-    ///         if (!referrerAtual || !referrerAtual.includes(referrerPermitido)) {
-    ///             // Verificar se não estamos já na página de login para evitar loop infinito
-    ///             if (window.location.href !== paginaLogin) {
-    ///                 // Redirecionar para a página de login
-    ///                 window.location.replace(paginaLogin);
-    ///             }
-    ///         }
-    ///     })();
+             // Verificar se o referrer está vazio (acesso direto) ou não é o permitido
+             if (!referrerAtual || !referrerAtual.includes(referrerPermitido)) {
+                 // Verificar se não estamos já na página de login para evitar loop infinito
+                 if (window.location.href !== paginaLogin) {
+                     // Redirecionar para a página de login
+                    window.location.replace(paginaLogin);
+                 }
+             }
+         })();
        
   </script>
 </body>

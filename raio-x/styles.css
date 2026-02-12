@@ -152,6 +152,64 @@ body {
   background-color: var(--muted);
 }
 
+.btn-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background-color: hsl(199, 89%, 48%);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-info:hover {
+  opacity: 0.9;
+}
+
+.btn-destructive {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background-color: var(--destructive);
+  color: var(--destructive-foreground);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-destructive:hover {
+  opacity: 0.9;
+}
+
+.csv-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.csv-actions.hidden {
+  display: none;
+}
+
+.csv-upload-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.csv-upload-wrapper.hidden {
+  display: none;
+}
+
 /* Filters */
 .filters-card {
   background-color: var(--card);

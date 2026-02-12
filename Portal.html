@@ -307,25 +307,18 @@
                 <button onclick="showTab('painel-setor')" data-permissao="painel-setor"><i class="fas fa-chart-pie"></i>
                     Painel do Setor</button>
             </li>
-            <li class="nav-item">
-                <button onclick="toggleBIAnalyticsSubmenu()" data-permissao="bi-analytics" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <span><i class="fas fa-chart-bar"></i> Atendimento</span>
-                    <i class="fas fa-chevron-down" id="bi-analytics-toggle" style="transition: transform 0.3s;"></i>
-                </button>
-                <ul class="submenu" id="bi-analytics-submenu" style="display: none; list-style: none; padding-left: 50px; margin: 5px 0;">
-                    <li><button onclick="showBITab('tickets')" style="background: none; border: none; color: #59595c; padding: 8px 0; cursor: pointer; text-align: left; width: 100%;"><i class="fas fa-ticket-alt"></i> Tickets</button></li>
-                    <li><button onclick="showBITab('bi-analytics')" style="background: none; border: none; color: #59595c; padding: 8px 0; cursor: pointer; text-align: left; width: 100%;"><i class="fas fa-chart-line"></i> BI Analytics</button></li>
-                    <li><button onclick="showBITab('presentation')" style="background: none; border: none; color: #59595c; padding: 8px 0; cursor: pointer; text-align: left; width: 100%;"><i class="fas fa-film"></i> Apresentação</button></li>
-                    <li><button onclick="showBITab('insights')" style="background: none; border: none; color: #59595c; padding: 8px 0; cursor: pointer; text-align: left; width: 100%;"><i class="fas fa-lightbulb"></i> Insights</button></li>
-                    <li><button onclick="showBITab('reports')" style="background: none; border: none; color: #59595c; padding: 8px 0; cursor: pointer; text-align: left; width: 100%;"><i class="fas fa-file-pdf"></i> Relatórios</button></li>
-                    <li><button onclick="showBITab('glossary')" style="background: none; border: none; color: #59595c; padding: 8px 0; cursor: pointer; text-align: left; width: 100%;"><i class="fas fa-book"></i> Glossário</button></li>
-                    <li><button onclick="showBITab('annotations')" style="background: none; border: none; color: #59595c; padding: 8px 0; cursor: pointer; text-align: left; width: 100%;"><i class="fas fa-sticky-note"></i> Anotações</button></li>
-                </ul>
+             <li class="nav-item">
+                <button onclick="window.location.href='atendimento/BI_por_Time(2).html'" data-permissao="bi-analytics"><i class="fas fa-chart-bar"></i>
+                    Atendimento</button>
             </li>
             <li class="nav-item">
                 <button onclick="showTab('telemetria')" data-permissao="telemetria"><i class="fas fa-chart-line"></i>
                     Dashboards</button>
             </li>
+            <li class="nav-item">
+                <button onclick="window.location.href='melhorias/index.html'" data-permissao="dashmelhorias"><i class="fas fa-chart-area"></i>
+                    Melhorias</button>
+                </li>
             <li class="nav-item">
                 <button onclick="showTab('clients')" data-permissao="clients"><i class="fas fa-users"></i>
                     Clientes</button>

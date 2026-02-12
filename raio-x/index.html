@@ -37,6 +37,29 @@
           </svg>
           <span>Gerar PDF</span>
         </button>
+        <div class="csv-upload-wrapper hidden" id="csv-upload-wrapper">
+          <input type="file" id="csv-file-input" accept=".csv,.xlsx,.xls" style="display: none;">
+          <button id="btn-upload-csv" class="btn-info" title="Fazer upload de CSV ou Excel">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span>Fazer Upload CSV/Excel</span>
+          </button>
+          <div id="csv-actions" class="csv-actions hidden">
+            <button id="btn-baixar-csv" class="btn-success" title="Baixar CSV">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span>Baixar CSV</span>
+            </button>
+            <button id="btn-deletar-csv" class="btn-destructive" title="Deletar CSV">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+              </svg>
+              <span>Deletar CSV</span>
+            </button>
+          </div>
+        </div>
       </div>
     </header>
 

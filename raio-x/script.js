@@ -41,6 +41,12 @@ const modalClose = document.getElementById('modal-close');
 const modalCancel = document.getElementById('modal-cancel');
 const raioXForm = document.getElementById('raio-x-form');
 const addResponsavelBtn = document.getElementById('add-responsavel');
+const csvUploadWrapper = document.getElementById('csv-upload-wrapper');
+const csvFileInput = document.getElementById('csv-file-input');
+const btnUploadCSV = document.getElementById('btn-upload-csv');
+const csvActionsEl = document.getElementById('csv-actions');
+const btnBaixarCSV = document.getElementById('btn-baixar-csv');
+const btnDeletarCSV = document.getElementById('btn-deletar-csv');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', init);
@@ -74,6 +80,10 @@ function setupEventListeners() {
   clientSelect.addEventListener('change', handleClientChange);
   btnCadastrar.addEventListener('click', openModal);
   document.getElementById('btn-gerar-pdf').addEventListener('click', gerarPDF);
+  btnUploadCSV.addEventListener('click', () => csvFileInput.click());
+  csvFileInput.addEventListener('change', handleCSVFileSelect);
+  btnBaixarCSV.addEventListener('click', baixarCSV);
+  btnDeletarCSV.addEventListener('click', deletarCSV);
   modalClose.addEventListener('click', closeModal);
   modalCancel.addEventListener('click', closeModal);
   modal.querySelector('.modal-backdrop').addEventListener('click', closeModal);
@@ -129,6 +139,7 @@ async function handleClientChange(e) {
     showEmptyState();
     btnCadastrar.classList.add('hidden');
     document.getElementById('btn-gerar-pdf').classList.add('hidden');
+    csvUploadWrapper.classList.add('hidden');
     return;
   }
   
@@ -136,6 +147,10 @@ async function handleClientChange(e) {
   renderContent();
   btnCadastrar.classList.remove('hidden');
   document.getElementById('btn-gerar-pdf').classList.remove('hidden');
+  csvUploadWrapper.classList.remove('hidden');
+  
+  // Check if CSV exists
+  await verificarCSVExistente();
 }
 
 async function fetchRaioX() {
@@ -536,6 +551,174 @@ async function gerarPDF() {
   } catch (error) {
     console.error('Erro ao gerar PDF:', error);
     alert('Erro ao gerar PDF');
+  }
+}
+
+// CSV Functions
+async function handleCSVFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Validate file type
+  const validExtensions = ['.csv', '.xlsx', '.xls'];
+  const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+  
+  if (!validExtensions.includes(fileExtension)) {
+    alert('Por favor, selecione um arquivo CSV ou Excel válido (.csv, .xlsx, .xls)');
+    csvFileInput.value = '';
+    return;
+  }
+
+  // Validate file size (max 10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    alert('O arquivo é muito grande. Máximo de 10MB');
+    csvFileInput.value = '';
+    return;
+  }
+
+  try {
+    await uploadCSV(file);
+  } catch (error) {
+    console.error('Erro ao fazer upload:', error);
+    alert('Erro ao fazer upload: ' + error.message);
+  }
+
+  csvFileInput.value = '';
+}
+
+async function uploadCSV(file) {
+  if (!selectedClient || !raioXData) {
+    alert('Você precisa de um Raio X salvo primeiro');
+    return;
+  }
+
+  const implantacao = implantacoes.find(imp => imp.id.toString() === selectedClient);
+  if (!implantacao) return;
+
+  // Create unique file name
+  const timestamp = Date.now();
+  const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const fileName = `raio-x-${implantacao.id}-${timestamp}-${cleanFileName}`;
+
+  try {
+    // Delete old file if exists
+    if (raioXData.csv_file_name) {
+      await supabase.storage
+        .from('raio-x-csv')
+        .remove([raioXData.csv_file_name])
+        .catch(err => console.log('Old file not found:', err));
+    }
+
+    // Upload new file
+    const { data, error: uploadError } = await supabase.storage
+      .from('raio-x-csv')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('raio-x-csv')
+      .getPublicUrl(fileName);
+
+    // Update raio_x table with CSV URL
+    const { error: updateError } = await supabase
+      .from('raio_x')
+      .update({
+        csv_url: urlData.publicUrl,
+        csv_file_name: fileName
+      })
+      .eq('id', raioXData.id);
+
+    if (updateError) throw updateError;
+
+    // Update local data
+    raioXData.csv_url = urlData.publicUrl;
+    raioXData.csv_file_name = fileName;
+
+    const fileType = file.name.split('.').pop().toUpperCase();
+    alert(`Arquivo ${fileType} enviado com sucesso!`);
+    await verificarCSVExistente();
+  } catch (error) {
+    console.error('Erro ao fazer upload CSV:', error);
+    throw error;
+  }
+}
+
+async function baixarCSV() {
+  if (!raioXData?.csv_url) {
+    alert('Nenhum arquivo CSV disponível');
+    return;
+  }
+
+  try {
+    const response = await fetch(raioXData.csv_url);
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = raioXData.csv_file_name || `raio-x-${implantacoes.find(imp => imp.id.toString() === selectedClient)?.empresa || 'cliente'}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Erro ao baixar CSV:', error);
+    alert('Erro ao baixar CSV');
+  }
+}
+
+async function deletarCSV() {
+  if (!raioXData?.csv_file_name) {
+    alert('Nenhum arquivo CSV para deletar');
+    return;
+  }
+
+  if (!confirm('Tem certeza que deseja deletar o arquivo CSV?')) {
+    return;
+  }
+
+  try {
+    // Delete from storage
+    const { error: deleteError } = await supabase.storage
+      .from('raio-x-csv')
+      .remove([raioXData.csv_file_name]);
+
+    if (deleteError) throw deleteError;
+
+    // Update raio_x table
+    const { error: updateError } = await supabase
+      .from('raio_x')
+      .update({
+        csv_url: null,
+        csv_file_name: null
+      })
+      .eq('id', raioXData.id);
+
+    if (updateError) throw updateError;
+
+    // Update local data
+    raioXData.csv_url = null;
+    raioXData.csv_file_name = null;
+
+    alert('Arquivo CSV deletado com sucesso!');
+    await verificarCSVExistente();
+  } catch (error) {
+    console.error('Erro ao deletar CSV:', error);
+    alert('Erro ao deletar CSV: ' + error.message);
+  }
+}
+
+async function verificarCSVExistente() {
+  if (raioXData?.csv_url) {
+    btnUploadCSV.classList.add('hidden');
+    csvActionsEl.classList.remove('hidden');
+  } else {
+    btnUploadCSV.classList.remove('hidden');
+    csvActionsEl.classList.add('hidden');
   }
 }
 
