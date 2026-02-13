@@ -399,9 +399,9 @@ function escapeHtml(str) {
              // Verificar se o referrer está vazio (acesso direto) ou não é o permitido
              if (!referrerAtual || !referrerAtual.includes(referrerPermitido)) {
                  // Verificar se não estamos já na página de login para evitar loop infinito
-                 if (window.location.href !== paginaLogin) {
-                     // Redirecionar para a página de login
-                    window.location.replace(paginaLogin);
+                 if (!window.location.pathname.endsWith('/login/index.html')) {
+                   // Redirecionar para a página de login (caminho relativo para repositório)
+                  window.location.replace(paginaLogin);
                  }
              }
          })();
