@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="icon" type="image/png" href="images/logo-group.png" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Left Side - Universe -->
+    <div class="universe-section">
+      <div class="universe-bg">
+        <!-- Stars layers -->
+        <div class="stars"></div>
+        <div class="stars-layer-2"></div>
+        
+        <!-- Nebula effect -->
+        <div class="nebula"></div>
+        
+        <!-- Content container -->
+        <div class="orbit-wrapper">
+          <!-- Orbit rings -->
+          <div class="orbit-ring orbit-ring-1"></div>
+          <div class="orbit-ring orbit-ring-2"></div>
+          <div class="orbit-ring orbit-ring-3"></div>
+          
+          <!-- First orbit - inner -->
+          <div class="orbit-container orbit-inner">
+            <div class="orbiting-logo" style="top: -25px; left: 50%; margin-left: -25px;">
+              <img src="images/logo-compass.png" alt="Compass">
+            </div>
+            <div class="orbiting-logo" style="top: 50%; right: -25px; margin-top: -25px;">
+              <img src="images/logo-target.png" alt="Target">
+            </div>
+          </div>
+
+          <!-- Second orbit - outer -->
+          <div class="orbit-container orbit-outer orbit-container-reverse">
+            <div class="orbiting-logo orbiting-logo-reverse" style="top: -25px; left: 50%; margin-left: -25px;">
+              <img src="images/logo-globe.png" alt="Globe">
+            </div>
+            <div class="orbiting-logo orbiting-logo-reverse" style="bottom: -25px; left: 50%; margin-left: -25px;">
+              <img src="images/logo-clock.png" alt="Clock">
+            </div>
+          </div>
+
+          <!-- Center Logo -->
+          <div class="center-logo">
+            <img src="images/logo-group.png" alt="Grupo Logo">
+          </div>
+        </div>
+
+        <!-- Tagline -->
+        <div class="tagline">
+          <p></p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Right Side - Login Form -->
+    <div class="login-section">
+      <div class="login-wrapper">
+        <!-- Header -->
+        <div class="login-header">
+          <h1>Bem-vindo</h1>
+          <p>Entre com suas credenciais para acessar</p>
+        </div>
+
+        <!-- Form -->
+        <form id="loginForm" class="login-form">
+          <!-- Email Field -->
+          <div class="form-group">
+            <label for="email">E-mail</label>
+            <div class="input-wrapper">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="M22 6l-10 7L2 6"/>
+              </svg>
+              <input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                class="login-input"
+                required
+              >
+            </div>
+          </div>
+
+          <!-- Password Field -->
+          <div class="form-group">
+            <label for="password">Senha</label>
+            <div class="input-wrapper">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0110 0v4"/>
+              </svg>
+              <input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                class="login-input with-toggle"
+                required
+              >
+              <button type="button" id="togglePassword" class="password-toggle">
+                <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg id="eyeOffIcon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Remember & Forgot -->
+          <div class="form-options">
+            <label class="checkbox-wrapper">
+              <input type="checkbox" id="remember">
+              <span>Lembrar-me</span>
+            </label>
+            <a href="#" class="forgot-link">Esqueceu a senha?</a>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" id="submitBtn" class="login-button">
+            <span id="btnText">Entrar</span>
+            <div id="btnLoader" class="loader hidden"></div>
+          </button>
+        </form>
+
+        <div style="margin-top:12px; text-align:center;">
+          <div id="errorMessage" style="color:#dc3545; display:none; margin-bottom:6px;"></div>
+          <div id="successMessage" style="color:#2e7d32; display:none; margin-bottom:6px;"></div>
+        </div>
+
+        <!-- Sign Up Link -->
+        <p class="signup-link">
+          Não tem uma conta? <a href="#">Entre em contato com o seu Supervisor</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase client (needed by script.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js"></script>
+</body>
+</html>

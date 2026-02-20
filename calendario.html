@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <link rel="icon" type="image/png" href="tryvia.png" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendário de Atividades</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: #3b82f6;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background 0.3s ease;
+            z-index: 100;
+        }
+
+        .back-button:hover {
+            background: #2563eb;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-icon {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            padding: 15px;
+            border-radius: 15px;
+        }
+
+        .header-icon svg {
+            width: 32px;
+            height: 32px;
+            color: white;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 5px;
+        }
+
+        .header-title p {
+            color: #6b7280;
+            font-size: 1rem;
+        }
+
+        .month-navigation {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #374151;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: #f3f4f6;
+            transform: scale(1.1);
+        }
+
+        .month-year {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1f2937;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .legend {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .legend-color.reunioes { background: #10b981; }
+        .legend-color.homologacoes { background: #3b82f6; }
+        .legend-color.implantacoes { background: #f59e0b; }
+        .legend-color.mvps { background: #8b5cf6; }
+        .legend-color.visitas { background: #ef4444; }
+        .legend-color.resumo_projetos { background: #00d9ff; }
+
+        .calendar-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+
+        .weekday {
+            padding: 20px;
+            text-align: center;
+            font-weight: 600;
+            color: #374151;
+            border-right: 1px solid #e5e7eb;
+        }
+
+        .weekday:last-child {
+            border-right: none;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+        }
+
+        .calendar-day {
+            min-height: 120px;
+            padding: 10px;
+            border-right: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-day:hover {
+            background: #eff6ff;
+        }
+
+        .calendar-day:last-child {
+            border-right: none;
+        }
+
+        .calendar-day.other-month {
+            background: #f9fafb;
+            color: #9ca3af;
+        }
+
+        .calendar-day.today {
+            background: #dbeafe;
+        }
+
+        .day-number {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .today .day-number {
+            color: #2563eb;
+            font-weight: 700;
+        }
+
+        .activity-counters {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .counter-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .counter-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .counter-item.reunioes {
+            background: rgba(16, 185, 129, 0.1);
+            color: #047857;
+        }
+
+        .counter-item.homologacoes {
+            background: rgba(59, 130, 246, 0.1);
+            color: #1d4ed8;
+        }
+
+        .counter-item.implantacoes {
+            background: rgba(245, 158, 11, 0.1);
+            color: #d97706;
+        }
+
+        .counter-item.mvps {
+            background: rgba(139, 92, 246, 0.1);
+            color: #7c3aed;
+        }
+
+        .counter-item.visitas {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        .counter-item.resumo_projetos {
+            background: rgba(0, 217, 255, 0.1);
+            color: #00d9ff;
+        }
+
+        .counter-icon {
+            width: 10px;
+            height: 10px;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 30px 30px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+
+        .modal-body {
+            padding: 20px 30px 30px;
+        }
+
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .activity-item {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .activity-item.reunioes { border-left-color: #10b981; }
+        .activity-item.homologacoes { border-left-color: #3b82f6; }
+        .activity-item.implantacoes { border-left-color: #f59e0b; }
+        .activity-item.mvps { border-left-color: #8b5cf6; }
+        .activity-item.visitas { border-left-color: #ef4444; }
+        .activity-item.resumo_projetos { border-left-color: #00d9ff; }
+
+        .activity-item-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 5px;
+        }
+
+        .activity-item-details {
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        .close-modal {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-top: 20px;
+        }
+
+        .close-modal:hover {
+            background: #2563eb;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .calendar-day {
+                min-height: 80px;
+                padding: 5px;
+            }
+
+            .legend {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="Portal.html" class="back-button">Voltar para o portal</a>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="header-icon">
+                    <i data-lucide="calendar"></i>
+                </div>
+                <div class="header-title">
+                    <h1>Calendário de Atividades</h1>
+                    <p>Visualize suas atividades de forma inteligente</p>
+                </div>
+            </div>
+            <div class="month-navigation">
+                <button class="nav-btn" onclick="previousMonth()">←</button>
+                <div class="month-year" id="monthYear"></div>
+                <button class="nav-btn" onclick="nextMonth()">→</button>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color reunioes"></div>
+                <span>Reuniões</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color homologacoes"></div>
+                <span>Homologações</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color implantacoes"></div>
+                <span>Implantações</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color resumo_projetos"></div>
+                <span>Resumo de projetos</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color mvps"></div>
+                <span>MVPs</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color visitas"></div>
+                <span>Visitas</span>
+            </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="calendar-container">
+            <div class="weekdays">
+                <div class="weekday">Dom</div>
+                <div class="weekday">Seg</div>
+                <div class="weekday">Ter</div>
+                <div class="weekday">Qua</div>
+                <div class="weekday">Qui</div>
+                <div class="weekday">Sex</div>
+                <div class="weekday">Sáb</div>
+            </div>
+            <div class="calendar-grid" id="calendarGrid">
+                <div class="loading">Carregando dados...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para detalhes das atividades -->
+    <div class="modal" id="activityModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Atividades do Dia</h3>
+            </div>
+            <div class="modal-body">
+                <div class="activity-list" id="activityList">
+                    <!-- Atividades serão inseridas aqui -->
+                </div>
+                <button class="close-modal" onclick="closeModal()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let currentDate = new Date();
+        let activitiesData = {
+            reunioes: [],
+            homologacoes: [],
+            implantacoes: [],
+            resumo_projetos: [],
+            mvps: [],
+            viagens: []
+        };
+
+        // Configurações das APIs Supabase
+        const API_CONFIGS = {
+            api1: {
+                url: "https://mzjdmhgkrroajmsfwryu.supabase.co",
+                key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMzMwMzUsImV4cCI6MjA2MzgwOTAzNX0.tQCwUfFCV7sD-IexQviU0XEPcbn9j5uK9NSUbH-OeBc"
+            },
+            api2: {
+                url: "https://obwgegvrtxrlombmkaej.supabase.co",
+                key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9id2dlZ3ZydHhybG9tYm1rYWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NDcxOTMsImV4cCI6MjA2NDAyMzE5M30.0Ng21Ywqrm6eDqbclFyeOhARpJCyWvX7b-0dJLE1QwM"
+            }
+        };
+
+        const monthNames = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ];
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async function() {
+            lucide.createIcons();
+            await loadAllData();
+            renderCalendar();
+        });
+
+        // Carregar dados de todas as APIs
+        async function loadAllData() {
+            try {
+                // Criar clientes Supabase
+                const client1 = supabase.createClient(API_CONFIGS.api1.url, API_CONFIGS.api1.key);
+                const client2 = supabase.createClient(API_CONFIGS.api2.url, API_CONFIGS.api2.key);
+
+                // Carregar dados da primeira API (reuniões, homologações e resumo de projetos)
+                const [reunioesResponse, homologacoesResponse, resumoProjetosResponse] = await Promise.all([
+                    client1.from('reunioes').select('*'),
+                    client1.from('homologacoes').select('*'),
+                    client1.from('implantacoes').select('*')
+                ]);
+
+                // Carregar dados da segunda API (implantações, MVPs e viagens)
+                const [implantacoesResponse, mvpsResponse, viagensResponse] = await Promise.all([
+                    client2.from('implantacoes').select('*'),
+                    client2.from('mvps').select('*'),
+                    client2.from('viagens').select('*')
+                ]);
+
+                // Processar dados
+                if (reunioesResponse.data) {
+                    activitiesData.reunioes = reunioesResponse.data;
+                }
+                if (homologacoesResponse.data) {
+                    activitiesData.homologacoes = homologacoesResponse.data;
+                }
+                if (resumoProjetosResponse.data) {
+                    activitiesData.resumo_projetos = resumoProjetosResponse.data;
+                }
+                if (implantacoesResponse.data) {
+                    activitiesData.implantacoes = implantacoesResponse.data;
+                }
+                if (mvpsResponse.data) {
+                    activitiesData.mvps = mvpsResponse.data;
+                }
+                if (viagensResponse.data) {
+                    activitiesData.viagens = viagensResponse.data;
+                }
+
+                console.log('Dados carregados:', activitiesData);
+
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                showError('Erro ao carregar dados das APIs');
+            }
+        }
+
+        // Mostrar erro
+        function showError(message) {
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        // Navegação do calendário
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        }
+
+        // Renderizar calendário
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            document.getElementById('monthYear').textContent = `${monthNames[month]} ${year}`;
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = '';
+            
+            // Dias do mês anterior
+            for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+                const prevDate = new Date(year, month, -i);
+                createDayElement(prevDate, false);
+            }
+            
+            // Dias do mês atual
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                createDayElement(date, true);
+            }
+            
+            // Dias do próximo mês
+            const totalCells = calendarGrid.children.length;
+            const remainingCells = 42 - totalCells;
+            for (let day = 1; day <= remainingCells; day++) {
+                const nextDate = new Date(year, month + 1, day);
+                createDayElement(nextDate, false);
+            }
+            
+            lucide.createIcons();
+        }
+
+        function createDayElement(date, isCurrentMonth) {
+            const dayElement = document.createElement('div');
+            dayElement.className = 'calendar-day';
+            
+            if (!isCurrentMonth) {
+                dayElement.classList.add('other-month');
+            }
+            
+            if (isToday(date)) {
+                dayElement.classList.add('today');
+            }
+            
+            const counters = getActivityCountersForDate(date);
+            
+            dayElement.innerHTML = `
+                <div class="day-number">${date.getDate()}</div>
+                <div class="activity-counters">
+                    ${counters.map(counter => createCounterElement(counter, date)).join('')}
+                </div>
+            `;
+            
+            document.getElementById('calendarGrid').appendChild(dayElement);
+        }
+
+        function createCounterElement(counter, date) {
+            if (counter.count === 0) return '';
+            
+            const icons = {
+                reunioes: 'users',
+                homologacoes: 'check-circle',
+                implantacoes: 'settings',
+                resumo_projetos: 'file-text',
+                mvps: 'star',
+                visitas: 'map-pin'
+            };
+            
+            return `
+                <div class="counter-item ${counter.type}" onclick="showActivityDetails('${counter.type}', '${formatDate(date)}')">
+                    <i data-lucide="${icons[counter.type]}" class="counter-icon"></i>
+                    <span>${counter.count}</span>
+                </div>
+            `;
+        }
+
+        function getActivityCountersForDate(date) {
+            const dateStr = formatDate(date);
+            const counters = [
+                { type: 'reunioes', count: 0 },
+                { type: 'homologacoes', count: 0 },
+                { type: 'implantacoes', count: 0 },
+                { type: 'resumo_projetos', count: 0 },
+                { type: 'mvps', count: 0 },
+                { type: 'visitas', count: 0 }
+            ];
+
+            // Contar reuniões
+            counters[0].count = activitiesData.reunioes.filter(item => 
+                formatDate(new Date(item.data)) === dateStr
+            ).length;
+
+            // Contar homologações (usando data_homologacao)
+            counters[1].count = activitiesData.homologacoes.filter(item => 
+                formatDate(new Date(item.data_homologacao)) === dateStr
+            ).length;
+
+            // Contar implantações (usando datas de Kick Off e Go Live das fases)
+            counters[2].count = 0;
+            activitiesData.implantacoes.forEach(item => {
+                if (item.fases && Array.isArray(item.fases)) {
+                    item.fases.forEach(fase => {
+                        // Verificar se é Kick Off ou Go Live e se tem data de início
+                        if ((fase.nome === 'Kick Off' || fase.nome === 'Go Live') && fase.inicio) {
+                            if (formatDate(new Date(fase.inicio)) === dateStr) {
+                                counters[2].count++;
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Contar resumo de projetos (usando data)
+            counters[3].count = activitiesData.resumo_projetos.filter(item => 
+                formatDate(new Date(item.data)) === dateStr
+            ).length;
+
+            // Contar MVPs (usando data_inicio e data_fim)
+            counters[4].count = activitiesData.mvps.filter(item => {
+                if (!item.data_inicio) return false;
+                const startDate = new Date(item.data_inicio);
+                const endDate = item.data_fim ? new Date(item.data_fim) : startDate;
+                const checkDate = new Date(dateStr);
+                return checkDate >= startDate && checkDate <= endDate;
+            }).length;
+
+            // Contar visitas (usando data_inicio e data_fim das viagens)
+            counters[5].count = activitiesData.viagens.filter(item => {
+                if (!item.data_inicio) return false;
+                const startDate = new Date(item.data_inicio);
+                const endDate = item.data_fim ? new Date(item.data_fim) : startDate;
+                const checkDate = new Date(dateStr);
+                return checkDate >= startDate && checkDate <= endDate;
+            }).length;
+
+            return counters;
+        }
+
+        function isToday(date) {
+            const today = new Date();
+            return date.toDateString() === today.toDateString();
+        }
+
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        // Funções do modal
+        function showActivityDetails(type, dateStr) {
+            const date = new Date(dateStr);
+            const activities = getActivitiesForDateAndType(date, type);
+            
+            const typeNames = {
+                reunioes: 'Reuniões',
+                homologacoes: 'Homologações',
+                implantacoes: 'Implantações',
+                resumo_projetos: 'Resumo de projetos',
+                mvps: 'MVPs',
+                visitas: 'Visitas'
+            };
+            
+            document.getElementById('modalTitle').textContent = 
+                `${typeNames[type]} - ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+            
+            const activityList = document.getElementById('activityList');
+            activityList.innerHTML = activities.map(activity => createActivityItemHTML(activity, type)).join('');
+            
+            document.getElementById('activityModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('activityModal').classList.remove('show');
+        }
+
+        function getActivitiesForDateAndType(date, type) {
+            const dateStr = formatDate(date);
+            
+            switch(type) {
+                case 'reunioes':
+                    return activitiesData.reunioes.filter(item => 
+                        formatDate(new Date(item.data)) === dateStr
+                    );
+                
+                case 'homologacoes':
+                    return activitiesData.homologacoes.filter(item => 
+                        formatDate(new Date(item.data_homologacao)) === dateStr
+                    );
+                
+                case 'implantacoes':
+                    const implantacoesData = [];
+                    activitiesData.implantacoes.forEach(item => {
+                        if (item.fases && Array.isArray(item.fases)) {
+                            item.fases.forEach(fase => {
+                                // Verificar se é Kick Off ou Go Live e se tem data de início
+                                if ((fase.nome === 'Kick Off' || fase.nome === 'Go Live') && fase.inicio) {
+                                    if (formatDate(new Date(fase.inicio)) === dateStr) {
+                                        implantacoesData.push({
+                                            ...item,
+                                            fase_atual: fase.nome,
+                                            data_fase: fase.inicio,
+                                            status_fase: fase.status
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    return implantacoesData;
+                
+                case 'resumo_projetos':
+                    return activitiesData.resumo_projetos.filter(item => 
+                        formatDate(new Date(item.data)) === dateStr
+                    );
+                
+                case 'mvps':
+                    return activitiesData.mvps.filter(item => {
+                        if (!item.data_inicio) return false;
+                        const startDate = new Date(item.data_inicio);
+                        const endDate = item.data_fim ? new Date(item.data_fim) : startDate;
+                        const checkDate = new Date(dateStr);
+                        return checkDate >= startDate && checkDate <= endDate;
+                    });
+                
+                case 'visitas':
+                    return activitiesData.viagens.filter(item => {
+                        if (!item.data_inicio) return false;
+                        const startDate = new Date(item.data_inicio);
+                        const endDate = item.data_fim ? new Date(item.data_fim) : startDate;
+                        const checkDate = new Date(dateStr);
+                        return checkDate >= startDate && checkDate <= endDate;
+                    });
+                
+                default:
+                    return [];
+            }
+        }
+
+        function createActivityItemHTML(activity, type) {
+            switch(type) {
+                case 'reunioes':
+                    return `
+                        <div class="activity-item ${type}">
+                            <div class="activity-item-title">${activity.cliente || 'Reunião'}</div>
+                            <div class="activity-item-details">
+                                <strong>Tipo:</strong> ${activity.tipo || 'N/A'}<br>
+                                <strong>Responsável:</strong> ${activity.responsavel || 'N/A'}<br>
+                                <strong>Horário:</strong> ${activity.horario || 'N/A'}<br>
+                                <strong>Participantes:</strong> ${activity.participantes || 'N/A'}
+                            </div>
+                        </div>
+                    `;
+                
+                case 'homologacoes':
+                    return `
+                        <div class="activity-item ${type}">
+                            <div class="activity-item-title">${activity.sistema || 'Sistema'} - v${activity.versao || 'N/A'}</div>
+                            <div class="activity-item-details">
+                                <strong>Especialista:</strong> ${activity.especialista || 'N/A'}<br>
+                                <strong>Data Liberação:</strong> ${new Date(activity.data_liberacao).toLocaleDateString('pt-BR')}<br>
+                                <strong>Observação:</strong> ${activity.observacao || 'Nenhuma'}
+                            </div>
+                        </div>
+                    `;
+                
+                case 'implantacoes':
+                    return `
+                        <div class="activity-item ${type}">
+                            <div class="activity-item-title">${activity.projeto || 'Projeto'} - ${activity.sistema || 'Sistema'}</div>
+                            <div class="activity-item-details">
+                                <strong>Empresa:</strong> ${activity.empresa || 'N/A'}<br>
+                                <strong>Especialista:</strong> ${activity.especialista || 'N/A'}<br>
+                                <strong>Gestor:</strong> ${activity.gestor || 'N/A'}<br>
+                                <strong>Fase:</strong> ${activity.fase_atual || 'N/A'}<br>
+                                <strong>Status da Fase:</strong> ${activity.status_fase || 'N/A'}<br>
+                                <strong>Progresso Geral:</strong> ${activity.progresso || 0}%<br>
+                                <strong>Data da Fase:</strong> ${new Date(activity.data_fase).toLocaleDateString('pt-BR')}
+                            </div>
+                        </div>
+                    `;
+                
+                case 'resumo_projetos':
+                    return `
+                        <div class="activity-item ${type}">
+                            <div class="activity-item-title">${activity.projeto || 'Projeto'} - ${activity.cliente || 'Cliente'}</div>
+                            <div class="activity-item-details">
+                                <strong>Especialista:</strong> ${activity.especialista || 'N/A'}<br>
+                                <strong>Tipo:</strong> ${activity.tipo || 'N/A'}<br>
+                                <strong>Setor:</strong> ${activity.setor || 'N/A'}<br>
+                                <strong>Tickets:</strong> ${activity.tickets || 0}<br>
+                                <strong>Tickets Pendentes:</strong> ${activity.tickets_pendentes || 0}<br>
+                                <strong>Data:</strong> ${new Date(activity.data).toLocaleDateString('pt-BR')}<br>
+                                <strong>Resumo:</strong> ${activity.resumo || 'Nenhum resumo disponível'}
+                            </div>
+                        </div>
+                    `;
+                
+                case 'mvps':
+                    return `
+                        <div class="activity-item ${type}">
+                            <div class="activity-item-title">${activity.empresa || 'MVP'} - ${activity.sistema || 'Sistema'}</div>
+                            <div class="activity-item-details">
+                                <strong>Especialista:</strong> ${activity.especialista || 'N/A'}<br>
+                                <strong>Status:</strong> ${activity.status || 'N/A'}<br>
+                                <strong>Período:</strong> ${activity.data_inicio ? new Date(activity.data_inicio).toLocaleDateString('pt-BR') : 'N/A'} - ${activity.data_fim ? new Date(activity.data_fim).toLocaleDateString('pt-BR') : 'Em andamento'}<br>
+                                <strong>Resumo:</strong> ${activity.resumo || 'Nenhum'}
+                            </div>
+                        </div>
+                    `;
+                
+                case 'visitas':
+                    return `
+                        <div class="activity-item ${type}">
+                            <div class="activity-item-title">Visita - ${activity.destino || 'Destino'}</div>
+                            <div class="activity-item-details">
+                                <strong>Especialista:</strong> ${activity.especialista || 'N/A'}<br>
+                                <strong>Empresa:</strong> ${activity.empresa || 'N/A'}<br>
+                                <strong>Propósito:</strong> ${activity.proposito || 'N/A'}<br>
+                                <strong>Status:</strong> ${activity.status || 'N/A'}<br>
+                                <strong>Período:</strong> ${activity.data_inicio ? new Date(activity.data_inicio).toLocaleDateString('pt-BR') : 'N/A'} - ${activity.data_fim ? new Date(activity.data_fim).toLocaleDateString('pt-BR') : 'Em andamento'}
+                            </div>
+                        </div>
+                    `;
+                
+                default:
+                    return '';
+            }
+        }
+
+        // Event listener para fechar modal clicando fora
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('activityModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

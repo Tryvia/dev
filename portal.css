@@ -321,7 +321,7 @@ a:contains('Ver Ata'),
 
 /* Estilos para o botão de nova implantação */
 .btn-nova-implantacao {
-    background-color: #9c27b0 !important;
+    background-color: hsl(215, 35%, 18% , 1)!important;
     color: white !important;
     border: none;
     padding: 12px 20px;
@@ -334,7 +334,7 @@ a:contains('Ver Ata'),
 }
 
 .btn-nova-implantacao:hover {
-    background-color: #7b1fa2 !important;
+    background-color: hsl(215, 35%, 18% , 1) !important;
 }
 
 /* Estilos para o modal de implantação */
@@ -397,6 +397,96 @@ a:contains('Ver Ata'),
     margin-bottom: 8px;
     font-weight: bold;
     color: #333;
+}
+
+/* ===== Styles para cartões de cliente (grid + menu hamburger) ===== */
+.clients-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+}
+
+.homologacoes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 18px;
+}
+
+.client-card-vertical{
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.client-card-top{
+    display:flex;
+    justify-content: flex-end;
+}
+
+.client-menu-btn{
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.client-menu{
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    display: none;
+    min-width: 180px;
+    z-index: 60;
+}
+
+.client-menu.active{ display:block; }
+
+.client-menu button{ display:block; width:100%; text-align:left; padding:10px 12px; border:none; background:transparent; cursor:pointer; }
+.client-menu button:hover{ background:#f5f7fb; }
+
+.client-logo-vertical{
+    width:64px; height:64px; border-radius:50%; background:#e9f7fe; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:20px; color:#0077a8; overflow:hidden;
+}
+.logo-preview-vertical{ width:100%; height:100%; object-fit:cover; border-radius:50%; }
+
+.client-name-vertical{ margin:0; font-size:1.05em; font-weight:700; }
+.client-status-text{ font-size:0.85em; color:#2e7d32; }
+.client-status-text.inactive{ color:#d32f2f; }
+
+.client-tags{ display:flex; gap:8px; flex-wrap:wrap; }
+.client-tag{ background:#f1f6f9; padding:6px 10px; border-radius:999px; font-size:0.85em; }
+
+.client-stats{ display:flex; gap:12px; align-items:center; }
+.client-stats div{ display:flex; flex-direction:column; align-items:center; font-size:0.9em; }
+.client-action-row{ display:flex; gap:8px; margin-top:8px; }
+.client-action-row .btn{ flex:1; }
+
+@media (max-width:700px){
+    .clients-grid{ grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+}
+
+/* Força centralização dos contadores no rodapé do cartão */
+.clients-grid .client-stats{
+    width:100%;
+    display:flex;
+    justify-content:center;
+    gap:18px;
+    padding-bottom:6px;
+}
+.clients-grid .client-stats div{ min-width:72px; display:flex; flex-direction:column; align-items:center; }
+.clients-grid .client-card-vertical{ align-items:center; text-align:center; }
+
+/* Ajuste do botão '+' de adicionar cliente: deslocar levemente para a esquerda */
+#addClientPlusBtn{
+    transform: translateX(-8px) !important;
 }
 
 .implantacao-form-group input,
@@ -518,12 +608,6 @@ a:contains('Ver Ata'),
     color: #ffffff !important;
 }
 
-header h1, .top-bar h1, .top-bar-title, .header-title {
-    color: #ffffff !important;
-}
-
-
-
 
 .content-section,
 .form-container,
@@ -540,7 +624,6 @@ header h1, .top-bar h1, .top-bar-title, .header-title {
 #cadastroReuniao,
 #cadastro-documento,
 #cadastroHomologacao,
-.homologacao-card,
 .modal-content,
 .dashboard-card,
 .client-card,
@@ -578,7 +661,7 @@ select {
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(145deg, #0a2b59 0%, #0a2b59 100%);
+            background: #ffffff;
             min-height: 100vh;
             color: var(--text-color);
         }
@@ -589,7 +672,7 @@ select {
             top: 0;
             width: 250px;
             height: 100vh;
-            background: #ffffff;
+            background:  hsl(215, 35%, 18% , 1);
             border-right: 1px solid rgba(255, 255, 255, 0.05);
             padding: 20px;
             box-shadow: 2px 0 5px rgba(0,0,0,0.2);
@@ -632,7 +715,7 @@ select {
             display: flex;
             align-items: center;
             padding: 12px 20px;
-            color: #333333;
+            color: #c7c7c7;
             text-decoration: none;
             font-size: 1.1em;
             border-radius: 8px;
@@ -647,8 +730,8 @@ select {
         .nav-item a:hover, .nav-item button:hover, 
 .nav-item.active a,
 .nav-item.active button {
-    background-color: var(--secondary-color) !important;
-    color: #ffffff !important;
+    background-color: #00e4ff ;
+    color: #3a383b!important;
     transform: translateX(5px);
 }
 
@@ -660,24 +743,38 @@ select {
 
         .main-content {
             margin-left: 250px;
+            margin-top: 100px;
             padding: 30px;
             flex-grow: 1;
+            position: relative;
+            z-index: 1;
+            width: calc(100% - 250px);
+            overflow-x: hidden;
         }
 
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: hsl(215, 35%, 18% , 1);
             padding: 20px 25px;
-            border-radius: 12px;
+            position: fixed;
+            top: 0;
+            left: 250px;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 0;
         }
 
         .header h1 {
             font-size: 2.2em;
-            color: var(--text-color);
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            color: #213448;
+            text-shadow: none;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            margin: 0;
         }
 
         .profile-info {
@@ -690,13 +787,50 @@ select {
             height: 50px;
             border-radius: 50%;
             margin-right: 15px;
-            border: 3px solid var(--accent-color);
+            border: 3px solid #29b6f6;
         }
 
         .profile-info span {
             font-size: 1.1em;
             font-weight: bold;
-            color: var(--text-color);
+            color: #213448;
+        }
+
+        /* Quick access buttons - estilo em cards com ícone e texto centralizados */
+        .quick-access .quick-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 26px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.06);
+            background: var(--btn-bg, rgba(0,0,0,0.02));
+            color: var(--btn-color, #333);
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            text-align: center;
+            min-height: 90px;
+            font-size: 0.95em;
+        }
+
+        .quick-access .quick-btn i {
+            font-size: 1.7em;
+            margin-bottom: 10px;
+            display: block;
+            color: var(--btn-color, inherit);
+        }
+
+        .quick-access .quick-btn:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+
+        .quick-access .quick-btn .label {
+            display: block;
+            color: var(--btn-color, inherit);
+            font-weight: 600;
+            margin-top: 4px;
         }
 
         .content-section {
@@ -704,7 +838,6 @@ select {
             background-color: #000000;
             padding: 30px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px var(--shadow-color);
             min-height: 70vh;
         }
 
@@ -785,20 +918,20 @@ select {
         }
 
         .btn-primary {
-            background-color:#29b6f6;
+            background-color:#ededed;
             color: var(--text-color);
-            box-shadow: 0 2px 5px #29b6f6;
+            box-shadow: 0 2px 5px #cdcdcd;
         }
 
         .btn-primary:hover {
-            background-color:#29b6f6;
+            background-color:#515050;
             transform: translateY(-2px);
         }
 
         .btn-secondary {
-            background-color:#29b6f6;
-            color: var(--text-color);
-            box-shadow: 0 2px 5px rgba(0,0,128,0.5);
+            background-color:hsl(215, 35%, 18% , 1);
+            color: #ffffff;
+            box-shadow: 0 2px 5px rgba(255, 255, 255, 0.5);
         }
 
         .btn-secondary:hover {
@@ -840,12 +973,12 @@ select {
             padding: 20px;
             background-color: #000000;
             border-radius: 10px;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0);
             min-height: 200px;
         }
 
         .document-card, .client-card, .dashboard-card {
-            background-color: #89ceee;
+            background-color: #ffffff;
             border-radius: 10px;
             padding: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -868,13 +1001,23 @@ select {
         }
 
         .document-type, .client-status-card {
-            background-color: #29b6f6;
+            background-color: hsl(215, 35%, 18% , 1);
             color: var(--text-dark);
             padding: 5px 10px;
             border-radius: 5px;
             font-size: 0.9em;
             font-weight: bold;
         }
+
+        .tipodocumentorelease{
+            background-color: hsl(215, 35%, 18% , 1);
+            color: #ffffff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
         .client-status-card {
             background-color: var(--success-color);
             color: var(--text-color);
@@ -1119,8 +1262,7 @@ select {
             font-size: 3em;
             font-weight: bold;
             color: var(--accent-color);
-            margin-bottom: 10px;
-            margin-left: 70px;
+            margin: 0 auto 10px; /* centraliza horizontalmente */
             overflow: hidden;
             border: 2px solid rgba(255, 255, 255, 0.2);
         }
@@ -1315,7 +1457,7 @@ select {
         #homologacao .header,
         #homologacao .filters-section,
         #homologacao .form-row {
-            background-color:#b3e5fc;
+            background-color:#ffffff;
             color: var(--text-color);
             border-radius: 8px;
             padding: 10px;
@@ -1365,51 +1507,106 @@ select {
         }
 
         .homologacao-card {
-            background-color: #000000;
-            padding: 20px;
+            background-color: #ffffff;
             border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            color: var(--text-color);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-            word-break: break-word;
-  overflow-wrap: break-word;
-  white-space: normal;
         }
 
         .homologacao-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
 
-        .homologacao-card h4 {
-            margin-bottom: 10px;
-            font-size: 1.2em;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 5px;
+        .homologacao-header {
+            background: hsl(215, 35%, 18% , 1);
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         }
 
-        .homologacao-card p {
-            font-size: 0.95em;
-            margin-bottom: 6px;
-            color: rgba(0, 0, 0, 0.85);
+        .homologacao-header h4 {
+            margin: 0;
+            font-size: 1.15em;
+            color: white;
+            font-weight: 600;
         }
 
-        .homologacao-card .btn-exportar {
-            background-color: var(--accent-color);
-            color: var(--text-color);
-            padding: 8px 15px;
+        .homologacao-body {
+            padding: 16px 20px;
+            flex-grow: 1;
+        }
+
+        .homologacao-body p {
+            font-size: 0.9em;
+            margin: 8px 0;
+            color: #333333;
+        }
+
+        .homologacao-body strong {
+            color: #1e3a5f;
+            font-weight: 600;
+        }
+
+        .homologacao-body a {
+            color: #007bff !important;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .homologacao-body a:hover {
+            color: #0056b3 !important;
+            text-decoration: underline;
+        }
+
+        .homologacao-footer {
+            display: flex;
+            gap: 10px;
+            padding: 12px 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+            background-color: #f9f9f9;
+            flex-wrap: wrap;
+        }
+
+        .homologacao-footer .btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 15px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            margin-top: 10px;
-            transition: background-color 0.3s ease;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
 
-        .homologacao-card .btn-exportar:hover {
-            background-color: var(--hover-color);
+        .homologacao-footer .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .homologacao-footer .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .homologacao-footer .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .homologacao-footer .btn-success:hover {
+            background-color: #218838;
+        }
+
+        .homologacao-footer .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .homologacao-footer .btn-danger:hover {
+            background-color: #c82333;
         }
 
         
@@ -1581,7 +1778,7 @@ select {
 #clientDocumentsList .document-card,
 #listaReunioes .reuniao-card,
 #listaReunioes .reuniao-item {
-  background-color: #b3e5fc !important;
+  background-color: #ffffff !important;
   color: #000000 !important;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
@@ -1599,6 +1796,14 @@ select {
   color: #000000 !important;
 }
 
+.documentotipodosetor{
+  background-color: hsl(215, 35%, 18% , 1);
+  color: #ffffff !important;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  padding: 10px;
+  margin-bottom: 12px;
+}
 
 @media (max-width: 1200px) {
     #inicio .metrics-grid {
@@ -1822,7 +2027,7 @@ select {
 #gerenciar-logins > div:first-child {
     background: #b3e5fc !important;
     border-radius: 15px;
-    box-shadow: 0 8px 25px rgba(41, 182, 246, 0.3);
+    box-shadow: 0 8px 25px rgba(143, 143, 143, 0.3);
     padding: 30px;
     margin-bottom: 30px;
     text-align: center;
@@ -2314,7 +2519,7 @@ a:contains('Ver Ata'),
 
 /* Estilos para o botão de nova implantação */
 .btn-nova-implantacao {
-    background-color: #9c27b0 !important;
+    background-color: hsl(215, 35%, 18% , 1) !important;
     color: white !important;
     border: none;
     padding: 12px 20px;
@@ -2327,7 +2532,7 @@ a:contains('Ver Ata'),
 }
 
 .btn-nova-implantacao:hover {
-    background-color: #7b1fa2 !important;
+    background-color: hsl(215, 34%, 37%) !important;
 }
 
 /* Estilos para o modal de implantação */
@@ -2379,6 +2584,24 @@ a:contains('Ver Ata'),
 
 .implantacao-modal-close:hover {
     color: #000;
+}
+
+/* Botão pequeno '+' ao lado de Atualizar na aba de Implantações */
+.btn-add-implantacao {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.08);
+    color: #333;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-add-implantacao:hover {
+    background: #f6f6f6;
 }
 
 .implantacao-form-group {
@@ -2505,7 +2728,7 @@ a:contains('Ver Ata'),
 }
 
 .profile-info span {
-    color: #ffffff !important;
+        color: #213448 ;
 }
 
 header h1, .top-bar h1, .top-bar-title, .header-title {
@@ -2532,10 +2755,9 @@ header h1, .top-bar h1, .top-bar-title, .header-title {
 .dashboard-card,
 .client-card,
 .client-card-vertical{
-    background-color: #b3e5fc !important;
+    background-color: #ffffff !important;
     color: #000000 !important;
     border-radius: 10px;
-    box-shadow: 0 4px 8px #78bfea;
 }
 
 input,
@@ -2559,13 +2781,13 @@ select {
 
 /* Estilos para a Seção de Treinamento */
 .product-item-training:hover {
-    background: #29b6f6 !important;
+    background: hsl(215, 35%, 18% , 1) !important;
     color: white !important;
     transform: translateX(5px);
 }
 
 .product-item-training.active {
-    background: #4fc3f7 !important;
+    background: hsl(216, 35%, 28%) !important;
     color: white !important;
 }
 
@@ -3376,3 +3598,311 @@ select {
 .modal-editar-usuario-content::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+/* Estilos para a Tela de Auditoria */
+#audit-log.content-section {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.audit-table-container {
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+.audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em;
+}
+
+.audit-table th {
+    background-color: #f8f9fa;
+    color: #333;
+    text-align: left;
+    padding: 12px 15px;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.audit-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    color: #555;
+}
+
+.audit-table tr:hover {
+    background-color: #f1f8ff;
+}
+
+.badge-op {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+    color: white;
+}
+
+.badge-insert { background-color: #28a745; }
+.badge-update { background-color: #ffc107; color: #333; }
+.badge-delete { background-color: #dc3545; }
+
+.btn-ver-detalhes {
+    background: #4fc3f7;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-ver-detalhes:hover {
+    background: #29b6f6;
+}
+
+/* Modal de Detalhes da Auditoria */
+.audit-modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.6);
+}
+
+.audit-modal-content {
+    background-color: #fff;
+    margin: 5% auto;
+    padding: 25px;
+    border-radius: 12px;
+    width: 80%;
+    max-width: 900px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 5px 30px rgba(0,0,0,0.3);
+}
+
+.audit-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.audit-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.audit-payloads {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .audit-payloads { grid-template-columns: 1fr; }
+}
+
+.payload-box {
+    background: #272822;
+    color: #f8f8f2;
+    padding: 15px;
+    border-radius: 6px;
+    overflow-x: auto;
+}
+
+.payload-box h4 {
+    margin-top: 0;
+    color: #a6e22e;
+    border-bottom: 1px solid #444;
+    padding-bottom: 8px;
+}
+
+.payload-box pre {
+    margin: 0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.85em;
+    white-space: pre-wrap;
+}
+
+/* Estilo para container do BI por Time */
+#bi-time-container {
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+#bi-time-container iframe {
+    overflow: hidden;
+}
+
+#bi-analytics-submenu li button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding-left: 5px;
+    transition: all 0.2s ease;
+}
+
+/* Reuniões: grid de clientes e cards compactos */
+#listaReunioes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 18px; /* espaço entre empresas/cards */
+    align-items: start;
+    margin-top: 8px;
+    grid-auto-rows: minmax(140px, auto); /* força linhas consistentes evitando sobreposição */
+}
+
+.reuniao-client-card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,250,250,0.98));
+    border: 1px solid rgba(229,229,229,1);
+    border-radius: 10px;
+    padding: 12px;
+    min-height: 140px; /* altura mínima, permite conteúdo maior sem sobreposição */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.reuniao-client-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    z-index: 3; /* garante que o card em hover fique sobre os vizinhos sem empurrá-los */
+}
+
+.reuniao-client-card .client-header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+}
+
+.reuniao-client-card h4,
+.reuniao-client-card .client-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #0277bd;
+    margin: 0;
+}
+
+.reuniao-client-card .client-info {
+    color: #555;
+    font-size: 0.92rem;
+}
+
+.reuniao-client-card .client-count {
+    background: #e1f5fe;
+    color: #0277bd;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.reuniao-client-card .client-last {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+/* Ajuste do modal de reuniões para largura confortável */
+#reunioesModal .modal-content {
+    max-width: 900px;
+    width: 95%;
+    padding: 18px;
+}
+
+/* Estilo do modal de reuniões para ficar igual ao exemplo */
+#reunioesModal .modal-content {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.25);
+    padding: 18px 20px;
+    max-width: 920px;
+}
+
+#reunioesModal .reunioes-modal-header {
+    align-items: center;
+}
+
+#reunioesModal .reunioes-modal-icon {
+    width:48px;
+    height:48px;
+    border-radius:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#e8f5ff;
+    color:#1976d2;
+    font-size:20px;
+}
+
+#reunioesModal .reunioes-modal-title {
+    font-size:1.2rem;
+    color:#0d47a1;
+    margin:0 0 4px 0;
+}
+
+#reunioesModal .reunioes-modal-subtitle {
+    color:#6d6d6d;
+    font-size:0.9rem;
+}
+
+#reunioesModal .reunioes-modal-new-btn {
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    color: #333;
+    padding:10px 14px;
+    border-radius:10px;
+    box-shadow: none;
+}
+
+/* Itens dentro do modal: cartões claros azuis com botão Editar/Excluir */
+#reunioesModalList .document-card {
+    background: #ededed; /* tom de azul claro */
+    border-radius: 8px;
+    padding: 18px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+}
+
+#reunioesModalList .document-title {
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: #0b3f60;
+}
+
+#reunioesModalList .document-author {
+    color:#145a7a;
+    font-size:0.9rem;
+    margin-top:6px;
+}
+
+#reunioesModalList .btn-secondary {
+    background:#12304a;
+    color:white;
+    padding:8px 14px;
+    border-radius:8px;
+}
+
+#reunioesModalList .btn-secondary[style] {
+    /* mantém override de excluir caso definido inline */
+}
+
+#reunioesModalList a.btn-secondary {
+    text-decoration:none;
+}
+

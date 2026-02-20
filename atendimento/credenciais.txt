@@ -1,0 +1,28 @@
+================================================
+  CREDENCIAIS DO PROJETO - BI ATENDIMENTO
+================================================
+
+------ SUPABASE ------
+SUPABASE_URL=https://mzjdmhgkrroajmsfwryu.supabase.co
+SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODIzMzAzNSwiZXhwIjoyMDYzODA5MDM1fQ.CVXkKh9yul_Mv2YMhPsDo4CmkQevxpkeI1CtitORpJ0
+
+------ FRESHDESK ------
+FRESHDESK_DOMAIN=suportetryvia
+FRESHDESK_API_KEY=s9GQtphoZqeRNz7Enl
+
+================================================
+  NOTAS IMPORTANTES
+================================================
+
+1. A SUPABASE_SERVICE_KEY tem acesso TOTAL ao banco
+   - Nunca exponha em código frontend
+   - Use apenas em scripts backend/servidor
+
+2. O FRESHDESK_API_KEY está vinculado ao usuário
+   - Pode ser regenerado em: Admin > Agents > Seu Perfil
+
+3. Estas credenciais são SECRETAS
+   - Não commitar em repositórios públicos
+   - Adicionar ao .gitignore
+
+================================================

@@ -1,0 +1,593 @@
+/* ===== CSS Variables ===== */
+:root {
+  --background: hsl(220, 20%, 97%);
+  --foreground: hsl(0, 0%, 100%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(220, 30%, 10%);
+  --primary: hsl(187, 100%, 50%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(220, 30%, 94%);
+  --muted: hsl(220, 20%, 94%);
+  --muted-foreground: hsl(0, 0%, 68%);
+  --border: hsl(220, 20%, 88%);
+  --radius: 0.75rem;
+  
+  /* Universe Theme */
+  --universe-deep: hsl(240, 60%, 5%);
+  --universe-mid: hsl(250, 50%, 12%);
+  --universe-nebula: hsl(270, 60%, 20%);
+  --universe-star: hsl(45, 100%, 90%);
+  --universe-glow: hsl(187, 100%, 50%);
+}
+
+/* ===== Reset & Base ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+  line-height: 1.5;
+}
+
+/* ===== Layout ===== */
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .container {
+    flex-direction: row;
+  }
+}
+
+.universe-section {
+  width: 100%;
+  height: 40vh;
+  position: relative;
+}
+
+@media (min-width: 1024px) {
+  .universe-section {
+    width: 50%;
+    height: 100vh;
+  }
+}
+
+.login-section {
+  width: 100%;
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:  hsl(215, 35%, 18% , 1);
+  padding: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .login-section {
+    width: 50%;
+    height: 100vh;
+  }
+}
+
+/* ===== Universe Background ===== */
+.universe-bg {
+  background: linear-gradient(135deg, var(--universe-deep) 0%, var(--universe-mid) 40%, var(--universe-nebula) 100%);
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.universe-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, hsla(187, 100%, 50%, 0.3) 0%, transparent 70%);
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+/* ===== Stars ===== */
+.stars {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, var(--universe-star), transparent),
+    radial-gradient(2px 2px at 40px 70px, hsla(45, 100%, 90%, 0.8), transparent),
+    radial-gradient(1px 1px at 90px 40px, var(--universe-star), transparent),
+    radial-gradient(2px 2px at 130px 80px, hsla(45, 100%, 90%, 0.6), transparent),
+    radial-gradient(1px 1px at 160px 120px, var(--universe-star), transparent),
+    radial-gradient(2px 2px at 200px 50px, hsla(45, 100%, 90%, 0.7), transparent),
+    radial-gradient(1px 1px at 250px 150px, var(--universe-star), transparent),
+    radial-gradient(2px 2px at 300px 100px, hsla(45, 100%, 90%, 0.5), transparent);
+  background-size: 350px 350px;
+  animation: twinkle 3s ease-in-out infinite alternate;
+}
+
+.stars-layer-2 {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(1px 1px at 50px 100px, hsla(45, 100%, 90%, 0.9), transparent),
+    radial-gradient(2px 2px at 100px 200px, hsla(45, 100%, 90%, 0.7), transparent),
+    radial-gradient(1px 1px at 180px 80px, var(--universe-star), transparent),
+    radial-gradient(1px 1px at 220px 180px, hsla(45, 100%, 90%, 0.6), transparent),
+    radial-gradient(2px 2px at 280px 220px, hsla(45, 100%, 90%, 0.8), transparent),
+    radial-gradient(1px 1px at 320px 60px, var(--universe-star), transparent);
+  background-size: 400px 400px;
+  animation: twinkle 5s ease-in-out infinite alternate-reverse;
+}
+
+.nebula {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom right, hsla(270, 60%, 20%, 0.3), transparent, hsla(250, 50%, 12%, 0.4));
+}
+
+/* ===== Orbit Container ===== */
+.orbit-wrapper {
+  position: relative;
+  width: 450px;
+  height: 450px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 500px) {
+  .orbit-wrapper {
+    width: 300px;
+    height: 300px;
+    transform: scale(0.7);
+  }
+}
+
+/* ===== Orbit Rings ===== */
+.orbit-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid hsla(187, 100%, 50%, 0.2);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: orbit-pulse 3s ease-in-out infinite;
+}
+
+.orbit-ring-1 {
+  width: 200px;
+  height: 200px;
+}
+
+.orbit-ring-2 {
+  width: 300px;
+  height: 300px;
+  animation-delay: 0.5s;
+}
+
+.orbit-ring-3 {
+  width: 400px;
+  height: 400px;
+  animation-delay: 1s;
+}
+
+/* ===== Orbiting Containers ===== */
+.orbit-container {
+  position: absolute;
+  animation: rotate 20s linear infinite;
+}
+
+.orbit-inner {
+  width: 200px;
+  height: 200px;
+  top: 50%;
+  left: 50%;
+  margin-top: -100px;
+  margin-left: -100px;
+}
+
+.orbit-outer {
+  width: 350px;
+  height: 350px;
+  top: 50%;
+  left: 50%;
+  margin-top: -175px;
+  margin-left: -175px;
+}
+
+.orbit-container-reverse {
+  animation: rotate-reverse 25s linear infinite;
+}
+
+/* ===== Orbiting Logos ===== */
+.orbiting-logo {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: hsla(240, 60%, 5%, 0.8);
+  box-shadow: 
+    0 0 20px hsla(187, 100%, 50%, 0.3),
+    inset 0 0 10px hsla(187, 100%, 50%, 0.1);
+  backdrop-filter: blur(4px);
+  animation: counter-rotate 20s linear infinite;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.orbiting-logo:hover {
+  transform: scale(1.2);
+  box-shadow: 
+    0 0 30px hsla(187, 100%, 50%, 0.5),
+    inset 0 0 15px hsla(187, 100%, 50%, 0.2);
+}
+
+.orbiting-logo-reverse {
+  animation: counter-rotate-reverse 25s linear infinite;
+}
+
+.orbiting-logo img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+/* ===== Center Logo ===== */
+.center-logo {
+  position: relative;
+  z-index: 10;
+  animation: float 6s ease-in-out infinite;
+}
+
+.center-logo::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, hsla(187, 100%, 50%, 0.4) 0%, transparent 70%);
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.center-logo img {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 30px hsla(187, 100%, 50%, 0.8));
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== Tagline ===== */
+.tagline {
+  position: absolute;
+  bottom: 3rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+
+.tagline p {
+  color: hsla(0, 0%, 100%, 0.7);
+  font-size: 0.875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* ===== Login Form ===== */
+.login-wrapper {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.login-header h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+}
+
+.login-header p {
+  color: var(--muted-foreground);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--muted-foreground);
+}
+
+.login-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.75rem;
+  border-radius: var(--radius);
+  background: hsla(220, 30%, 94%, 0.5);
+  border: 1px solid var(--border);
+  font-size: 1rem;
+  color: var(--foreground);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.login-input.with-toggle {
+  padding-right: 2.75rem;
+}
+
+.login-input::placeholder {
+  color: var(--muted-foreground);
+}
+
+.login-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px hsla(187, 100%, 50%, 0.2);
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted-foreground);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.password-toggle:hover {
+  color: var(--foreground);
+}
+
+.password-toggle svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ===== Form Options ===== */
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+.checkbox-wrapper input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.25rem;
+  accent-color: var(--primary);
+}
+
+.forgot-link {
+  font-size: 0.875rem;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+/* ===== Login Button ===== */
+.login-button {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 15px hsla(187, 100%, 50%, 0.4);
+  transition: all 0.2s;
+}
+
+.login-button:hover {
+  opacity: 0.9;
+  box-shadow: 0 6px 20px hsla(187, 100%, 50%, 0.5);
+  transform: translateY(-1px);
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+.login-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.loader {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid hsla(220, 50%, 5%, 0.3);
+  border-top-color: var(--primary-foreground);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ===== Divider ===== */
+.divider {
+  position: relative;
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
+}
+
+.divider span {
+  position: relative;
+  padding: 0 1rem;
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+/* ===== Social Buttons ===== */
+.social-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: hsla(220, 30%, 94%, 0.3);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.social-btn:hover {
+  background: hsla(220, 30%, 94%, 0.5);
+}
+
+.social-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.social-btn span {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* ===== Signup Link ===== */
+.signup-link {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+.signup-link a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.signup-link a:hover {
+  text-decoration: underline;
+}
+
+/* ===== Animations ===== */
+@keyframes twinkle {
+  0% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes orbit-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes rotate-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes counter-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes counter-rotate-reverse {
+  from { transform: rotate(-360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

@@ -1,0 +1,109 @@
+/* ========================================
+   TOPBAR & MAIN LAYOUT STYLES
+   ======================================== */
+
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 240px;
+  right: 0;
+  height: 70px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  transition: left 0.3s cubic-bezier(0.4,0,0.2,1);
+  z-index: 90;
+}
+
+.sidebar.collapsed ~ .main-wrapper .topbar {
+  left: 0;
+}
+
+.topbar-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.topbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Main Wrapper */
+.main-wrapper {
+  margin-left: 240px;
+  transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+.sidebar.collapsed ~ .main-wrapper {
+  margin-left: 0;
+}
+
+.main-content {
+  padding: 100px 2rem 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Utility class for hiding elements */
+.hidden {
+  display: none !important;
+}
+
+.main-content.hidden {
+  display: none;
+}
+
+/* Form Elements */
+input[type="file"] {
+  display: none;
+}
+
+.file-label {
+  display: inline-block;
+  padding: 0.625rem 1.25rem;
+  background: var(--gradient);
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.file-label:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(139,92,246,0.3);
+}
+
+select {
+  background: var(--card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.625rem 2rem 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a1a1aa' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 12px;
+}
+
+select:hover {
+  border-color: var(--accent-purple);
+  background-color: var(--card-hover);
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+}

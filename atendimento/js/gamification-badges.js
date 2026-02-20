@@ -1,0 +1,86 @@
+/**
+ * 300 Conquistas Únicas para o Sistema de Gamificação
+ * Organizadas por categorias
+ */
+
+window.GAMIFICATION_BADGES = [
+    // =====================================
+    // CATEGORIA 1: VOLUME DE TICKETS (1-45)
+    // =====================================
+    { id: 'vol_1', name: 'Primeiro Passo', desc: 'Resolveu o primeiro ticket', icon: '🎯', category: 'volume', condition: (s) => s.resolved >= 1 },
+    { id: 'vol_2', name: 'Iniciando', desc: 'Resolveu 5 tickets', icon: '🌱', category: 'volume', condition: (s) => s.resolved >= 5 },
+    { id: 'vol_3', name: 'Esquentando', desc: 'Resolveu 10 tickets', icon: '🔥', category: 'volume', condition: (s) => s.resolved >= 10 },
+    { id: 'vol_4', name: 'Em Ritmo', desc: 'Resolveu 15 tickets', icon: '🎵', category: 'volume', condition: (s) => s.resolved >= 15 },
+    { id: 'vol_5', name: 'Aquecido', desc: 'Resolveu 20 tickets', icon: '🌡️', category: 'volume', condition: (s) => s.resolved >= 20 },
+    { id: 'vol_6', name: 'Vinte e Cinco', desc: 'Resolveu 25 tickets', icon: '🎲', category: 'volume', condition: (s) => s.resolved >= 25 },
+    { id: 'vol_7', name: 'Trinta', desc: 'Resolveu 30 tickets', icon: '📊', category: 'volume', condition: (s) => s.resolved >= 30 },
+    { id: 'vol_8', name: 'Acelerando', desc: 'Resolveu 40 tickets', icon: '🏃', category: 'volume', condition: (s) => s.resolved >= 40 },
+    { id: 'vol_9', name: 'Produtivo', desc: 'Resolveu 50 tickets', icon: '⚡', category: 'volume', condition: (s) => s.resolved >= 50 },
+    { id: 'vol_10', name: 'Sessenta', desc: 'Resolveu 60 tickets', icon: '6️⃣', category: 'volume', condition: (s) => s.resolved >= 60 },
+    { id: 'vol_11', name: 'Setenta', desc: 'Resolveu 70 tickets', icon: '7️⃣', category: 'volume', condition: (s) => s.resolved >= 70 },
+    { id: 'vol_12', name: 'Oitenta', desc: 'Resolveu 80 tickets', icon: '8️⃣', category: 'volume', condition: (s) => s.resolved >= 80 },
+    { id: 'vol_13', name: 'Noventa', desc: 'Resolveu 90 tickets', icon: '9️⃣', category: 'volume', condition: (s) => s.resolved >= 90 },
+    { id: 'vol_14', name: 'Centurião', desc: 'Resolveu 100 tickets', icon: '💯', category: 'volume', condition: (s) => s.resolved >= 100 },
+    { id: 'vol_15', name: 'Cento e Vinte', desc: 'Resolveu 120 tickets', icon: '🔢', category: 'volume', condition: (s) => s.resolved >= 120 },
+    { id: 'vol_16', name: 'Cento e Cinquenta', desc: 'Resolveu 150 tickets', icon: '📈', category: 'volume', condition: (s) => s.resolved >= 150 },
+    { id: 'vol_17', name: 'Duzentos', desc: 'Resolveu 200 tickets', icon: '🎖️', category: 'volume', condition: (s) => s.resolved >= 200 },
+    { id: 'vol_18', name: 'Duzentos e Cinquenta', desc: 'Resolveu 250 tickets', icon: '🏵️', category: 'volume', condition: (s) => s.resolved >= 250 },
+    { id: 'vol_19', name: 'Trezentos', desc: 'Resolveu 300 tickets', icon: '⭐', category: 'volume', condition: (s) => s.resolved >= 300 },
+    { id: 'vol_20', name: 'Trezentos e Cinquenta', desc: 'Resolveu 350 tickets', icon: '🌟', category: 'volume', condition: (s) => s.resolved >= 350 },
+    { id: 'vol_21', name: 'Quatrocentos', desc: 'Resolveu 400 tickets', icon: '💫', category: 'volume', condition: (s) => s.resolved >= 400 },
+    { id: 'vol_22', name: 'Quatrocentos e Cinquenta', desc: 'Resolveu 450 tickets', icon: '✨', category: 'volume', condition: (s) => s.resolved >= 450 },
+    { id: 'vol_23', name: 'Veterano', desc: 'Resolveu 500 tickets', icon: '🏅', category: 'volume', condition: (s) => s.resolved >= 500 },
+    { id: 'vol_24', name: 'Seiscentos', desc: 'Resolveu 600 tickets', icon: '🏆', category: 'volume', condition: (s) => s.resolved >= 600 },
+    { id: 'vol_25', name: 'Setecentos', desc: 'Resolveu 700 tickets', icon: '🎊', category: 'volume', condition: (s) => s.resolved >= 700 },
+    { id: 'vol_26', name: 'Oitocentos', desc: 'Resolveu 800 tickets', icon: '🎁', category: 'volume', condition: (s) => s.resolved >= 800 },
+    { id: 'vol_27', name: 'Novecentos', desc: 'Resolveu 900 tickets', icon: '🏰', category: 'volume', condition: (s) => s.resolved >= 900 },
+    { id: 'vol_28', name: 'Lendário', desc: 'Resolveu 1000 tickets', icon: '👑', category: 'volume', condition: (s) => s.resolved >= 1000 },
+    { id: 'vol_29', name: 'Mil e Duzentos', desc: 'Resolveu 1200 tickets', icon: '💎', category: 'volume', condition: (s) => s.resolved >= 1200 },
+    { id: 'vol_30', name: 'Mil e Quinhentos', desc: 'Resolveu 1500 tickets', icon: '⚜️', category: 'volume', condition: (s) => s.resolved >= 1500 },
+    { id: 'vol_31', name: 'Duas Mil', desc: 'Resolveu 2000 tickets', icon: '🌠', category: 'volume', condition: (s) => s.resolved >= 2000 },
+    { id: 'vol_32', name: 'Três Mil', desc: 'Resolveu 3000 tickets', icon: '🚀', category: 'volume', condition: (s) => s.resolved >= 3000 },
+    { id: 'vol_33', name: 'Cinco Mil', desc: 'Resolveu 5000 tickets', icon: '🌍', category: 'volume', condition: (s) => s.resolved >= 5000 },
+    { id: 'vol_34', name: 'Dez Mil', desc: 'Resolveu 10000 tickets', icon: '🌎', category: 'volume', condition: (s) => s.resolved >= 10000 },
+    { id: 'vol_35', name: 'Imortal', desc: 'Resolveu 15000 tickets', icon: '👼', category: 'volume', condition: (s) => s.resolved >= 15000 },
+
+    // VELOCIDADE (36-70)
+    { id: 'speed_1', name: 'Resposta Rápida', desc: 'Tempo médio 1ª resposta < 4h', icon: '⏱️', category: 'velocidade', condition: (s) => s.avgFirstResponse > 0 && s.avgFirstResponse < 4 },
+    { id: 'speed_2', name: 'Ágil', desc: 'Tempo médio 1ª resposta < 3h', icon: '🏃', category: 'velocidade', condition: (s) => s.avgFirstResponse > 0 && s.avgFirstResponse < 3 },
+    { id: 'speed_3', name: 'Veloz', desc: 'Tempo médio 1ª resposta < 2h', icon: '💨', category: 'velocidade', condition: (s) => s.avgFirstResponse > 0 && s.avgFirstResponse < 2 },
+    { id: 'speed_4', name: 'Relâmpago', desc: 'Tempo médio 1ª resposta < 1h', icon: '⚡', category: 'velocidade', condition: (s) => s.avgFirstResponse > 0 && s.avgFirstResponse < 1 },
+    { id: 'speed_5', name: 'Flash', desc: 'Tempo médio 1ª resposta < 30min', icon: '🔴', category: 'velocidade', condition: (s) => s.avgFirstResponse > 0 && s.avgFirstResponse < 0.5 },
+    { id: 'speed_6', name: 'Instantâneo', desc: 'Tempo médio 1ª resposta < 15min', icon: '💥', category: 'velocidade', condition: (s) => s.avgFirstResponse > 0 && s.avgFirstResponse < 0.25 },
+    { id: 'speed_7', name: 'Resolução Dia', desc: 'Tempo médio resolução < 24h', icon: '🗓️', category: 'velocidade', condition: (s) => s.avgTime > 0 && s.avgTime < 24 },
+    { id: 'speed_8', name: 'Resolução Rápida', desc: 'Tempo médio resolução < 12h', icon: '⏰', category: 'velocidade', condition: (s) => s.avgTime > 0 && s.avgTime < 12 },
+    { id: 'speed_9', name: 'Resolução Veloz', desc: 'Tempo médio resolução < 8h', icon: '🚄', category: 'velocidade', condition: (s) => s.avgTime > 0 && s.avgTime < 8 },
+    { id: 'speed_10', name: 'Velocista', desc: 'Tempo médio resolução < 4h', icon: '🚀', category: 'velocidade', condition: (s) => s.avgTime > 0 && s.avgTime < 4 },
+    { id: 'speed_11', name: 'Supersônico', desc: 'Tempo médio resolução < 2h', icon: '✈️', category: 'velocidade', condition: (s) => s.avgTime > 0 && s.avgTime < 2 },
+    { id: 'speed_12', name: 'Hipersônico', desc: 'Tempo médio resolução < 1h', icon: '🛫', category: 'velocidade', condition: (s) => s.avgTime > 0 && s.avgTime < 1 },
+    { id: 'speed_13', name: 'Tempo Real', desc: 'Tempo médio resolução < 30min', icon: '⌚', category: 'velocidade', condition: (s) => s.avgTime > 0 && s.avgTime < 0.5 },
+    { id: 'speed_14', name: 'Dia Produtivo', desc: '5+ tickets em um dia', icon: '📈', category: 'velocidade', condition: (s) => s.maxTicketsInDay >= 5 },
+    { id: 'speed_15', name: 'Dia Excepcional', desc: '10+ tickets em um dia', icon: '🌟', category: 'velocidade', condition: (s) => s.maxTicketsInDay >= 10 },
+    { id: 'speed_16', name: 'Dia Lendário', desc: '15+ tickets em um dia', icon: '👑', category: 'velocidade', condition: (s) => s.maxTicketsInDay >= 15 },
+    { id: 'speed_17', name: 'Dia Impossível', desc: '20+ tickets em um dia', icon: '🦄', category: 'velocidade', condition: (s) => s.maxTicketsInDay >= 20 },
+    { id: 'speed_18', name: 'Dia Mítico', desc: '30+ tickets em um dia', icon: '🐉', category: 'velocidade', condition: (s) => s.maxTicketsInDay >= 30 },
+    { id: 'speed_19', name: 'Eficiência Bronze', desc: 'Média < 8h e 25+ tickets', icon: '🥉', category: 'velocidade', condition: (s) => s.avgTime < 8 && s.resolved >= 25 },
+    { id: 'speed_20', name: 'Eficiência Prata', desc: 'Média < 4h e 50+ tickets', icon: '🥈', category: 'velocidade', condition: (s) => s.avgTime < 4 && s.resolved >= 50 },
+    { id: 'speed_21', name: 'Eficiência Ouro', desc: 'Média < 2h e 100+ tickets', icon: '🥇', category: 'velocidade', condition: (s) => s.avgTime < 2 && s.resolved >= 100 },
+    { id: 'speed_22', name: 'Semana Veloz', desc: 'Média < 4h na semana', icon: '📅', category: 'velocidade', condition: (s) => s.weeklyAvgTime < 4 },
+    { id: 'speed_23', name: 'Mês Veloz', desc: 'Média < 4h no mês', icon: '📆', category: 'velocidade', condition: (s) => s.monthlyAvgTime < 4 },
+    { id: 'speed_24', name: 'Sprint Master', desc: '10+ tickets em 4 horas', icon: '🏃‍♂️', category: 'velocidade', condition: (s) => s.sprintMaster >= 1 },
+    { id: 'speed_25', name: 'Turbo', desc: 'Dobrou velocidade em 1 mês', icon: '🔥', category: 'velocidade', condition: (s) => s.speedDoubled },
+    { id: 'speed_26', name: 'Aceleração Total', desc: 'Top 3 mais rápidos', icon: '🏆', category: 'velocidade', condition: (s) => s.speedRank <= 3 },
+    { id: 'speed_27', name: 'Raio', desc: 'Resolveu ticket em < 5min', icon: '⚡', category: 'velocidade', condition: (s) => s.ultraFastResolution >= 1 },
+    { id: 'speed_28', name: 'Mestre Raio', desc: '10+ tickets em < 5min', icon: '🌩️', category: 'velocidade', condition: (s) => s.ultraFastResolution >= 10 },
+    { id: 'speed_29', name: 'Sem Parar', desc: '50+ tickets sem atraso', icon: '🎯', category: 'velocidade', condition: (s) => s.noDelayStreak >= 50 },
+    { id: 'speed_30', name: 'Máquina', desc: '100+ tickets sem atraso', icon: '🤖', category: 'velocidade', condition: (s) => s.noDelayStreak >= 100 },
+    { id: 'speed_31', name: 'Imparável', desc: '200+ tickets sem atraso', icon: '🚂', category: 'velocidade', condition: (s) => s.noDelayStreak >= 200 },
+    { id: 'speed_32', name: 'Pontualidade Bronze', desc: '90%+ no prazo', icon: '🥉', category: 'velocidade', condition: (s) => s.onTimePercent >= 90 },
+    { id: 'speed_33', name: 'Pontualidade Prata', desc: '95%+ no prazo', icon: '🥈', category: 'velocidade', condition: (s) => s.onTimePercent >= 95 },
+    { id: 'speed_34', name: 'Pontualidade Ouro', desc: '99%+ no prazo', icon: '🥇', category: 'velocidade', condition: (s) => s.onTimePercent >= 99 },
+    { id: 'speed_35', name: 'Pontualidade Perfeita', desc: '100% no prazo', icon: '💯', category: 'velocidade', condition: (s) => s.onTimePercent === 100 && s.resolved >= 50 },
+
+    // Badges serão continuados em window.GAMIFICATION_BADGES_PART2
+];
+
+console.log('✅ Gamification Badges Part 1 carregado');

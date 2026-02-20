@@ -1,0 +1,182 @@
+/* ========================================
+   CARDS & GRID STYLES
+   ======================================== */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1.5rem;
+}
+
+.card {
+  grid-column: span 12;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gradient);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+  background: var(--card-hover);
+  border-color: var(--border-light);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 
+              0 0 0 1px rgba(139, 92, 246, 0.1);
+}
+
+.card:hover::before {
+  transform: scaleX(1);
+}
+
+.card.span6 {
+  grid-column: span 6;
+}
+
+.card h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Card Icons */
+.card h3.icon-chart::before { content: '📊'; font-size: 1.2rem; }
+.card h3.icon-users::before { content: '👥'; font-size: 1.2rem; }
+.card h3.icon-types::before { content: '📋'; font-size: 1.2rem; }
+.card h3.icon-priority::before { content: '🎯'; font-size: 1.2rem; }
+.card h3.icon-timeline::before { content: '📅'; font-size: 1.2rem; }
+
+/* Team Name */
+#teamName {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1.5rem;
+}
+
+/* KPI Cards */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.kpi {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  border-left: 3px solid transparent;
+  cursor: default;
+}
+
+.kpi:nth-child(1) { border-left-color: var(--accent-blue); }
+.kpi:nth-child(2) { border-left-color: var(--accent-green); }
+.kpi:nth-child(3) { border-left-color: var(--accent-purple); }
+.kpi:nth-child(4) { border-left-color: var(--accent-orange); }
+.kpi:nth-child(5) { border-left-color: #10b981; }
+.kpi:nth-child(6) { border-left-color: #f59e0b; }
+
+.kpi:hover {
+  background: var(--card);
+  border-color: var(--border-light);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.kpi:hover .value {
+  transform: scale(1.05);
+}
+
+.kpi .value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+  color: var(--text-primary);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.kpi .label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+table thead {
+  background: var(--bg-secondary);
+}
+
+table th {
+  padding: 0.75rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border);
+}
+
+table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+table tbody tr {
+  transition: background 0.2s;
+}
+
+table tbody tr:hover {
+  background: var(--bg-secondary);
+}
+
+table tbody tr:first-child td:last-child {
+  font-weight: 700;
+  color: var(--accent-purple);
+}
+
+/* Footer */
+.footer {
+  padding: 2rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  text-align: center;
+  border-top: 1px solid var(--border);
+  margin-top: 3rem;
+  background: var(--bg-secondary);
+}
