@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <link rel="icon" type="image/png" href="tryvia.png" />
+    <link rel="icon" type="image/png" href="/tryvia.png" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Linha do Tempo MVP</title>
@@ -762,8 +762,8 @@ tbody tr:hover {
     <script>
         (function() {
             // Verificar se o usuário veio da página Portal.html
-            const referrerPermitido = 'Portal.html';
-            const paginaLogin = 'login/index.html';
+            const referrerPermitido = '/Portal.html';  
+            const paginaLogin = `/login/index.html`;  
             
             // Obter o referrer atual
             const referrerAtual = document.referrer;
@@ -780,7 +780,7 @@ tbody tr:hover {
     </script>
 </head>
 <body>
-<a href="Portal.html" class="btn-voltar-portal">
+<a href="/Portal.html" class="btn-voltar-portal">
     Voltar para o portal
 </a>
 

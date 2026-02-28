@@ -273,12 +273,7 @@ function carregarDadosLocais() {
 }
 
 // Configurar event listeners
-function configurarEventListeners() {
-    // Botão voltar para o portal
-    document.getElementById("btn-voltar-portal").addEventListener("click", function () {
-        window.location.href = "Portal.html";
-    });
-
+{
     // Botão adicionar nova implantação
     document.getElementById('btn-adicionar').addEventListener('click', abrirModalAdicionar);
 

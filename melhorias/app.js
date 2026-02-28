@@ -404,8 +404,7 @@ function escapeHtml(str) {
      (function() {
              // Verificar se o usuário veio da página Portal.html
             const referrerPermitido = '/Portal.html';  
-            const BASE_PATH = '/dev';
-            const paginaLogin = `${BASE_PATH}/login/index.html`;    
+            const paginaLogin = `/login/index.html`;  
             
              // Obter o referrer atual
              const referrerAtual = document.referrer;

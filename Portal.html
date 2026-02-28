@@ -1,20 +1,9 @@
 <!DOCTYPE html>
 
 <html lang="pt-BR">
-
-
 <head>
-    <link rel="icon" type="image/png" href="tryvia.png" />
-    <link rel="stylesheet" href="portal.css">
-    <style>
-        .content-section {
-            display: none;
-            width: 100%;
-        }
-        .content-section.active {
-            display: block !important;
-        }
-    </style>
+    <link rel="icon" type="image/png" href="/tryvia.png" />
+    <link rel="stylesheet" href="css/portal.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -22,283 +11,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="portal-function/function-ocultarabas.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    <script>
-        const setorUsuario = sessionStorage.getItem('setor');
-        const RELEASE_SUPABASE_URL = 'https://mzjdmhgkrroajmsfwryu.supabase.co';
-        const RELEASE_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODIzMzAzNSwiZXhwIjoyMDYzODA5MDM1fQ.CVXkKh9yul_Mv2YMhPsDo4CmkQevxpkeI1CtitORpJ0';
-        const releaseClient = supabase.createClient(RELEASE_SUPABASE_URL, RELEASE_SUPABASE_KEY);
-        const SUPABASE_URL = 'https://mzjdmhgkrroajmsfwryu.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMzMwMzUsImV4cCI6MjA2MzgwOTAzNX0.tQCwUfFCV7sD-IexQviU0XEPcbn9j5uK9NSUbH-OeBc';
-
-        // Função para mostrar/ocultar abas
-        function showTab(tabId) {
-            console.log('Mostrando aba:', tabId);
-            // Oculta todas as seções de conteúdo
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.style.display = 'none';
-                section.classList.remove('active');
-            });
-
-            // Mostra a seção selecionada
-            const selectedTab = document.getElementById(tabId);
-            if (selectedTab) {
-                selectedTab.style.display = 'block';
-                selectedTab.classList.add('active');
-                console.log('Elemento encontrado e exibido:', tabId);
-            } else {
-                console.error('Elemento não encontrado:', tabId);
-            }
-
-            if (tabId === 'documents') {
-                if (typeof loadDocuments === 'function') loadDocuments();
-            }
-
-            if (tabId === 'dashboard') {
-                if (typeof fetchAndRenderDashboards === 'function') fetchAndRenderDashboards();
-            }
-
-            if (tabId === 'homologacao') {
-                if (typeof fetchAndRenderHomologacoes === 'function') fetchAndRenderHomologacoes();
-            }
-
-            // Remove a classe active de todos os botões
-            document.querySelectorAll('.nav-item button').forEach(button => {
-                button.parentElement.classList.remove('active');
-            });
-
-            // Adiciona a classe active ao botão selecionado
-            const selectedButton = document.querySelector(`button[onclick*="showTab('${tabId}')"]`);
-            if (selectedButton) {
-                selectedButton.parentElement.classList.add('active');
-            }
-        }
-    </script>
     <meta charset="utf-8" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Portal</title>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script type="text/javascript">
 
     </script>
-    <!-- Modal de Detalhes da Auditoria -->
-    <div id="auditDetailModal" class="audit-modal">
-        <div class="audit-modal-content">
-            <div class="audit-modal-header">
-                <h3><i class="fas fa-info-circle"></i> Detalhes da Alteração</h3>
-                <span class="close" onclick="fecharModalAudit()" style="cursor:pointer; font-size: 24px;">&times;</span>
-            </div>
-            <div id="auditDetailContent">
-                <!-- Conteúdo preenchido via JS -->
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="customModal">
-        <div class="modal-content">
-            <h3 id="modalTitle"></h3>
-            <p id="modalMessage"></p>
-            <div class="modal-buttons" id="modalButtons">
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para Envio por E-mail -->
-    <div class="modal-overlay" id="emailModal">
-        <div class="modal-content" style="max-width: 500px;">
-            <h3 style="color: #4fc3f7; margin-bottom: 20px;">
-                <i class="fas fa-envelope" style="margin-right: 10px;"></i>
-                Enviar Relatório por E-mail
-            </h3>
-            <div class="form-group">
-                <label for="emailRecipients">E-mails dos Destinatários</label>
-                <textarea id="emailRecipients"
-                    placeholder="Digite os e-mails separados por vírgula ou quebra de linha&#10;exemplo@empresa.com, outro@empresa.com"
-                    rows="4"
-                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical;"></textarea>
-                <small style="color: #666; font-size: 0.9em;">Separe múltiplos e-mails por vírgula ou quebra de
-                    linha</small>
-            </div>
-            <div class="form-group">
-                <label for="emailSubject">Assunto</label>
-                <input type="text" id="emailSubject" placeholder="Assunto do e-mail"
-                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-            </div>
-            <div class="form-group">
-                <label for="emailMessage">Mensagem (opcional)</label>
-                <textarea id="emailMessage" placeholder="Digite uma mensagem personalizada..." rows="3"
-                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical;"></textarea>
-            </div>
-            <div class="modal-buttons">
-                <button class="modal-button cancel" onclick="closeEmailModal()">Cancelar</button>
-                <button class="modal-button confirm" onclick="enviarRelatorioPorEmail()">
-                    <i class="fas fa-paper-plane" style="margin-right: 8px;"></i>
-                    Enviar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para Envio por WhatsApp -->
-    <div class="modal-overlay" id="whatsappModal">
-        <div class="modal-content" style="max-width: 500px;">
-            <h3 style="color: #25d366; margin-bottom: 20px;">
-                <i class="fab fa-whatsapp" style="margin-right: 10px;"></i>
-                Enviar Relatório por WhatsApp
-            </h3>
-            <div class="form-group">
-                <label for="whatsappNumber">Número do WhatsApp</label>
-                <input type="tel" id="whatsappNumber" placeholder="(11) 99999-9999 ou +5511999999999"
-                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                <small style="color: #666; font-size: 0.9em;">Digite o número com DDD. Ex: (11) 99999-9999</small>
-            </div>
-            <div class="form-group">
-                <label for="whatsappMessage">Mensagem</label>
-                <textarea id="whatsappMessage" rows="4"
-                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical;"></textarea>
-            </div>
-            <div
-                style="background: #f0f8ff; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #25d366;">
-                <p style="margin: 0; font-size: 0.9em; color: #333;">
-                    <i class="fas fa-info-circle" style="color: #25d366; margin-right: 8px;"></i>
-                    <strong>Importante:</strong> O WhatsApp será aberto com a mensagem pré-preenchida. Você precisará
-                    anexar o PDF manualmente após o envio da mensagem.
-                </p>
-            </div>
-            <div class="modal-buttons">
-                <button class="modal-button cancel" onclick="closeWhatsappModal()">Cancelar</button>
-                <button class="modal-button confirm" style="background-color: #25d366;"
-                    onclick="enviarRelatorioPorWhatsapp()">
-                    <i class="fab fa-whatsapp" style="margin-right: 8px;"></i>
-                    Abrir WhatsApp
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para Editar Reunião -->
-    <div class="modal-overlay" id="modalEditarReuniao">
-        <div class="modal-content" style="max-width: 600px;">
-            <h3 style="color: #4fc3f7; margin-bottom: 20px;">
-                <i class="fas fa-edit" style="margin-right: 10px;"></i>
-                Editar Reunião
-            </h3>
-            <form id="formEditarReuniao">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="editReuniaoCliente">Cliente</label>
-                        <select id="editReuniaoCliente">
-                            <option value="">Selecione um cliente...</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="editReuniaoData">Data</label>
-                        <input type="date" id="editReuniaoData" class="input-padrao">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="editReuniaoHorario">Horário</label>
-                        <input type="time" id="editReuniaoHorario" class="input-padrao">
-                    </div>
-                    <div class="form-group">
-                        <label for="editReuniaoTipo">Tipo</label>
-                        <input type="text" id="editReuniaoTipo">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="editReuniaoResponsavel">Responsável pela Reunião</label>
-                        <select id="editReuniaoResponsavel">
-                            <option value="">Selecione um responsável...</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="editReuniaoParticipantes">Participantes</label>
-                        <input type="text" id="editReuniaoParticipantes">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="editReuniaoFile">📎 Anexar Nova Ata (opcional)</label>
-                    <input type="file" id="editReuniaoFile" class="input-padrao">
-                    <small style="color: #666;">Deixe em branco para manter a ata atual</small>
-                    <div id="existingReuniaoAttachment" style="margin-top:8px; color:#333; font-size:0.95em;"></div>
-                    <div style="margin-top:6px;">
-                        <label style="font-size:0.9em; color:#666;"><input type="checkbox" id="deleteReuniaoAttachment" style="margin-right:6px;"> Excluir ata atual</label>
-                    </div>
-                </div>
-                <div class="modal-buttons">
-                    <button type="button" class="modal-button cancel"
-                        onclick="fecharModalEditarReuniao()">Cancelar</button>
-                    <button type="submit" class="modal-button confirm">
-                        <i class="fas fa-save" style="margin-right: 8px;"></i>
-                        Salvar Alterações
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal para Editar Homologação -->
-    <div class="modal-overlay" id="modalEditarHomologacao">
-        <div class="modal-content" style="max-width: 600px;">
-            <h3 style="color: #4fc3f7; margin-bottom: 20px;">
-                <i class="fas fa-edit" style="margin-right: 10px;"></i>
-                Editar Homologação
-            </h3>
-            <form id="formEditarHomologacao">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="editHomologacaoVersao">Versão</label>
-                        <input type="text" id="editHomologacaoVersao" class="input-padrao">
-                    </div>
-                    <div class="form-group">
-                        <label for="editHomologacaoEspecialista">Especialista</label>
-                        <input type="text" id="editHomologacaoEspecialista" class="input-padrao">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="editHomologacaoSistema">Sistema</label>
-                        <input type="text" id="editHomologacaoSistema" class="input-padrao">
-                    </div>
-                    <div class="form-group">
-                        <label for="editHomologacaoDataLiberacao">Data de Liberação</label>
-                        <input type="date" id="editHomologacaoDataLiberacao" class="input-padrao">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="editHomologacaoDataHomologacao">Data de Homologação</label>
-                        <input type="date" id="editHomologacaoDataHomologacao" class="input-padrao">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="editHomologacaoObservacao">Observação</label>
-                    <textarea id="editHomologacaoObservacao" rows="3" class="input-padrao"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="editHomologacaoFiles">📎 Adicionar Documentos (opcional)</label>
-                    <input type="file" id="editHomologacaoFiles" class="input-padrao" multiple>
-                    <small style="color: #666;">Selecione um ou mais arquivos para adicionar à homologação</small>
-                </div>
-                <div class="modal-buttons">
-                    <button type="button" class="modal-button cancel"
-                        onclick="fecharModalEditarHomologacao()">Cancelar</button>
-                    <button type="submit" class="modal-button confirm">
-                        <i class="fas fa-save" style="margin-right: 8px;"></i>
-                        Salvar Alterações
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+</head>
     <div class="sidebar">
         <div class="logo-container">
             <img alt="Sua Logo" class="your-custom-logo" src="logo111.png" />
@@ -332,7 +58,7 @@
                         class="fas fa-ticket-alt"></i> Painel de Tickets</button>
             </li>
             <li class="nav-item">
-                <button onclick="window.location.href='mapa_visitas.html'"
+                <button onclick="window.location.href='mapa_de_visitas/index.html'"
                     data-permissao="https://tryvia.github.io/TryviaBI/mapa_visitas.html"><i
                         class="fas fa-calendar-check"></i> Visitas</button>
             </li>
@@ -368,17 +94,17 @@
                 <button onclick="showTab('cs')" data-permissao="cs"><i class="fas fa-headset"></i> CS</button>
             </li>
             <li class="nav-item">
-                <button onclick="window.location.href='calendario.html'"
+                <button onclick="window.location.href='calendario/index.html'"
                     data-permissao="https://tryvia.github.io/TryviaBI/calendario.html"><i class="fas fa-calendar"></i>
                     Calendário</button>
             </li>
             <li class="nav-item">
-                <button onclick="window.location.href='linha%20do%20tempo.html'"
+                <button onclick="window.location.href='linha_do_tempo/index.html'"
                     data-permissao="https://tryvia.github.io/TryviaBI/linha%20do%20tempo.html"><i
                         class="fas fa-clock"></i> MVP</button>
             </li>
             <li class="nav-item">
-                <button onclick="window.location.href='implanta%C3%A7%C3%A3o.html'"
+                <button onclick="window.location.href='implantacao/index.html'"
                     data-permissao="implanta%C3%A7%C3%A3o.html"><i class="fas fa-cogs"></i> Implantações</button>
             </li>
             <li class="nav-item">
@@ -3283,9 +3009,222 @@
         </div>
     </div>
 
-    <script src="portal.js"></script>
-    <script src="audit.js"></script>
-    <script src="audit-utility.js"></script>
+    <!-- Modal de Detalhes da Auditoria -->
+    <div id="auditDetailModal" class="audit-modal">
+        <div class="audit-modal-content">
+            <div class="audit-modal-header">
+                <h3><i class="fas fa-info-circle"></i> Detalhes da Alteração</h3>
+                <span class="close" onclick="fecharModalAudit()" style="cursor:pointer; font-size: 24px;">&times;</span>
+            </div>
+            <div id="auditDetailContent">
+                <!-- Conteúdo preenchido via JS -->
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="customModal">
+        <div class="modal-content">
+            <h3 id="modalTitle"></h3>
+            <p id="modalMessage"></p>
+            <div class="modal-buttons" id="modalButtons">
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Envio por E-mail -->
+    <div class="modal-overlay" id="emailModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 style="color: #4fc3f7; margin-bottom: 20px;">
+                <i class="fas fa-envelope" style="margin-right: 10px;"></i>
+                Enviar Relatório por E-mail
+            </h3>
+            <div class="form-group">
+                <label for="emailRecipients">E-mails dos Destinatários</label>
+                <textarea id="emailRecipients"
+                    placeholder="Digite os e-mails separados por vírgula ou quebra de linha&#10;exemplo@empresa.com, outro@empresa.com"
+                    rows="4"
+                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical;"></textarea>
+                <small style="color: #666; font-size: 0.9em;">Separe múltiplos e-mails por vírgula ou quebra de
+                    linha</small>
+            </div>
+            <div class="form-group">
+                <label for="emailSubject">Assunto</label>
+                <input type="text" id="emailSubject" placeholder="Assunto do e-mail"
+                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
+            <div class="form-group">
+                <label for="emailMessage">Mensagem (opcional)</label>
+                <textarea id="emailMessage" placeholder="Digite uma mensagem personalizada..." rows="3"
+                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical;"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-button cancel" onclick="closeEmailModal()">Cancelar</button>
+                <button class="modal-button confirm" onclick="enviarRelatorioPorEmail()">
+                    <i class="fas fa-paper-plane" style="margin-right: 8px;"></i>
+                    Enviar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Envio por WhatsApp -->
+    <div class="modal-overlay" id="whatsappModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 style="color: #25d366; margin-bottom: 20px;">
+                <i class="fab fa-whatsapp" style="margin-right: 10px;"></i>
+                Enviar Relatório por WhatsApp
+            </h3>
+            <div class="form-group">
+                <label for="whatsappNumber">Número do WhatsApp</label>
+                <input type="tel" id="whatsappNumber" placeholder="(11) 99999-9999 ou +5511999999999"
+                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                <small style="color: #666; font-size: 0.9em;">Digite o número com DDD. Ex: (11) 99999-9999</small>
+            </div>
+            <div class="form-group">
+                <label for="whatsappMessage">Mensagem</label>
+                <textarea id="whatsappMessage" rows="4"
+                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical;"></textarea>
+            </div>
+            <div
+                style="background: #f0f8ff; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #25d366;">
+                <p style="margin: 0; font-size: 0.9em; color: #333;">
+                    <i class="fas fa-info-circle" style="color: #25d366; margin-right: 8px;"></i>
+                    <strong>Importante:</strong> O WhatsApp será aberto com a mensagem pré-preenchida. Você precisará
+                    anexar o PDF manualmente após o envio da mensagem.
+                </p>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-button cancel" onclick="closeWhatsappModal()">Cancelar</button>
+                <button class="modal-button confirm" style="background-color: #25d366;"
+                    onclick="enviarRelatorioPorWhatsapp()">
+                    <i class="fab fa-whatsapp" style="margin-right: 8px;"></i>
+                    Abrir WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Reunião -->
+    <div class="modal-overlay" id="modalEditarReuniao">
+        <div class="modal-content" style="max-width: 600px;">
+            <h3 style="color: #4fc3f7; margin-bottom: 20px;">
+                <i class="fas fa-edit" style="margin-right: 10px;"></i>
+                Editar Reunião
+            </h3>
+            <form id="formEditarReuniao">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editReuniaoCliente">Cliente</label>
+                        <select id="editReuniaoCliente">
+                            <option value="">Selecione um cliente...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editReuniaoData">Data</label>
+                        <input type="date" id="editReuniaoData" class="input-padrao">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editReuniaoHorario">Horário</label>
+                        <input type="time" id="editReuniaoHorario" class="input-padrao">
+                    </div>
+                    <div class="form-group">
+                        <label for="editReuniaoTipo">Tipo</label>
+                        <input type="text" id="editReuniaoTipo">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editReuniaoResponsavel">Responsável pela Reunião</label>
+                        <select id="editReuniaoResponsavel">
+                            <option value="">Selecione um responsável...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editReuniaoParticipantes">Participantes</label>
+                        <input type="text" id="editReuniaoParticipantes">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editReuniaoFile">📎 Anexar Nova Ata (opcional)</label>
+                    <input type="file" id="editReuniaoFile" class="input-padrao">
+                    <small style="color: #666;">Deixe em branco para manter a ata atual</small>
+                    <div id="existingReuniaoAttachment" style="margin-top:8px; color:#333; font-size:0.95em;"></div>
+                    <div style="margin-top:6px;">
+                        <label style="font-size:0.9em; color:#666;"><input type="checkbox" id="deleteReuniaoAttachment" style="margin-right:6px;"> Excluir ata atual</label>
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="modal-button cancel"
+                        onclick="fecharModalEditarReuniao()">Cancelar</button>
+                    <button type="submit" class="modal-button confirm">
+                        <i class="fas fa-save" style="margin-right: 8px;"></i>
+                        Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Homologação -->
+    <div class="modal-overlay" id="modalEditarHomologacao">
+        <div class="modal-content" style="max-width: 600px;">
+            <h3 style="color: #4fc3f7; margin-bottom: 20px;">
+                <i class="fas fa-edit" style="margin-right: 10px;"></i>
+                Editar Homologação
+            </h3>
+            <form id="formEditarHomologacao">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editHomologacaoVersao">Versão</label>
+                        <input type="text" id="editHomologacaoVersao" class="input-padrao">
+                    </div>
+                    <div class="form-group">
+                        <label for="editHomologacaoEspecialista">Especialista</label>
+                        <input type="text" id="editHomologacaoEspecialista" class="input-padrao">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editHomologacaoSistema">Sistema</label>
+                        <input type="text" id="editHomologacaoSistema" class="input-padrao">
+                    </div>
+                    <div class="form-group">
+                        <label for="editHomologacaoDataLiberacao">Data de Liberação</label>
+                        <input type="date" id="editHomologacaoDataLiberacao" class="input-padrao">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editHomologacaoDataHomologacao">Data de Homologação</label>
+                        <input type="date" id="editHomologacaoDataHomologacao" class="input-padrao">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editHomologacaoObservacao">Observação</label>
+                    <textarea id="editHomologacaoObservacao" rows="3" class="input-padrao"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editHomologacaoFiles">📎 Adicionar Documentos (opcional)</label>
+                    <input type="file" id="editHomologacaoFiles" class="input-padrao" multiple>
+                    <small style="color: #666;">Selecione um ou mais arquivos para adicionar à homologação</small>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="modal-button cancel"
+                        onclick="fecharModalEditarHomologacao()">Cancelar</button>
+                    <button type="submit" class="modal-button confirm">
+                        <i class="fas fa-save" style="margin-right: 8px;"></i>
+                        Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="portal-function/portal.js"></script>
+    <script src="portal-function/audit.js"></script>
+    <script src="portal-function/audit-utility.js"></script>
     <script src="SING-Service/consultar_integracao_IDCliente.js"></script>
     <script src="SING-Service/obter-token.js"></script>
     

@@ -12185,4 +12185,3 @@ function showBITab(section) {
         }
     }
 }
-

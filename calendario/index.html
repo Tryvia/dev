@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <link rel="icon" type="image/png" href="tryvia.png" />
+    <link rel="icon" type="image/png" href="/tryvia.png" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendário de Atividades</title>
@@ -398,10 +398,11 @@
                 align-items: center;
             }
         }
+        
     </style>
 </head>
 <body>
-    <a href="Portal.html" class="back-button">Voltar para o portal</a>
+    <a href="/Portal.html" class="back-button">Voltar para o portal</a>
     <div class="container">
         <!-- Header -->
         <div class="header">
@@ -916,6 +917,24 @@
                     return '';
             }
         }
+
+                (function () {
+            // Verificar se o usuário veio da página Portal.html
+            const referrerPermitido = '/Portal.html';  
+            const paginaLogin = `/login/index.html`;  
+
+            // Obter o referrer atual
+            const referrerAtual = document.referrer;
+
+            // Verificar se o referrer está vazio (acesso direto) ou não é o permitido
+            if (!referrerAtual || !referrerAtual.includes(referrerPermitido)) {
+                // Verificar se não estamos já na página de login para evitar loop infinito
+                if (window.location.href !== paginaLogin) {
+                    // Redirecionar para a página de login
+                    window.location.replace(paginaLogin);
+                }
+            }
+        })();
 
         // Event listener para fechar modal clicando fora
         document.addEventListener('DOMContentLoaded', function() {

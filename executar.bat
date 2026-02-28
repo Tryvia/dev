@@ -9,10 +9,12 @@ cd /d "%~dp0"
 
 echo.
 echo ====================================
-echo     TryviaBI - Servidor Local
+echo     HAHAHAHA- Servidor Local
 echo ====================================
 echo.
 echo Iniciando servidor...
+echo.
+echo lembrar de ajustar o caminho do arquivo de gestao no banco de dados...
 echo.
 
 REM Tentar usar Python (mais compatível)
@@ -23,10 +25,12 @@ if %errorlevel% equ 0 (
     echo [INFO] Pressione Ctrl+C para parar o servidor
     echo.
     
-    REM Criar arquivo de log
-    set "logfile=tryvia_logs_%date:~-4,4%%date:~-10,2%%date:~-7,2%_%time:~0,2%%time:~3,2%%time:~6,2%.log"
+    REM Garantir pasta de logs
+    if not exist "logs" mkdir "logs"
+    REM Criar arquivo de log dentro da pasta logs
+    set "logfile=logs\tryvia_logs_%date:~-4,4%%date:~-10,2%%date:~-7,2%_%time:~0,2%%time:~3,2%%time:~6,2%.log"
     
-    echo [%date% %time%] Servidor iniciado > !logfile!
+    echo [%date% %time%] Servidor iniciado > !logfile!"
     python -m http.server 8000 >> !logfile! 2>&1
     
     goto fim

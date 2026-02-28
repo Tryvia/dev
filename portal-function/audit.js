@@ -1,4 +1,11 @@
 
+// Configuração do Supabase para o banco de auditoria fornecido pelo usuário
+const AUDIT_SUPABASE_URL = 'https://qmdmlbxjiuykfoptamfv.supabase.co';
+const AUDIT_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtZG1sYnhqaXV5a2ZvcHRhbWZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxOTcwMzEsImV4cCI6MjA4Nzc3MzAzMX0.ALYoN2FaahkLAiropeBBYHiH-LTPwK7x4j_By_nJDRA';
+
+// Cliente específico para operações de auditoria
+const auditClient = supabase.createClient(AUDIT_SUPABASE_URL, AUDIT_SUPABASE_KEY);
+
 const auditState = {
     pageSize: 30,
     currentPage: 1,
@@ -11,6 +18,9 @@ const auditState = {
         search: ''
     }
 };
+
+// tabela de auditoria que será utilizada; valor inicial e possível fallback
+let AUDIT_TABLE = 'audit_log';
 
 // Somente essas tabelas serão exibidas na seção de auditoria
 const ALLOWED_TABLES = ['client_documents','clients','cs_contacts','documents_setor','homologacoes','releases','reunioes','status_projetos','tarefas_painel_setor','training_videos'];
@@ -46,11 +56,22 @@ async function populateAuditFilters() {
         });
 
         // Busca usuários apenas das tabelas permitidas
-        const { data, error } = await releaseClient
-            .from('audit_log')
+        // tenta buscar usuários na tabela atual
+        let { data, error } = await auditClient
+            .from(AUDIT_TABLE)
             .select('actor_name,actor_identifier')
             .in('table_name', ALLOWED_TABLES)
             .limit(5000);
+        if (error && /does not exist/.test(error.message)) {
+            // tabela não existe, trocar para system_logs e tentar novamente
+            AUDIT_TABLE = 'system_logs';
+            ({ data, error } = await auditClient
+                .from(AUDIT_TABLE)
+                .select('actor_name,actor_identifier')
+                .in('table_name', ALLOWED_TABLES)
+                .limit(5000));
+        }
+        if (error) throw error;    
         if (error) throw error;
 
         const userSet = new Set();
@@ -90,8 +111,8 @@ async function carregarAuditLogs(page = 1) {
     auditState.filters.search = searchEl ? searchEl.value.trim() : '';
 
     try {
-        let query = releaseClient
-            .from('audit_log')
+        let query = auditClient
+            .from(AUDIT_TABLE)
             .select('*', { count: 'exact' })
             .order('changed_at', { ascending: false });
 
