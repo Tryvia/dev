@@ -1,0 +1,20 @@
+[28/02/2026  2:24:44,68] Servidor iniciado 
+::1 - - [28/Feb/2026 02:24:45] "GET / HTTP/1.1" 200 -
+::1 - - [28/Feb/2026 02:24:46] code 404, message File not found
+::1 - - [28/Feb/2026 02:24:46] "GET /favicon.ico HTTP/1.1" 404 -
+::1 - - [28/Feb/2026 02:24:47] "GET /Portal.html HTTP/1.1" 200 -
+::1 - - [28/Feb/2026 02:24:47] "GET /logo111.png HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:24:47] "GET /tryvia.png HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:24:48] "GET /portal-function/audit.js HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:24:48] "GET /portal-function/audit-utility.js HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:24:48] "GET /SING-Service/consultar_integracao_IDCliente.js HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:24:48] "GET /SING-Service/obter-token.js HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:24:48] "GET /raio-x/index.html HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:24:48] "GET /raio-x/styles.css HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:24:48] "GET /raio-x/script.js HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:24:56] "GET /melhorias/app.js HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:25:00] "GET /melhorias/index.html HTTP/1.1" 200 -
+::1 - - [28/Feb/2026 02:25:00] code 404, message File not found
+::1 - - [28/Feb/2026 02:25:00] "GET /melhorias/tryvia.png HTTP/1.1" 404 -
+::1 - - [28/Feb/2026 02:25:43] "GET /melhorias/index.html HTTP/1.1" 200 -
+^C
