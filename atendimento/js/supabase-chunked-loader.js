@@ -5,7 +5,7 @@
 
 class SupabaseChunkedLoader {
     constructor() {
-        this.DEFAULT_CHUNK_SIZE = 500;
+        this.DEFAULT_CHUNK_SIZE = 1000;
         this.SMALL_CHUNK_SIZE = 100;
         this.MAX_RETRIES = 3;
         this.RETRY_DELAY = 1000; // 1 segundo
@@ -20,7 +20,7 @@ class SupabaseChunkedLoader {
      */
     async loadTickets(client, options = {}) {
         const {
-            tableName = 'Tickets',
+            tableName = 'tickets',
             chunkSize = this.DEFAULT_CHUNK_SIZE,
             maxTickets = this.MAX_TICKETS,
             onProgress = null,
@@ -50,9 +50,9 @@ class SupabaseChunkedLoader {
 
                 // Buscar chunk
                 const result = await this.fetchChunk(
-                    client, 
-                    tableName, 
-                    offset, 
+                    client,
+                    tableName,
+                    offset,
                     currentChunkSize,
                     orderBy,
                     ascending
@@ -61,7 +61,7 @@ class SupabaseChunkedLoader {
                 if (result.data && result.data.length > 0) {
                     allData = allData.concat(result.data);
                     consecutiveErrors = 0; // Reset erro counter
-                    
+
                     // Se retornou menos que o chunk size, não há mais dados
                     if (result.data.length < currentChunkSize) {
                         hasMore = false;
@@ -92,12 +92,12 @@ class SupabaseChunkedLoader {
                     currentChunkSize = Math.max(this.SMALL_CHUNK_SIZE, Math.floor(currentChunkSize / 2));
                     console.log(`⚠️ Timeout detectado. Reduzindo chunk size para ${currentChunkSize}`);
                     await this.sleep(this.RETRY_DELAY);
-                } 
+                }
                 // Se muitos erros consecutivos, parar
                 else if (consecutiveErrors >= this.MAX_RETRIES) {
                     console.error('❌ Muitos erros consecutivos. Parando carregamento.');
                     hasMore = false;
-                } 
+                }
                 // Tentar novamente com delay
                 else {
                     console.log(`🔄 Tentando novamente em ${this.RETRY_DELAY}ms...`);
@@ -134,7 +134,7 @@ class SupabaseChunkedLoader {
      */
     async loadTicketsOptimized(client, options = {}) {
         const {
-            tableName = 'Tickets',
+            tableName = 'tickets',
             fields = 'id,subject,status,priority,created_at,updated_at,responder_name,group_name,cf_tratativa,cf_grupo_tratativa,custom_fields,source,description_text,stats_resolved_at,stats_closed_at,stats_first_responded_at',
             ...restOptions
         } = options;
@@ -165,7 +165,7 @@ class SupabaseChunkedLoader {
 
                 if (data && data.length > 0) {
                     allData = allData.concat(data);
-                    
+
                     if (data.length < chunkSize) {
                         hasMore = false;
                     } else {
@@ -194,7 +194,7 @@ class SupabaseChunkedLoader {
     /**
      * Conta total de tickets sem carregar todos os dados
      */
-    async countTickets(client, tableName = 'Tickets') {
+    async countTickets(client, tableName = 'tickets') {
         try {
             const { count, error } = await client
                 .from(tableName)

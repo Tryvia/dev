@@ -12,7 +12,7 @@
  * - Dashboard de métricas inline
  */
 
-(function() {
+(function () {
     'use strict';
 
     // Injetar CSS Premium
@@ -52,31 +52,43 @@
                 --try-radius: 20px;
             }
 
-            /* Botão Flutuante Premium */
+            /* Botão Flutuante Premium - Minimizado por padrão */
             #tryvianoButton {
                 position: fixed;
-                bottom: 24px;
-                right: 24px;
-                width: 64px;
-                height: 64px;
+                bottom: 20px;
+                right: 20px;
+                width: 42px;
+                height: 42px;
                 background: var(--try-gradient-1);
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-                box-shadow: var(--try-shadow), var(--try-shadow-glow);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
                 transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
                 z-index: 99998;
-                border: 2px solid rgba(255,255,255,0.1);
+                border: 1px solid rgba(255,255,255,0.1);
                 overflow: hidden;
+                opacity: 0.6;
+            }
+            
+            #tryvianoButton:hover {
+                width: 56px;
+                height: 56px;
+                opacity: 1;
+                box-shadow: var(--try-shadow), var(--try-shadow-glow);
             }
 
             #tryvianoButton::before {
                 content: '';
                 position: absolute;
                 inset: -50%;
-                background: conic-gradient(from 0deg, transparent, rgba(255,255,255,0.3), transparent);
+                background: conic-gradient(from 0deg, transparent, rgba(255,255,255,0.2), transparent);
+                animation: none;
+            }
+            
+            #tryvianoButton:hover::before {
                 animation: tryRotate 4s linear infinite;
             }
 
@@ -92,10 +104,7 @@
                 to { transform: rotate(360deg); }
             }
 
-            #tryvianoButton:hover {
-                transform: scale(1.1) translateY(-4px);
-                box-shadow: var(--try-shadow), 0 0 60px rgba(139, 92, 246, 0.5);
-            }
+            /* hover já definido acima */
 
             #tryvianoButton img {
                 width: 65%;
@@ -782,7 +791,7 @@
         messages: [],
         isTyping: false,
         notificationCount: 0,
-        
+
         // Personalidade do Assistente
         personality: {
             name: 'Tryviano',
@@ -795,20 +804,20 @@
         aiConfig: {
             // Provedor primário selecionável
             primaryProvider: localStorage.getItem('chatbot_primary_provider') || 'gemini',
-            
+
             // Ordem de fallback (configurável)
             fallbackOrder: ['gemini', 'openrouter', 'groq'],
-            
-            // API Keys
-            geminiKey: localStorage.getItem('chatbot_gemini_key') || 'AIzaSyAf1Y_iJxafTDKIw_IpSrFdKYx7DQ3pVuc',
-            groqKey: localStorage.getItem('chatbot_groq_key') || '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',
-            openrouterKey: localStorage.getItem('chatbot_openrouter_key') || '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',
-            
-            // Modelos
-            geminiModel: 'gemini-2.0-flash-exp',
-            groqModel: 'llama-3.3-70b-versatile',
-            openrouterModel: 'google/gemini-2.0-flash-exp:free', // Modelo gratuito no OpenRouter
-            
+
+            // API Keys - Usa EnvConfig se disponível
+            geminiKey: localStorage.getItem('chatbot_gemini_key') || (window.EnvConfig?.ai?.gemini?.key) || '',
+            groqKey: localStorage.getItem('chatbot_groq_key') || (window.EnvConfig?.ai?.groq?.key) || '',
+            openrouterKey: localStorage.getItem('chatbot_openrouter_key') || (window.EnvConfig?.ai?.openrouter?.key) || '',
+
+            // Modelos - Usa EnvConfig se disponível
+            geminiModel: (window.EnvConfig?.ai?.gemini?.model) || 'gemini-1.5-flash',
+            groqModel: (window.EnvConfig?.ai?.groq?.model) || 'llama-3.3-70b-versatile',
+            openrouterModel: (window.EnvConfig?.ai?.openrouter?.model) || 'google/gemini-flash-1.5',
+
             maxTokens: 800,
             temperature: 0.7,
             systemPersonality: localStorage.getItem('chatbot_personality') || 'conversacional'
@@ -828,15 +837,15 @@
         // Sugestões inteligentes baseadas em contexto
         smartSuggestions: {
             default: [
-                { icon: '📊', text: 'Status rápido', query: 'Qual o status atual?' },
-                { icon: '🚨', text: 'Alertas', query: 'Tem algum alerta?' },
-                { icon: '🔮', text: 'Previsão', query: 'Previsão para próximos dias' },
-                { icon: '🏆', text: 'Ranking', query: 'Quem mais resolveu?' }
+                { icon: '📊', text: 'Status rápido', query: 'Qual o status atual dos tickets?' },
+                { icon: '🚨', text: 'Alertas urgentes', query: 'Tem algum alerta ou urgência?' },
+                { icon: '🔍', text: 'Buscar solução', query: 'Como resolver problema no SING?' },
+                { icon: '🏆', text: 'Ranking', query: 'Quem mais resolveu tickets?' }
             ],
             afterSLA: [
                 { icon: '📉', text: 'Fora do SLA', query: 'Quais tickets estão fora do SLA?' },
                 { icon: '👤', text: 'Por pessoa', query: 'SLA por pessoa' },
-                { icon: '📈', text: 'Tendência', query: 'Tendência de SLA' }
+                { icon: '📈', text: 'Tendência', query: 'Tendência de SLA nos últimos dias' }
             ],
             afterPerson: [
                 { icon: '📊', text: 'Detalhes', query: 'Mais detalhes dessa pessoa' },
@@ -844,9 +853,20 @@
                 { icon: '⚖️', text: 'Comparar', query: 'Comparar com outros' }
             ],
             afterTicket: [
-                { icon: '🔗', text: 'Similar', query: 'Tickets similares' },
+                { icon: '🔗', text: 'Similar', query: 'Buscar tickets similares já resolvidos' },
                 { icon: '📝', text: 'Histórico', query: 'Histórico do solicitante' },
-                { icon: '💡', text: 'Solução', query: 'Sugestão de solução' }
+                { icon: '💡', text: 'Solução', query: 'Sugestão de solução para este ticket' }
+            ],
+            afterProblem: [
+                { icon: '🎫', text: 'Tickets similares', query: 'Mostre mais tickets similares resolvidos' },
+                { icon: '📖', text: 'Procedimento', query: 'Qual o procedimento padrão?' },
+                { icon: '👨‍💻', text: 'Especialista', query: 'Quem mais resolve esse tipo de problema?' }
+            ],
+            systems: [
+                { icon: '🔧', text: 'SING', query: 'Como resolver problemas comuns do SING?' },
+                { icon: '🚚', text: 'OPT+z', query: 'Ajuda com problemas de rotas no OPT+z' },
+                { icon: '🚗', text: 'YUV', query: 'Problemas comuns com frota no YUV' },
+                { icon: '📍', text: 'Telemetria', query: 'Veículo não aparece no rastreamento' }
             ]
         },
 
@@ -857,7 +877,7 @@
             this.createWindow();
             this.loadHistory();
             this.checkForAlerts();
-            
+
             // Verificar se o Chatbot original existe e desativar visual
             if (window.Chatbot) {
                 const oldBtn = document.getElementById('chatbotButton');
@@ -865,7 +885,7 @@
                 if (oldBtn) oldBtn.style.display = 'none';
                 if (oldWin) oldWin.style.display = 'none';
             }
-            
+
             console.log('✅ Tryviano Premium iniciado!');
         },
 
@@ -1009,14 +1029,30 @@
         },
 
         getContextualActions() {
+            // Se houver um ticket ID no contexto, sugerir resumo
+            if (this.context.lastTicketId) {
+                return [
+                    { icon: '📄', text: `Resumir Ticket #${this.context.lastTicketId}`, action: 'summarize_ticket' },
+                    ...this.smartSuggestions.afterTicket.slice(0, 2)
+                ];
+            }
+
             // Baseado no contexto da última pergunta
             if (this.context.lastIntent === 'sla') {
                 return this.smartSuggestions.afterSLA;
             }
+            if (this.context.lastIntent === 'problem') {
+                return this.smartSuggestions.afterProblem;
+            }
+            if (this.context.lastIntent === 'ticket') {
+                return this.smartSuggestions.afterTicket;
+            }
             if (this.context.lastEntity) {
                 return this.smartSuggestions.afterPerson;
             }
-            return this.smartSuggestions.default.slice(0, 4);
+            // Alternar entre sugestões padrão e de sistemas
+            const combined = [...this.smartSuggestions.default.slice(0, 2), ...this.smartSuggestions.systems.slice(0, 2)];
+            return combined;
         },
 
         toggle() {
@@ -1024,24 +1060,24 @@
         },
 
         open() {
-            document.getElementById('tryvianoWindow').classList.add('active');
-            document.getElementById('tryInput').focus();
+            document.getElementById('tryvianoWindow')?.classList.add('active');
+            document.getElementById('tryInput')?.focus();
             this.isOpen = true;
             this.notificationCount = 0;
             this.updateBadge();
         },
 
         close() {
-            document.getElementById('tryvianoWindow').classList.remove('active');
+            document.getElementById('tryvianoWindow')?.classList.remove('active');
             this.isOpen = false;
         },
 
         showSettings() {
-            document.getElementById('trySettings').classList.add('active');
+            document.getElementById('trySettings')?.classList.add('active');
         },
 
         hideSettings() {
-            document.getElementById('trySettings').classList.remove('active');
+            document.getElementById('trySettings')?.classList.remove('active');
         },
 
         saveSettings() {
@@ -1049,11 +1085,11 @@
             const geminiKey = document.getElementById('tryGeminiKey').value.trim();
             const openrouterKey = document.getElementById('tryOpenRouterKey').value.trim();
             const groqKey = document.getElementById('tryGroqKey').value.trim();
-            
+
             // Salvar provedor primário
             localStorage.setItem('chatbot_primary_provider', primaryProvider);
             this.aiConfig.primaryProvider = primaryProvider;
-            
+
             // Salvar API keys
             if (geminiKey) {
                 localStorage.setItem('chatbot_gemini_key', geminiKey);
@@ -1067,20 +1103,27 @@
                 localStorage.setItem('chatbot_groq_key', groqKey);
                 this.aiConfig.groqKey = groqKey;
             }
-            
+
             // Atualizar status
             document.getElementById('tryStatus').textContent = this.getProviderStatusText();
-            
+
             this.hideSettings();
             this.addMessage('✅ Configurações salvas com sucesso!', 'bot');
         },
 
         changePersonality(value) {
             this.aiConfig.systemPersonality = value;
-            localStorage.setItem('tryviano_personality', value);
+            localStorage.setItem('chatbot_personality', value);
         },
 
-        askSuggestion(text) {
+        askSuggestion(text, action) {
+            if (action === 'summarize_ticket') {
+                if (this.context.lastTicketId) {
+                    this.summarizeTicket(this.context.lastTicketId);
+                }
+                return;
+            }
+
             document.getElementById('tryInput').value = text;
             this.send();
         },
@@ -1107,11 +1150,20 @@
 
             // Processar resposta
             let response;
+            let ticketsSimilares = [];
+
             try {
+                const tickets = window.allTicketsCache || [];
+
+                // Buscar tickets similares se for uma pergunta sobre problema/resolução
+                if (window.TryvianoKnowledge && this.isProblemQuestion(text)) {
+                    ticketsSimilares = window.TryvianoKnowledge.buscarTicketsSimilaresResolvidos(text, tickets, 3);
+                }
+
                 // Tentar usar o Chatbot original se disponível (para aproveitar ferramentas)
                 if (window.Chatbot && window.Chatbot.agent) {
                     const agentResult = await window.Chatbot.agent.process(text, window.Chatbot);
-                    
+
                     if (agentResult.response && !agentResult.useAI) {
                         response = agentResult.response;
                     } else {
@@ -1125,6 +1177,11 @@
                 if (!response) {
                     response = this.processLocal(text);
                 }
+
+                // Adicionar tickets similares à resposta se houver
+                if (ticketsSimilares.length > 0 && window.TryvianoKnowledge) {
+                    response = window.TryvianoKnowledge.formatarRespostaComTickets(response, ticketsSimilares);
+                }
             } catch (error) {
                 console.error('Erro:', error);
                 response = this.processLocal(text);
@@ -1132,26 +1189,56 @@
 
             this.hideTyping();
             this.addMessage(response, 'bot');
-            
+
             // Atualizar ações contextuais
             this.updateQuickActions();
-            
+
             // Salvar no histórico
             this.saveHistory();
+
+            // Salvar conversa no Supabase (se disponível)
+            if (window.ChatbotUtils) {
+                const sessionId = this.sessionId || (this.sessionId = window.ChatbotUtils.generateSessionId());
+                window.ChatbotUtils.salvarConversa(sessionId, 'user', text);
+                window.ChatbotUtils.salvarConversa(sessionId, 'bot', response, this.lastProvider);
+            }
+        },
+
+        // Verifica se é uma pergunta sobre problema/resolução que pode se beneficiar de tickets similares
+        isProblemQuestion(text) {
+            const lower = text.toLowerCase();
+            const problemPatterns = [
+                /como (resolver|solucionar|corrigir|arrumar|fazer)/i,
+                /erro|problema|falha|bug|não (funciona|aparece|carrega)/i,
+                /ajuda com|preciso de ajuda/i,
+                /(cadastro|login|senha|acesso|sistema).*não/i,
+                /não consigo|não consegue/i,
+                /o que fazer quando/i,
+                /sing|opt\+?z|yuv|telemetria|app/i,
+                /ticket similar|já resolvido|exemplo/i
+            ];
+            return problemPatterns.some(p => p.test(lower));
         },
 
         detectIntent(text) {
             const lower = text.toLowerCase();
-            
+
             if (/sla|tempo.*respo|prazo/i.test(lower)) {
                 this.context.lastIntent = 'sla';
+            } else if (/como (resolver|solucionar|corrigir|fazer)|erro|problema|falha|não (funciona|aparece|carrega)|ajuda com/i.test(lower)) {
+                this.context.lastIntent = 'problem';
             } else if (/pessoa|tratativa|quem|colaborador/i.test(lower)) {
                 this.context.lastIntent = 'person';
             } else if (/ticket|#\d+|chamado/i.test(lower)) {
                 this.context.lastIntent = 'ticket';
+                // Extrair ID do ticket se houver (ex: #12345 ou "ticket 12345")
+                const ticketMatch = lower.match(/(?:#|ticket\s+|chamado\s+)(\d+)/i);
+                if (ticketMatch) {
+                    this.context.lastTicketId = ticketMatch[1];
+                }
             } else if (/ranking|melhor|pior|top/i.test(lower)) {
                 this.context.lastIntent = 'ranking';
-            } else if (/alert|urgente|crítico|problema/i.test(lower)) {
+            } else if (/alert|urgente|crítico/i.test(lower)) {
                 this.context.lastIntent = 'alert';
             } else {
                 this.context.lastIntent = 'general';
@@ -1175,7 +1262,7 @@
             const container = document.getElementById('tryMessages');
             const msg = document.createElement('div');
             msg.className = `try-msg ${type}`;
-            
+
             if (type === 'bot') {
                 const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                 msg.innerHTML = `
@@ -1189,13 +1276,13 @@
             } else {
                 msg.innerHTML = content;
             }
-            
+
             container.appendChild(msg);
             container.scrollTop = container.scrollHeight;
 
             this.messages.push({ content, type, time: Date.now() });
             this.context.conversationHistory.push({ type, content: content.replace(/<[^>]*>/g, '') });
-            
+
             // Manter histórico limitado
             if (this.context.conversationHistory.length > 20) {
                 this.context.conversationHistory = this.context.conversationHistory.slice(-20);
@@ -1261,27 +1348,29 @@
                     </div>
                 </div>
             `;
-            document.getElementById('tryMessages').appendChild(warning);
-            document.getElementById('tryMessages').scrollTop = document.getElementById('tryMessages').scrollHeight;
+            document.getElementById('tryMessages')?.appendChild(warning);
+            const tryMsgs = document.getElementById('tryMessages');
+            if (tryMsgs) tryMsgs.scrollTop = tryMsgs.scrollHeight;
         },
 
         // Chamada principal com sistema de fallback
         async callAIPremium(userMessage) {
             const primaryProvider = this.aiConfig.primaryProvider;
-            
+
             // Construir ordem de tentativas: primário primeiro, depois fallbacks
             const providers = [primaryProvider, ...this.aiConfig.fallbackOrder.filter(p => p !== primaryProvider)];
-            
+
             let lastError = null;
-            
+            const startTime = Date.now();
+
             for (let i = 0; i < providers.length; i++) {
                 const provider = providers[i];
-                
+
                 try {
                     console.log(`🤖 Tentando ${this.getProviderName(provider)}...`);
-                    
+
                     let response = null;
-                    
+
                     switch (provider) {
                         case 'gemini':
                             response = await this.callGemini(userMessage);
@@ -1293,25 +1382,40 @@
                             response = await this.callGroq(userMessage);
                             break;
                     }
-                    
+
                     if (response) {
                         // Se usou fallback (não é o primeiro), mostrar aviso
                         if (i > 0) {
                             this.showFallbackWarning(providers[i - 1], provider, lastError);
                         }
                         console.log(`✅ Resposta obtida via ${this.getProviderName(provider)}`);
+                        this.lastProvider = provider;
+                        
+                        // Registrar métrica de sucesso
+                        if (window.ChatbotUtils) {
+                            const tempoMs = Date.now() - startTime;
+                            window.ChatbotUtils.registrarMetricaIA(provider, true, tempoMs, 0, i > 0);
+                        }
+                        
                         return response;
                     }
-                    
+
                     lastError = 'Sem resposta';
                 } catch (error) {
                     console.error(`❌ Erro em ${this.getProviderName(provider)}:`, error);
                     lastError = error.message || 'Erro desconhecido';
+                    
+                    // Registrar métrica de erro
+                    if (window.ChatbotUtils) {
+                        const tempoMs = Date.now() - startTime;
+                        window.ChatbotUtils.registrarMetricaIA(provider, false, tempoMs);
+                    }
                 }
             }
-            
-            // Todos falharam
+
+            // Todos falharam - mostrar mensagem amigável
             console.error('❌ Todas as APIs falharam');
+            this.lastProvider = 'local';
             return null;
         },
 
@@ -1321,12 +1425,12 @@
 
             const systemPrompt = this.getEnhancedSystemPrompt();
             const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${this.aiConfig.geminiModel}:generateContent?key=${this.aiConfig.geminiKey}`;
-            
+
             const contents = this.context.conversationHistory.slice(-6).map(h => ({
                 role: h.type === 'user' ? 'user' : 'model',
                 parts: [{ text: h.content }]
             }));
-            
+
             contents.push({
                 role: 'user',
                 parts: [{ text: userMessage }]
@@ -1352,7 +1456,7 @@
 
             const data = await response.json();
             const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            
+
             return aiResponse ? this.formatResponse(aiResponse) : null;
         },
 
@@ -1362,7 +1466,7 @@
 
             const systemPrompt = this.getEnhancedSystemPrompt();
             const endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-            
+
             const messages = [
                 { role: 'system', content: systemPrompt },
                 ...this.context.conversationHistory.slice(-6).map(h => ({
@@ -1394,7 +1498,7 @@
 
             const data = await response.json();
             const aiResponse = data.choices?.[0]?.message?.content;
-            
+
             return aiResponse ? this.formatResponse(aiResponse) : null;
         },
 
@@ -1404,7 +1508,7 @@
 
             const systemPrompt = this.getEnhancedSystemPrompt();
             const endpoint = 'https://api.groq.com/openai/v1/chat/completions';
-            
+
             const messages = [
                 { role: 'system', content: systemPrompt },
                 ...this.context.conversationHistory.slice(-6).map(h => ({
@@ -1434,38 +1538,67 @@
 
             const data = await response.json();
             const aiResponse = data.choices?.[0]?.message?.content;
-            
+
             return aiResponse ? this.formatResponse(aiResponse) : null;
         },
 
         getEnhancedSystemPrompt() {
             const tickets = window.allTicketsCache || [];
             const context = this.generateDataContext(tickets);
-            
+
+            // Buscar conhecimento relevante se houver última pergunta
+            let knowledgeContext = '';
+            if (this.context.conversationHistory.length > 0) {
+                const lastUserMsg = this.context.conversationHistory.filter(h => h.type === 'user').pop();
+                if (lastUserMsg && window.TryvianoKnowledge) {
+                    knowledgeContext = window.TryvianoKnowledge.gerarContextoEnriquecido(lastUserMsg.content, tickets);
+                }
+            }
+
             const personalityPrompts = {
                 conversacional: 'Seja amigável, use emojis com moderação e linguagem acessível.',
                 formal: 'Use linguagem profissional e formal, mantenha tom corporativo.',
                 tecnico: 'Seja preciso e técnico, foque em métricas e dados objetivos.'
             };
 
-            return `Você é o Tryviano, um assistente de BI premium integrado ao sistema de tickets.
+            return `Você é o Tryviano, um assistente de BI premium integrado ao sistema de tickets da Tryvia.
 
 PERSONALIDADE: ${personalityPrompts[this.aiConfig.systemPersonality]}
 
-REGRAS:
-1. Responda em português brasileiro
-2. Baseie respostas nos dados REAIS fornecidos
-3. Nunca invente dados
-4. Formate números com separadores (1.234)
-5. Destaque métricas importantes
-6. Sugira próximas ações quando relevante
+SOBRE A TRYVIA:
+- Empresa de tecnologia para logística e transporte
+- Sistemas principais: SING (Gestão), OPT+z (Rotas), YUV (Frotas), Telemetria, BI, App Motorista
+- Suporte técnico via Freshdesk
 
-${context}`;
+CAPACIDADES ESPECIAIS:
+- Identifico o sentimento do usuário (irritação, urgência, gratidão)
+- Posso buscar tickets similares já resolvidos para ajudar em problemas
+- Conheço os procedimentos de resolução dos sistemas Tryvia
+- Posso cruzar informações entre tickets para encontrar padrões
+- Posso resumir históricos longos de tickets
+
+ANÁLISE DE SENTIMENTO:
+Sempre termine sua resposta com uma tag invisível no formato: [[SENTIMENT: tipo]]
+Onde 'tipo' pode ser: neutro, positivo, irritado, urgente, agradecido.
+Se detectar 'irritado' ou 'urgente', serei proativo em alertar a coordenação (Simulado).
+
+REGRAS IMPORTANTES:
+1. Responda SEMPRE em português brasileiro
+2. Baseie respostas nos dados REAIS fornecidos - NUNCA invente dados
+3. Se encontrar tickets similares resolvidos, mencione-os como referência
+4. Formate números com separadores (1.234)
+5. Destaque métricas e insights importantes
+6. Sugira próximas ações concretas quando relevante
+7. Se não souber algo, admita e sugira alternativas
+8. Para problemas técnicos, forneça passos de resolução estruturados
+
+${context}
+${knowledgeContext}`;
         },
 
         generateDataContext(tickets) {
             if (tickets.length === 0) return 'Nenhum dado carregado no momento.';
-            
+
             // Usar o contexto do Chatbot original se disponível
             if (window.Chatbot && window.Chatbot.generateSystemContext) {
                 return window.Chatbot.generateSystemContext();
@@ -1480,13 +1613,22 @@ ${context}`;
             return `
 DADOS REAIS DO SISTEMA:
 - Total: ${total} tickets
-- Resolvidos: ${resolved} (${((resolved/total)*100).toFixed(1)}%)
+- Resolvidos: ${resolved} (${((resolved / total) * 100).toFixed(1)}%)
 - Abertos: ${open}
 - Urgentes abertos: ${urgent}
 `;
         },
 
         formatResponse(text) {
+            // Extrair sentimento se houver
+            const sentimentMatch = text.match(/\[\[SENTIMENT:\s*(.*?)\]\]/);
+            if (sentimentMatch && sentimentMatch[1]) {
+                const sentiment = sentimentMatch[1].trim().toLowerCase();
+                this.handleSentiment(sentiment);
+                // Remover a tag do texto final
+                text = text.replace(/\[\[SENTIMENT:.*?\]\]/g, '');
+            }
+
             return text
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -1496,34 +1638,126 @@ DADOS REAIS DO SISTEMA:
                 .replace(/\n/g, '<br>');
         },
 
+        /**
+         * Trata o sentimento detectado pela IA
+         */
+        handleSentiment(sentiment) {
+            console.log(`🎭 Sentimento detectado: ${sentiment}`);
+
+            if (['irritado', 'urgente'].includes(sentiment)) {
+                if (window.showToast) {
+                    window.showToast(`🚨 Alerta: O usuário parece ${sentiment}. Notificando coordenação...`, 'warning');
+                }
+
+                // Registrar alerta no Supabase
+                if (window.ChatbotUtils) {
+                    const sessionId = this.sessionId || 'unknown';
+                    const lastUserMsg = this.context.conversationHistory.filter(h => h.type === 'user').pop();
+                    window.ChatbotUtils.registrarAlertaSentimento(
+                        sessionId, 
+                        sentiment, 
+                        lastUserMsg?.content || '',
+                        this.context.lastTicketId
+                    );
+                }
+
+                console.warn(`📢 ALERTA DE COORDENAÇÃO: Usuário ${sentiment} detectado no Chatbot.`);
+            } else if (sentiment === 'agradecido') {
+                if (window.showToast) {
+                    window.showToast(`✨ Que bom que ajudamos!`, 'success');
+                }
+            }
+        },
+
+        /**
+         * Resume o histórico de um ticket específico
+         */
+        async summarizeTicket(ticketId) {
+            const tickets = window.allTicketsCache || [];
+            const ticket = tickets.find(t => t.id == ticketId);
+
+            if (!ticket) {
+                this.addMessage('Desculpe, não encontrei os detalhes deste ticket para resumir.', 'bot');
+                return;
+            }
+
+            this.showTyping();
+
+            const historyText = ticket.description_text || ticket.description || 'Sem descrição.';
+            const prompt = `Por favor, faça um resumo executivo deste ticket (ID #${ticketId}). 
+            Foque em:
+            1. Qual o problema principal reportado?
+            2. Quais ações já foram tomadas?
+            3. Qual o status atual e o que falta para resolver?
+            
+            HISTÓRICO DO TICKET:
+            Assunto: ${ticket.subject}
+            Conteúdo: ${historyText}
+            ---
+            Responda de forma estruturada.`;
+
+            try {
+                const summary = await this.callAIPremium(prompt);
+                this.hideTyping();
+
+                if (summary) {
+                    this.addMessage(`<strong>📄 Resumo do Ticket #${ticketId}</strong><br><br>${summary}`, 'bot');
+                    this.saveHistory();
+                } else {
+                    this.addMessage('Não consegui gerar o resumo no momento. Tente novamente.', 'bot');
+                }
+            } catch (error) {
+                this.hideTyping();
+                console.error('Erro ao resumir ticket:', error);
+                this.addMessage('Erro técnico ao tentar resumir o ticket.', 'bot');
+            }
+        },
+
         processLocal(text) {
-            // Usar processamento local do Chatbot original
+            const tickets = window.allTicketsCache || [];
+
+            // PRIMEIRO: Tentar responder com a base de conhecimento
+            if (window.TryvianoKnowledge) {
+                const respostaConhecimento = window.TryvianoKnowledge.responderDireto(text);
+                if (respostaConhecimento) {
+                    // Adicionar tickets similares se houver
+                    let resposta = respostaConhecimento;
+                    if (tickets.length > 0) {
+                        const similares = window.TryvianoKnowledge.buscarTicketsSimilaresResolvidos(text, tickets, 3);
+                        if (similares.length > 0) {
+                            resposta = window.TryvianoKnowledge.formatarRespostaComTickets(resposta, similares);
+                        }
+                    }
+                    return resposta;
+                }
+            }
+
+            // SEGUNDO: Usar processamento local do Chatbot original
             if (window.Chatbot && window.Chatbot.processQuestion) {
                 return window.Chatbot.processQuestion(text);
             }
 
-            const tickets = window.allTicketsCache || [];
             if (tickets.length === 0) {
                 return `⚠️ Nenhum dado carregado.<br><br>
                     <span class="try-detail">Carregue os tickets primeiro para análises.</span>`;
             }
 
-            // Resposta básica
+            // Resposta básica de fallback
             const total = tickets.length;
             const resolved = tickets.filter(t => [4, 5].includes(Number(t.status))).length;
-            
-            return `📊 <strong>Resumo Rápido</strong>
-                <div class="try-metrics-grid">
-                    <div class="try-metric-card">
-                        <div class="try-metric-value">${total}</div>
-                        <div class="try-metric-label">Total</div>
-                    </div>
-                    <div class="try-metric-card">
-                        <div class="try-metric-value">${resolved}</div>
-                        <div class="try-metric-label">Resolvidos</div>
-                    </div>
+
+            return `🔍 <strong>Não encontrei informações sobre "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"</strong>
+                <div style="margin: 12px 0; color: #94a3b8;">
+                    Posso ajudar com:
+                    <ul style="margin: 8px 0; padding-left: 20px;">
+                        <li>Sistemas: SING, OPT+z, YUV, Telemetria, App Motorista</li>
+                        <li>Métricas: SLA, taxa de resolução, backlog</li>
+                        <li>Análises: ranking, tickets parados, pendências</li>
+                    </ul>
                 </div>
-                <div class="try-detail">Para análises mais detalhadas, configure uma API key nas configurações.</div>`;
+                <div style="margin-top: 12px; padding: 10px; background: rgba(139, 92, 246, 0.1); border-radius: 8px;">
+                    📊 <strong>Status atual:</strong> ${total} tickets (${resolved} resolvidos)
+                </div>`;
         },
 
         clearChat() {
@@ -1544,12 +1778,12 @@ DADOS REAIS DO SISTEMA:
                     if (history.length > 0) {
                         const welcome = document.querySelector('.try-welcome');
                         if (welcome) welcome.remove();
-                        
+
                         history.slice(-10).forEach(msg => {
                             const container = document.getElementById('tryMessages');
                             const el = document.createElement('div');
                             el.className = `try-msg ${msg.type}`;
-                            
+
                             if (msg.type === 'bot') {
                                 el.innerHTML = `
                                     <div class="try-msg-header">
@@ -1561,10 +1795,10 @@ DADOS REAIS DO SISTEMA:
                             } else {
                                 el.innerHTML = msg.content;
                             }
-                            
+
                             container.appendChild(el);
                         });
-                        
+
                         this.messages = history;
                     }
                 }
@@ -1577,7 +1811,7 @@ DADOS REAIS DO SISTEMA:
             try {
                 const toSave = this.messages.slice(-30);
                 localStorage.setItem('tryviano_history', JSON.stringify(toSave));
-            } catch (e) {}
+            } catch (e) { console.warn('⚠️ Erro ao salvar histórico Tryviano:', e.message); }
         },
 
         checkForAlerts() {
@@ -1585,7 +1819,7 @@ DADOS REAIS DO SISTEMA:
             if (tickets.length === 0) return;
 
             const urgentOpen = tickets.filter(t => t.priority == 4 && t.status == 2).length;
-            
+
             if (urgentOpen > 0) {
                 this.notificationCount = urgentOpen;
                 this.updateBadge();

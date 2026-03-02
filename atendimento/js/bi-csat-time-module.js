@@ -3,12 +3,12 @@
  * Integra dados de satisfação do cliente e tempo de atendimento ao BI Analytics
  */
 
-// Usa credenciais do SupabaseLoader (não redeclara para evitar conflito)
-const _CSAT_SUPABASE_URL = window.SupabaseLoader?.SUPABASE_URL || 'https://mzjdmhgkrroajmsfwryu.supabase.co';
-const _CSAT_SUPABASE_KEY = window.SupabaseLoader?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMzMwMzUsImV4cCI6MjA2MzgwOTAzNX0.tQCwUfFCV7sD-IexQviU0XEPcbn9j5uK9NSUbH-OeBc';
+// Usa credenciais do EnvConfig (requer env-config.js carregado)
+const _CSAT_SUPABASE_URL = window.EnvConfig?.supabase?.url || '';
+const _CSAT_SUPABASE_KEY = window.EnvConfig?.supabase?.key || '';
 
 // Injetar estilos de scrollbar para evitar flickering
-(function() {
+(function () {
     if (document.getElementById('csat-scrollbar-styles')) return;
     const style = document.createElement('style');
     style.id = 'csat-scrollbar-styles';
@@ -72,23 +72,23 @@ window.BICSATModule = {
     _agentsCache: null,
     _cacheTime: null,
     _cacheDuration: 5 * 60 * 1000, // 5 minutos
-    
+
     // Filtros de período
     csatPeriodFilter: '30',       // 7, 30, 90, 180, 365, 'all', 'custom'
     tempoPeriodFilter: '30',      // 7, 30, 90, 180, 365, 'all', 'custom'
-    
+
     // Datas customizadas
     csatCustomDateRange: { start: null, end: null },
     tempoCustomDateRange: { start: null, end: null },
-    
+
     // Filtro por agente
     csatAgentFilter: 'all',       // 'all' ou agent_id
-    
+
     // Mostrar todos os feedbacks
     showAllFeedbacks: false,
     feedbackPage: 1,
     feedbacksPerPage: 10,
-    
+
     // Cores para gráficos
     colors: {
         satisfied: '#10b981',    // Verde
@@ -102,7 +102,7 @@ window.BICSATModule = {
         textMuted: '#a1a1aa',
         border: '#3f3f46'
     },
-    
+
     /**
      * Carrega dados de CSAT do Supabase
      */
@@ -111,34 +111,34 @@ window.BICSATModule = {
             console.log('📦 CSAT: Usando cache');
             return this._csatCache;
         }
-        
+
         try {
             console.log('⭐ Carregando dados de CSAT do Supabase...');
-            
+
             const response = await fetch(`${_CSAT_SUPABASE_URL}/rest/v1/satisfaction_ratings?select=*&order=created_at.desc`, {
                 headers: {
                     'apikey': _CSAT_SUPABASE_KEY,
                     'Authorization': `Bearer ${_CSAT_SUPABASE_KEY}`
                 }
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
-            
+
             const data = await response.json();
             this._csatCache = data;
             this._cacheTime = Date.now();
-            
+
             console.log(`✅ ${data.length} avaliações CSAT carregadas`);
             return data;
-            
+
         } catch (error) {
             console.error('❌ Erro ao carregar CSAT:', error);
             return [];
         }
     },
-    
+
     /**
      * Carrega dados de Time Entries do Supabase
      */
@@ -147,33 +147,33 @@ window.BICSATModule = {
             console.log('📦 Time Entries: Usando cache');
             return this._timeEntriesCache;
         }
-        
+
         try {
             console.log('⏱️ Carregando dados de Time Entries do Supabase...');
-            
+
             const response = await fetch(`${_CSAT_SUPABASE_URL}/rest/v1/time_entries?select=*&order=created_at.desc`, {
                 headers: {
                     'apikey': _CSAT_SUPABASE_KEY,
                     'Authorization': `Bearer ${_CSAT_SUPABASE_KEY}`
                 }
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
-            
+
             const data = await response.json();
             this._timeEntriesCache = data;
-            
+
             console.log(`✅ ${data.length} time entries carregados`);
             return data;
-            
+
         } catch (error) {
             console.error('❌ Erro ao carregar Time Entries:', error);
             return [];
         }
     },
-    
+
     /**
      * Carrega dados de agentes do Supabase
      */
@@ -181,7 +181,7 @@ window.BICSATModule = {
         if (this._agentsCache) {
             return this._agentsCache;
         }
-        
+
         try {
             const response = await fetch(`${_CSAT_SUPABASE_URL}/rest/v1/agents?select=id,name,email`, {
                 headers: {
@@ -189,25 +189,25 @@ window.BICSATModule = {
                     'Authorization': `Bearer ${_CSAT_SUPABASE_KEY}`
                 }
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
-            
+
             const data = await response.json();
             this._agentsCache = {};
             data.forEach(agent => {
                 this._agentsCache[agent.id] = agent.name || agent.email || `Agent ${agent.id}`;
             });
-            
+
             return this._agentsCache;
-            
+
         } catch (error) {
             console.error('❌ Erro ao carregar agentes:', error);
             return {};
         }
     },
-    
+
     /**
      * Calcula estatísticas de CSAT
      */
@@ -225,7 +225,7 @@ window.BICSATModule = {
                 recentFeedback: []
             };
         }
-        
+
         const stats = {
             total: ratings.length,
             satisfied: 0,
@@ -236,15 +236,15 @@ window.BICSATModule = {
             byMonth: {},
             recentFeedback: []
         };
-        
+
         ratings.forEach(rating => {
             // Freshdesk usa 'rating' (1-5), alguns sistemas usam 'score'
             // Freshdesk também pode usar: positivo = satisfeito, negativo = insatisfeito
             const score = rating.rating || rating.score || 0;
-            
+
             // Detectar formato Freshdesk (valores absolutos grandes como 103, -103)
             const isFreshdeskFormat = Math.abs(score) > 5;
-            
+
             if (isFreshdeskFormat) {
                 // Formato Freshdesk: positivo = satisfeito, negativo = insatisfeito
                 if (score > 0) stats.satisfied++;
@@ -256,14 +256,14 @@ window.BICSATModule = {
                 else if (score === 3) stats.neutral++;
                 else if (score >= 1) stats.unsatisfied++;
             }
-            
+
             // Normalizar score para cálculo de média
             // Formato Freshdesk: converter para escala 1-5
-            const normalizedScore = isFreshdeskFormat 
+            const normalizedScore = isFreshdeskFormat
                 ? (score > 0 ? 5 : (score < 0 ? 1 : 3))  // positivo=5, negativo=1, zero=3
                 : (score >= 1 && score <= 5 ? score : 3);
             stats.totalScore += normalizedScore;
-            
+
             // Por agente
             if (rating.agent_id) {
                 if (!stats.byAgent[rating.agent_id]) {
@@ -275,7 +275,7 @@ window.BICSATModule = {
                 const isSatisfied = isFreshdeskFormat ? (score > 0) : (score >= 4);
                 if (isSatisfied) stats.byAgent[rating.agent_id].satisfied++;
             }
-            
+
             // Por mês
             if (rating.created_at) {
                 const date = new Date(rating.created_at);
@@ -289,7 +289,7 @@ window.BICSATModule = {
                 const isSatisfied = isFreshdeskFormat ? (score > 0) : (score >= 4);
                 if (isSatisfied) stats.byMonth[monthKey].satisfied++;
             }
-            
+
             // Feedback recente (incluir todos os tickets com avaliação, não só com comentário)
             stats.recentFeedback.push({
                 feedback: rating.feedback || '',
@@ -299,19 +299,19 @@ window.BICSATModule = {
                 date: rating.created_at
             });
         });
-        
+
         // Calcular CSAT %
         const respondedCount = stats.satisfied + stats.neutral + stats.unsatisfied;
         stats.csatPercent = respondedCount > 0 ? Math.round((stats.satisfied / respondedCount) * 100) : 0;
         stats.avgScore = stats.total > 0 ? (stats.totalScore / stats.total).toFixed(1) : 0;
-        
+
         // Ordenar feedback por data (mais recente primeiro) - mantém todos
         stats.recentFeedback.sort((a, b) => new Date(b.date) - new Date(a.date));
         stats.allFeedbacks = [...stats.recentFeedback]; // Guardar todos
-        
+
         return stats;
     },
-    
+
     /**
      * Calcula estatísticas de Time Entries
      */
@@ -325,18 +325,18 @@ window.BICSATModule = {
                 byTicket: {}
             };
         }
-        
+
         const stats = {
             total: entries.length,
             totalMinutes: 0,
             byAgent: {},
             byTicket: {}
         };
-        
+
         entries.forEach(entry => {
             const minutes = entry.time_spent_minutes || 0;
             stats.totalMinutes += minutes;
-            
+
             // Por agente
             if (entry.agent_id) {
                 if (!stats.byAgent[entry.agent_id]) {
@@ -346,7 +346,7 @@ window.BICSATModule = {
                 stats.byAgent[entry.agent_id].minutes += minutes;
                 stats.byAgent[entry.agent_id].tickets.add(entry.ticket_id);
             }
-            
+
             // Por ticket
             if (entry.ticket_id) {
                 if (!stats.byTicket[entry.ticket_id]) {
@@ -356,19 +356,19 @@ window.BICSATModule = {
                 stats.byTicket[entry.ticket_id].minutes += minutes;
             }
         });
-        
+
         // Converter Set para count
         Object.values(stats.byAgent).forEach(agent => {
             agent.ticketCount = agent.tickets.size;
             delete agent.tickets;
         });
-        
+
         stats.avgMinutes = stats.total > 0 ? Math.round(stats.totalMinutes / stats.total) : 0;
         stats.totalHours = Math.round(stats.totalMinutes / 60 * 10) / 10;
-        
+
         return stats;
     },
-    
+
     /**
      * Formata minutos para exibição
      */
@@ -378,14 +378,14 @@ window.BICSATModule = {
         const mins = minutes % 60;
         return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
     },
-    
+
     /**
      * Renderiza card de CSAT para a visão geral
      */
     renderCSATCard(stats) {
-        const csatColor = stats.csatPercent >= 85 ? this.colors.satisfied : 
-                         stats.csatPercent >= 70 ? this.colors.neutral : this.colors.unsatisfied;
-        
+        const csatColor = stats.csatPercent >= 85 ? this.colors.satisfied :
+            stats.csatPercent >= 70 ? this.colors.neutral : this.colors.unsatisfied;
+
         return `
             <div class="bi-card" style="
                 background: linear-gradient(135deg, #f59e0b, #f97316);
@@ -403,7 +403,7 @@ window.BICSATModule = {
             </div>
         `;
     },
-    
+
     /**
      * Renderiza card de Tempo para a visão geral
      */
@@ -425,13 +425,13 @@ window.BICSATModule = {
             </div>
         `;
     },
-    
+
     /**
      * Filtra dados por período
      */
     filterByPeriod(data, period, dateField = 'created_at', type = 'csat') {
         if (period === 'all' || !period) return data;
-        
+
         // Período customizado
         if (period === 'custom') {
             const customRange = type === 'csat' ? this.csatCustomDateRange : this.tempoCustomDateRange;
@@ -440,7 +440,7 @@ window.BICSATModule = {
                 startDate.setHours(0, 0, 0, 0);
                 const endDate = new Date(customRange.end);
                 endDate.setHours(23, 59, 59, 999);
-                
+
                 return data.filter(item => {
                     const itemDate = new Date(item[dateField]);
                     return itemDate >= startDate && itemDate <= endDate;
@@ -448,19 +448,19 @@ window.BICSATModule = {
             }
             return data;
         }
-        
+
         const days = parseInt(period);
         if (isNaN(days)) return data;
-        
+
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - days);
-        
+
         return data.filter(item => {
             const itemDate = new Date(item[dateField]);
             return itemDate >= cutoffDate;
         });
     },
-    
+
     /**
      * Muda o filtro de período do CSAT e re-renderiza
      */
@@ -475,7 +475,7 @@ window.BICSATModule = {
             container.innerHTML = await this.renderCSATSection();
         }
     },
-    
+
     /**
      * Muda o filtro de período do Tempo e re-renderiza
      */
@@ -490,7 +490,7 @@ window.BICSATModule = {
             container.innerHTML = await this.renderTimeSection();
         }
     },
-    
+
     /**
      * Abre o ticket no Freshdesk
      */
@@ -499,7 +499,7 @@ window.BICSATModule = {
             window.open(`https://suportetryvia.freshdesk.com/a/tickets/${ticketId}`, '_blank');
         }
     },
-    
+
     /**
      * Define o filtro de agente e re-renderiza
      */
@@ -511,7 +511,7 @@ window.BICSATModule = {
             container.innerHTML = await this.renderCSATSection();
         }
     },
-    
+
     /**
      * Alterna visualização de todos os feedbacks
      */
@@ -523,7 +523,7 @@ window.BICSATModule = {
             container.innerHTML = await this.renderCSATSection();
         }
     },
-    
+
     /**
      * Navega páginas de feedback
      */
@@ -534,25 +534,25 @@ window.BICSATModule = {
             container.innerHTML = await this.renderCSATSection();
         }
     },
-    
+
     // Picker temporário para os calendários
     _csatTempPicker: null,
     _tempoTempPicker: null,
-    
+
     /**
      * Abre date picker visual para CSAT
      */
     openCSATDatePicker() {
         this.openDatePickerPopup('csat');
     },
-    
+
     /**
      * Abre date picker visual para Tempo
      */
     openTempoDatePicker() {
         this.openDatePickerPopup('tempo');
     },
-    
+
     /**
      * Abre o popup com calendário visual
      */
@@ -560,27 +560,27 @@ window.BICSATModule = {
         const popupId = type + 'DatePickerPopup';
         const existing = document.getElementById(popupId);
         if (existing) { existing.remove(); return; }
-        
+
         const btnId = type + 'PeriodBtn';
         const btn = document.getElementById(btnId);
         const rect = btn ? btn.getBoundingClientRect() : { left: window.innerWidth / 2 - 180, bottom: 100 };
-        
+
         const customRange = type === 'csat' ? this.csatCustomDateRange : this.tempoCustomDateRange;
-        const tempPicker = { 
+        const tempPicker = {
             startDate: customRange.start ? new Date(customRange.start) : null,
             endDate: customRange.end ? new Date(customRange.end) : null,
             currentMonth: new Date()
         };
-        
+
         if (type === 'csat') this._csatTempPicker = tempPicker;
         else this._tempoTempPicker = tempPicker;
-        
+
         // Calcular posição usando coordenadas do documento (não da viewport)
         const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
         const scrollY = window.pageYOffset || document.documentElement.scrollTop;
         const popupTop = Math.min(rect.bottom + scrollY + 8, scrollY + window.innerHeight - 450);
         const popupLeft = Math.min(rect.left + scrollX, scrollX + window.innerWidth - 380);
-        
+
         const popup = document.createElement('div');
         popup.id = popupId;
         popup.style.cssText = `
@@ -595,7 +595,7 @@ window.BICSATModule = {
             box-shadow: 0 20px 40px rgba(0,0,0,0.5);
             min-width: 360px;
         `;
-        
+
         popup.innerHTML = `
             <div style="margin-bottom: 1rem;">
                 <h4 style="color: white; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">📅 Selecionar Período</h4>
@@ -623,20 +623,20 @@ window.BICSATModule = {
                 <button id="${type}ApplyBtn" style="padding:0.5rem 1rem;background:#8b5cf6;border:none;border-radius:6px;color:white;cursor:pointer;font-weight:600;">Aplicar</button>
             </div>
         `;
-        
+
         document.body.appendChild(popup);
-        
+
         // Renderizar calendário
         const calendarContainer = document.getElementById(type + 'Calendar');
         this.renderCalendar(calendarContainer, tempPicker, type);
-        
+
         // Event listeners para atalhos rápidos
         popup.querySelectorAll(`.drp-quick-${type}`).forEach(btn => {
             btn.onclick = () => {
                 const preset = btn.dataset.preset;
                 const today = new Date();
                 today.setHours(23, 59, 59, 999);
-                
+
                 if (preset === 'month') {
                     tempPicker.startDate = new Date(today.getFullYear(), today.getMonth(), 1);
                     tempPicker.endDate = today;
@@ -658,11 +658,11 @@ window.BICSATModule = {
                     tempPicker.endDate = today;
                 }
                 this.renderCalendar(calendarContainer, tempPicker, type);
-                document.getElementById(type + 'Hint').textContent = 
+                document.getElementById(type + 'Hint').textContent =
                     `📅 ${tempPicker.startDate.toLocaleDateString('pt-BR')} → ${tempPicker.endDate.toLocaleDateString('pt-BR')}`;
             };
         });
-        
+
         // Botões de ação
         document.getElementById(type + 'ClearBtn').onclick = () => {
             tempPicker.startDate = null;
@@ -670,9 +670,9 @@ window.BICSATModule = {
             this.renderCalendar(calendarContainer, tempPicker, type);
             document.getElementById(type + 'Hint').textContent = '👆 Clique em um dia para iniciar';
         };
-        
+
         document.getElementById(type + 'CancelBtn').onclick = () => popup.remove();
-        
+
         document.getElementById(type + 'ApplyBtn').onclick = () => {
             if (tempPicker.startDate && tempPicker.endDate) {
                 if (type === 'csat') {
@@ -692,7 +692,7 @@ window.BICSATModule = {
                 this.refreshSection(type);
             }
         };
-        
+
         // Fechar ao clicar fora (mas não nos dias do calendário)
         const closeHandler = (e) => {
             // Não fechar se clicar dentro do popup
@@ -704,7 +704,7 @@ window.BICSATModule = {
         };
         setTimeout(() => document.addEventListener('mousedown', closeHandler), 100);
     },
-    
+
     /**
      * Renderiza o calendário visual
      */
@@ -712,13 +712,13 @@ window.BICSATModule = {
         const month = picker.currentMonth || new Date();
         const year = month.getFullYear();
         const monthNum = month.getMonth();
-        
-        const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
-                           'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-        
+
+        const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
         const firstDay = new Date(year, monthNum, 1).getDay();
         const daysInMonth = new Date(year, monthNum + 1, 0).getDate();
-        
+
         let calendarHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <button onclick="window.BICSATModule.navigateMonth(-1, '${type}')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1.2rem;">◀◀</button>
@@ -736,22 +736,22 @@ window.BICSATModule = {
                 <div style="color:#64748b;font-size:0.75rem;padding:0.5rem;">Sex</div>
                 <div style="color:#64748b;font-size:0.75rem;padding:0.5rem;">Sáb</div>
         `;
-        
+
         for (let i = 0; i < firstDay; i++) {
             calendarHTML += `<div></div>`;
         }
-        
+
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, monthNum, day);
             const isStart = picker.startDate && date.toDateString() === picker.startDate.toDateString();
             const isEnd = picker.endDate && date.toDateString() === picker.endDate.toDateString();
             const isInRange = picker.startDate && picker.endDate && date > picker.startDate && date < picker.endDate;
             const isToday = date.toDateString() === new Date().toDateString();
-            
+
             let bgColor = 'transparent';
             let textColor = '#e4e4e7';
             let border = 'none';
-            
+
             if (isStart || isEnd) {
                 bgColor = '#8b5cf6';
                 textColor = 'white';
@@ -761,7 +761,7 @@ window.BICSATModule = {
             if (isToday) {
                 border = '2px solid #10b981';
             }
-            
+
             calendarHTML += `
                 <div onclick="window.BICSATModule.selectDate(${year}, ${monthNum}, ${day}, '${type}')" 
                      style="padding:0.5rem;cursor:pointer;border-radius:6px;background:${bgColor};color:${textColor};border:${border};transition:all 0.2s;"
@@ -769,11 +769,11 @@ window.BICSATModule = {
                      onmouseout="this.style.background='${bgColor}'">${day}</div>
             `;
         }
-        
+
         calendarHTML += '</div>';
         container.innerHTML = calendarHTML;
     },
-    
+
     /**
      * Navega entre meses
      */
@@ -784,16 +784,16 @@ window.BICSATModule = {
         const container = document.getElementById(type + 'Calendar');
         if (container) this.renderCalendar(container, picker, type);
     },
-    
+
     /**
      * Seleciona uma data no calendário
      */
     selectDate(year, month, day, type) {
         const picker = type === 'csat' ? this._csatTempPicker : this._tempoTempPicker;
         if (!picker) return;
-        
+
         const selectedDate = new Date(year, month, day);
-        
+
         if (!picker.startDate || (picker.startDate && picker.endDate)) {
             picker.startDate = selectedDate;
             picker.endDate = null;
@@ -805,14 +805,14 @@ window.BICSATModule = {
             } else {
                 picker.endDate = selectedDate;
             }
-            document.getElementById(type + 'Hint').textContent = 
+            document.getElementById(type + 'Hint').textContent =
                 `📅 ${picker.startDate.toLocaleDateString('pt-BR')} → ${picker.endDate.toLocaleDateString('pt-BR')}`;
         }
-        
+
         const container = document.getElementById(type + 'Calendar');
         if (container) this.renderCalendar(container, picker, type);
     },
-    
+
     /**
      * Atualiza a seção após mudança de filtro
      */
@@ -831,14 +831,14 @@ window.BICSATModule = {
             }
         }
     },
-    
+
     /**
      * Retorna texto descritivo do período
      */
     getDateRangeText(type) {
         const customRange = type === 'csat' ? this.csatCustomDateRange : this.tempoCustomDateRange;
         const periodFilter = type === 'csat' ? this.csatPeriodFilter : this.tempoPeriodFilter;
-        
+
         if (periodFilter === 'custom' && customRange.start && customRange.end) {
             const start = new Date(customRange.start);
             const end = new Date(customRange.end);
@@ -847,7 +847,7 @@ window.BICSATModule = {
         const labels = { '7': '7 dias', '30': '30 dias', '90': '90 dias', '180': '180 dias', '365': '1 ano', 'all': 'Tudo' };
         return labels[periodFilter] || 'Personalizado';
     },
-    
+
     /**
      * Renderiza o botão de filtro de período (abre calendário visual)
      */
@@ -855,7 +855,7 @@ window.BICSATModule = {
         const isCustom = currentValue === 'custom';
         const btnId = type + 'PeriodBtn';
         const datePickerFn = type === 'csat' ? 'openCSATDatePicker' : 'openTempoDatePicker';
-        
+
         return `
             <button id="${btnId}" onclick="window.BICSATModule.${datePickerFn}()" style="
                 padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;
@@ -871,7 +871,7 @@ window.BICSATModule = {
             </button>
         `;
     },
-    
+
     /**
      * Renderiza seção completa de CSAT
      */
@@ -879,17 +879,17 @@ window.BICSATModule = {
         const allRatings = await this.loadCSATData();
         const periodRatings = this.filterByPeriod(allRatings, this.csatPeriodFilter, 'created_at', 'csat');
         const agents = await this.loadAgentsData();
-        
+
         // Aplicar filtro de agente aos ratings (para cards e gráfico de tendência)
-        const ratings = this.csatAgentFilter !== 'all' 
+        const ratings = this.csatAgentFilter !== 'all'
             ? periodRatings.filter(r => String(r.agent_id) === String(this.csatAgentFilter))
             : periodRatings;
-        
+
         const stats = this.calculateCSATStats(ratings);
-        
+
         // Para o ranking de agentes, sempre usar todos os ratings do período (sem filtro de agente)
         const allAgentsStats = this.calculateCSATStats(periodRatings);
-        
+
         // Calcular CSAT por agente com nomes (usando stats de todos os agentes)
         const agentRankingArray = Object.entries(allAgentsStats.byAgent)
             .map(([agentId, data]) => ({
@@ -901,7 +901,7 @@ window.BICSATModule = {
                 avgScore: data.scores.length > 0 ? (data.scores.reduce((a, b) => a + b, 0) / data.scores.length).toFixed(1) : 0
             }))
             .sort((a, b) => b.csat - a.csat);
-        
+
         // Calcular tendência mensal
         const monthlyData = Object.entries(stats.byMonth)
             .map(([month, data]) => ({
@@ -911,18 +911,18 @@ window.BICSATModule = {
             }))
             .sort((a, b) => a.month.localeCompare(b.month))
             .slice(-12); // Últimos 12 meses
-        
-        const csatColor = stats.csatPercent >= 85 ? this.colors.satisfied : 
-                         stats.csatPercent >= 70 ? this.colors.neutral : this.colors.unsatisfied;
-        
+
+        const csatColor = stats.csatPercent >= 85 ? this.colors.satisfied :
+            stats.csatPercent >= 70 ? this.colors.neutral : this.colors.unsatisfied;
+
         const periodLabel = this.csatPeriodFilter === 'all' ? '' : ` (Últimos ${this.csatPeriodFilter} dias)`;
-        
+
         // Label do agente selecionado
-        const selectedAgentName = this.csatAgentFilter !== 'all' 
+        const selectedAgentName = this.csatAgentFilter !== 'all'
             ? agentRankingArray.find(a => String(a.id) === String(this.csatAgentFilter))?.name || 'Agente'
             : null;
         const agentLabel = selectedAgentName ? ` - ${selectedAgentName}` : '';
-        
+
         return `
             <div class="bi-csat-section" style="padding: 1.5rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
@@ -1054,9 +1054,9 @@ window.BICSATModule = {
                         </div>
                         <div style="height: 220px; display: flex; align-items: flex-end; gap: 8px; padding: 1rem 0; position: relative;">
                             ${monthlyData.map(m => {
-                                const barColor = m.csat >= 85 ? this.colors.satisfied : 
-                                               m.csat >= 70 ? this.colors.neutral : this.colors.unsatisfied;
-                                return `
+            const barColor = m.csat >= 85 ? this.colors.satisfied :
+                m.csat >= 70 ? this.colors.neutral : this.colors.unsatisfied;
+            return `
                                     <div class="csat-bar-container" style="flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; cursor: pointer;"
                                          onmouseover="this.querySelector('.csat-tooltip').style.opacity='1'; this.querySelector('.csat-tooltip').style.visibility='visible';"
                                          onmouseout="this.querySelector('.csat-tooltip').style.opacity='0'; this.querySelector('.csat-tooltip').style.visibility='hidden';">
@@ -1092,7 +1092,7 @@ window.BICSATModule = {
                                         </div>
                                     </div>
                                 `;
-                            }).join('')}
+        }).join('')}
                         </div>
                     </div>
                     
@@ -1114,9 +1114,9 @@ window.BICSATModule = {
                                 </thead>
                                 <tbody>
                                     ${agentRankingArray.slice(0, 10).map((agent, i) => {
-                                        const agentCsatColor = agent.csat >= 85 ? '#10b981' : 
-                                                             agent.csat >= 70 ? '#f59e0b' : '#ef4444';
-                                        return `
+            const agentCsatColor = agent.csat >= 85 ? '#10b981' :
+                agent.csat >= 70 ? '#f59e0b' : '#ef4444';
+            return `
                                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
                                                 <td style="padding: 0.5rem; color: ${i < 3 ? '#fbbf24' : '#71717a'}; font-weight: ${i < 3 ? '600' : '400'};">${i + 1}</td>
                                                 <td style="padding: 0.5rem; color: #e4e4e7; font-weight: 500;">
@@ -1135,7 +1135,7 @@ window.BICSATModule = {
                                                 <td style="padding: 0.5rem; text-align: center; color: #a1a1aa;">${agent.total}</td>
                                             </tr>
                                         `;
-                                    }).join('')}
+        }).join('')}
                                 </tbody>
                             </table>
                         </div>
@@ -1144,20 +1144,20 @@ window.BICSATModule = {
                 
                 <!-- Avaliações dos Tickets -->
                 ${stats.allFeedbacks && stats.allFeedbacks.length > 0 ? (() => {
-                    // Filtrar por agente se selecionado
-                    let filteredFeedbacks = stats.allFeedbacks;
-                    if (this.csatAgentFilter !== 'all') {
-                        filteredFeedbacks = stats.allFeedbacks.filter(fb => String(fb.agentId) === String(this.csatAgentFilter));
-                    }
-                    
-                    // Paginação
-                    const totalPages = Math.ceil(filteredFeedbacks.length / this.feedbacksPerPage);
-                    const startIdx = (this.feedbackPage - 1) * this.feedbacksPerPage;
-                    const pageItems = this.showAllFeedbacks 
-                        ? filteredFeedbacks.slice(startIdx, startIdx + this.feedbacksPerPage)
-                        : filteredFeedbacks.slice(0, 5);
-                    
-                    return `
+                // Filtrar por agente se selecionado
+                let filteredFeedbacks = stats.allFeedbacks;
+                if (this.csatAgentFilter !== 'all') {
+                    filteredFeedbacks = stats.allFeedbacks.filter(fb => String(fb.agentId) === String(this.csatAgentFilter));
+                }
+
+                // Paginação
+                const totalPages = Math.ceil(filteredFeedbacks.length / this.feedbacksPerPage);
+                const startIdx = (this.feedbackPage - 1) * this.feedbacksPerPage;
+                const pageItems = this.showAllFeedbacks
+                    ? filteredFeedbacks.slice(startIdx, startIdx + this.feedbacksPerPage)
+                    : filteredFeedbacks.slice(0, 5);
+
+                return `
                     <div class="bi-card" style="background: #1a1a2e; padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); margin-top: 1.5rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -1177,27 +1177,27 @@ window.BICSATModule = {
                         </div>
                         <div style="display: flex; flex-direction: column; gap: 0.75rem; ${this.showAllFeedbacks ? '' : 'max-height: 350px;'} overflow-y: auto;">
                             ${pageItems.map(fb => {
-                                // Detectar formato Freshdesk (valores absolutos grandes como 103, -103)
-                                const isFreshdeskFormat = Math.abs(fb.score) > 5;
-                                
-                                // Determinar satisfação baseado no formato
-                                let isSatisfied, isNeutral;
-                                if (isFreshdeskFormat) {
-                                    isSatisfied = fb.score > 0;
-                                    isNeutral = fb.score === 0;
-                                } else {
-                                    isSatisfied = fb.score >= 4;
-                                    isNeutral = fb.score === 3;
-                                }
-                                
-                                const displayScore = isFreshdeskFormat 
-                                    ? (fb.score > 0 ? '👍 Satisfeito' : '👎 Insatisfeito')
-                                    : fb.score + '/5';
-                                const scoreColor = isSatisfied ? this.colors.satisfied : 
-                                                 isNeutral ? this.colors.neutral : this.colors.unsatisfied;
-                                const scoreEmoji = isSatisfied ? '😊' : isNeutral ? '😐' : '😞';
-                                const agentName = agents[fb.agentId] || 'N/A';
-                                return `
+                    // Detectar formato Freshdesk (valores absolutos grandes como 103, -103)
+                    const isFreshdeskFormat = Math.abs(fb.score) > 5;
+
+                    // Determinar satisfação baseado no formato
+                    let isSatisfied, isNeutral;
+                    if (isFreshdeskFormat) {
+                        isSatisfied = fb.score > 0;
+                        isNeutral = fb.score === 0;
+                    } else {
+                        isSatisfied = fb.score >= 4;
+                        isNeutral = fb.score === 3;
+                    }
+
+                    const displayScore = isFreshdeskFormat
+                        ? (fb.score > 0 ? '👍 Satisfeito' : '👎 Insatisfeito')
+                        : fb.score + '/5';
+                    const scoreColor = isSatisfied ? this.colors.satisfied :
+                        isNeutral ? this.colors.neutral : this.colors.unsatisfied;
+                    const scoreEmoji = isSatisfied ? '😊' : isNeutral ? '😐' : '😞';
+                    const agentName = agents[fb.agentId] || 'N/A';
+                    return `
                                     <div onclick="window.BICSATModule.openTicket(${fb.ticketId})" style="
                                         background: ${this.colors.background};
                                         padding: 1rem;
@@ -1232,7 +1232,7 @@ window.BICSATModule = {
                                         `}
                                     </div>
                                 `;
-                            }).join('')}
+                }).join('')}
                         </div>
                         ${this.showAllFeedbacks && totalPages > 1 ? `
                             <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid ${this.colors.border};">
@@ -1253,11 +1253,11 @@ window.BICSATModule = {
                         ` : ''}
                     </div>
                     `;
-                })() : ''}
+            })() : ''}
             </div>
         `;
     },
-    
+
     /**
      * Renderiza seção completa de Time Entries
      */
@@ -1266,7 +1266,7 @@ window.BICSATModule = {
         const entries = this.filterByPeriod(allEntries, this.tempoPeriodFilter, 'created_at', 'tempo');
         const agents = await this.loadAgentsData();
         const stats = this.calculateTimeStats(entries);
-        
+
         // Ranking de agentes por tempo
         const agentTimeRanking = Object.entries(stats.byAgent)
             .map(([agentId, data]) => ({
@@ -1277,9 +1277,9 @@ window.BICSATModule = {
                 avgMinutes: data.ticketCount > 0 ? Math.round(data.minutes / data.ticketCount) : 0
             }))
             .sort((a, b) => b.totalMinutes - a.totalMinutes);
-        
+
         const periodLabel = this.tempoPeriodFilter === 'all' ? '' : ` (Últimos ${this.tempoPeriodFilter} dias)`;
-        
+
         return `
             <div class="bi-time-section" style="padding: 1.5rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
@@ -1390,7 +1390,7 @@ window.BICSATModule = {
             </div>
         `;
     },
-    
+
     /**
      * Analisa tickets por horário comercial
      * Horário comercial: Segunda a Sexta, 08:00 às 18:00 (América/São_Paulo)
@@ -1406,38 +1406,38 @@ window.BICSATModule = {
                 peakHour: null
             };
         }
-        
+
         let withinHours = 0;
         let outsideHours = 0;
         const byDayOfWeek = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
         const byHour = new Array(24).fill(0);
-        
+
         tickets.forEach(ticket => {
             if (!ticket.created_at) return;
-            
+
             const date = new Date(ticket.created_at);
             const day = date.getDay(); // 0 = domingo
             const hour = date.getHours();
-            
+
             byDayOfWeek[day]++;
             byHour[hour]++;
-            
+
             // Verificar se está dentro do horário comercial
             // Segunda (1) a Sexta (5), 08:00 às 18:00
             const isWeekday = day >= 1 && day <= 5;
             const isBusinessHour = hour >= 8 && hour < 18;
-            
+
             if (isWeekday && isBusinessHour) {
                 withinHours++;
             } else {
                 outsideHours++;
             }
         });
-        
+
         const total = withinHours + outsideHours;
         const peakHourValue = Math.max(...byHour);
         const peakHour = byHour.indexOf(peakHourValue);
-        
+
         return {
             withinHours,
             outsideHours,
@@ -1449,16 +1449,16 @@ window.BICSATModule = {
             peakHourValue
         };
     },
-    
+
     /**
      * Renderiza seção de Business Hours
      */
     renderBusinessHoursCard(tickets) {
         const stats = this.analyzeBusinessHours(tickets);
-        
-        const withinColor = stats.percentWithin >= 70 ? this.colors.satisfied : 
-                           stats.percentWithin >= 50 ? '#f59e0b' : this.colors.unsatisfied;
-        
+
+        const withinColor = stats.percentWithin >= 70 ? this.colors.satisfied :
+            stats.percentWithin >= 50 ? '#f59e0b' : this.colors.unsatisfied;
+
         return `
             <div style="
                 background: ${this.colors.surface};
@@ -1514,36 +1514,36 @@ window.BICSATModule = {
             </div>
         `;
     },
-    
+
     /**
      * Abre modal com tickets filtrados por categoria CSAT
      */
     async openTicketsModal(filter = 'all') {
         const ratings = await this.loadCSATData();
         const agents = await this.loadAgentsData();
-        
+
         // Aplicar filtro de período
         const filteredRatings = this.filterByPeriod(ratings, this.csatPeriodFilter, 'created_at', 'csat');
-        
+
         // Aplicar filtro de agente se não for 'all'
-        let displayRatings = this.csatAgentFilter !== 'all' 
+        let displayRatings = this.csatAgentFilter !== 'all'
             ? filteredRatings.filter(r => String(r.agent_id) === String(this.csatAgentFilter))
             : filteredRatings;
-        
+
         // Filtrar por categoria
         const filterLabels = {
             'all': { title: '📝 Todas as Avaliações', icon: '📝', color: this.colors.primary },
             'satisfied': { title: '😊 Tickets Satisfeitos', icon: '😊', color: this.colors.satisfied },
             'unsatisfied': { title: '😞 Tickets Insatisfeitos', icon: '😞', color: this.colors.unsatisfied }
         };
-        
+
         const filterInfo = filterLabels[filter] || filterLabels['all'];
-        
+
         // Aplicar filtro de satisfação
         displayRatings = displayRatings.filter(rating => {
             const score = rating.rating || rating.score || 0;
             const isFreshdeskFormat = Math.abs(score) > 5;
-            
+
             if (filter === 'satisfied') {
                 return isFreshdeskFormat ? score > 0 : score >= 4;
             } else if (filter === 'unsatisfied') {
@@ -1551,14 +1551,14 @@ window.BICSATModule = {
             }
             return true; // 'all'
         });
-        
+
         // Ordenar por data (mais recente primeiro)
         displayRatings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        
+
         // Criar modal
         const existingModal = document.getElementById('csatTicketsModal');
         if (existingModal) existingModal.remove();
-        
+
         const modal = document.createElement('div');
         modal.id = 'csatTicketsModal';
         modal.style.cssText = `
@@ -1574,7 +1574,7 @@ window.BICSATModule = {
             z-index: 10000;
             padding: 2rem;
         `;
-        
+
         modal.innerHTML = `
             <div style="
                 background: ${this.colors.background};
@@ -1631,18 +1631,18 @@ window.BICSATModule = {
                     ` : `
                         <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                             ${displayRatings.map(rating => {
-                                const score = rating.rating || rating.score || 0;
-                                const isFreshdeskFormat = Math.abs(score) > 5;
-                                const isSatisfied = isFreshdeskFormat ? score > 0 : score >= 4;
-                                const scoreColor = isSatisfied ? this.colors.satisfied : this.colors.unsatisfied;
-                                const scoreEmoji = isSatisfied ? '😊' : '😞';
-                                const displayScore = isFreshdeskFormat 
-                                    ? (score > 0 ? '👍 Satisfeito' : '👎 Insatisfeito')
-                                    : score + '/5';
-                                const agentName = agents[rating.agent_id] || 'N/A';
-                                const feedback = rating.feedback || '';
-                                
-                                return `
+            const score = rating.rating || rating.score || 0;
+            const isFreshdeskFormat = Math.abs(score) > 5;
+            const isSatisfied = isFreshdeskFormat ? score > 0 : score >= 4;
+            const scoreColor = isSatisfied ? this.colors.satisfied : this.colors.unsatisfied;
+            const scoreEmoji = isSatisfied ? '😊' : '😞';
+            const displayScore = isFreshdeskFormat
+                ? (score > 0 ? '👍 Satisfeito' : '👎 Insatisfeito')
+                : score + '/5';
+            const agentName = agents[rating.agent_id] || 'N/A';
+            const feedback = rating.feedback || '';
+
+            return `
                                     <div onclick="window.BICSATModule.openTicket(${rating.ticket_id})" style="
                                         background: ${this.colors.surface};
                                         padding: 1rem 1.25rem;
@@ -1679,7 +1679,7 @@ window.BICSATModule = {
                                         ` : ''}
                                     </div>
                                 `;
-                            }).join('')}
+        }).join('')}
                         </div>
                     `}
                 </div>
@@ -1704,12 +1704,12 @@ window.BICSATModule = {
                 </div>
             </div>
         `;
-        
+
         // Fechar ao clicar fora
         modal.addEventListener('click', (e) => {
             if (e.target === modal) modal.remove();
         });
-        
+
         // Fechar com ESC
         const escHandler = (e) => {
             if (e.key === 'Escape') {
@@ -1718,10 +1718,10 @@ window.BICSATModule = {
             }
         };
         document.addEventListener('keydown', escHandler);
-        
+
         document.body.appendChild(modal);
     },
-    
+
     /**
      * Inicializa e carrega todos os dados
      */

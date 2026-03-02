@@ -171,7 +171,7 @@ O **Sistema BI de Tickets Tryvia** é uma plataforma de Business Intelligence de
 
 ### Supabase REST API
 
-**Base URL:** `https://mzjdmhgkrroajmsfwryu.supabase.co`
+**Base URL:** `https://ifzypptlhpzuydjeympr.supabase.co`
 
 **Autenticação:** API Key + Bearer Token
 
