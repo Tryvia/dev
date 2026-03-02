@@ -1,0 +1,24 @@
+[28/02/2026  2:15:22,80] Servidor iniciado 
+::1 - - [28/Feb/2026 02:15:24] "GET / HTTP/1.1" 200 -
+::1 - - [28/Feb/2026 02:15:26] "GET /Portal.html HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:15:26] "GET /css/portal.css HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:15:26] "GET /login/index.html HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:15:26] "GET /login/images/logo-globe.png HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:15:26] "GET /login/images/logo-target.png HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:15:26] "GET /login/images/logo-compass.png HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:15:26] "GET /login/images/logo-clock.png HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:15:26] "GET /login/images/logo-group.png HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:15:26] "GET /login/styles.css HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:15:26] "GET /login/script.js HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:15:36] "GET /portal-function/portal.js HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:15:42] "GET /implantacao/index.html HTTP/1.1" 200 -
+::1 - - [28/Feb/2026 02:15:42] "GET /implantacao/style.css HTTP/1.1" 200 -
+::1 - - [28/Feb/2026 02:15:42] "GET /implantacao/supabase-config.js HTTP/1.1" 200 -
+::1 - - [28/Feb/2026 02:15:42] "GET /implantacao/script_modificado.js HTTP/1.1" 200 -
+::1 - - [28/Feb/2026 02:15:52] "GET /linha_do_tempo/index.html HTTP/1.1" 200 -
+::1 - - [28/Feb/2026 02:15:56] "GET /melhorias/index.html HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:15:56] "GET /melhorias/styles.css HTTP/1.1" 304 -
+::1 - - [28/Feb/2026 02:15:56] "GET /melhorias/app.js HTTP/1.1" 200 -
+::1 - - [28/Feb/2026 02:16:06] "GET /mapa_de_visitas/index.html HTTP/1.1" 200 -
+::1 - - [28/Feb/2026 02:16:07] "GET /portal-function/function-ocultarabas.js HTTP/1.1" 304 -
+^C

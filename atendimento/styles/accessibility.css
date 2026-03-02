@@ -1,0 +1,577 @@
+/**
+ * Accessibility Styles (A11Y)
+ * WCAG 2.1 AA Compliant
+ * @version 1.0.0
+ */
+
+/* ============================================
+   SCREEN READER ONLY
+   ============================================ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sr-only-focusable:focus,
+.sr-only-focusable:active {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* ============================================
+   SKIP LINKS
+   ============================================ */
+
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 14px 28px;
+  border-radius: 0 0 12px 12px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  z-index: 100000;
+  transition: top 0.2s ease;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+}
+
+.skip-link:focus {
+  top: 0;
+  outline: 3px solid #fbbf24;
+  outline-offset: 2px;
+}
+
+/* ============================================
+   FOCUS INDICATORS
+   ============================================ */
+
+/* Universal focus visible */
+:focus-visible {
+  outline: 3px solid #667eea !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 6px rgba(102, 126, 234, 0.25) !important;
+}
+
+/* Remove outline when not using keyboard */
+:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Buttons */
+button:focus-visible,
+.btn:focus-visible,
+[role="button"]:focus-visible {
+  outline: 3px solid #667eea !important;
+  outline-offset: 2px !important;
+  background-color: rgba(102, 126, 234, 0.15) !important;
+  transform: translateY(-1px);
+}
+
+/* Sidebar items */
+.sidebar-item:focus-visible {
+  outline: 3px solid #667eea !important;
+  outline-offset: -2px !important;
+  background: rgba(102, 126, 234, 0.2) !important;
+}
+
+/* Form inputs */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #667eea !important;
+  outline-offset: 0 !important;
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2) !important;
+}
+
+/* Cards */
+.card:focus-visible,
+.chart-card:focus-visible,
+[role="region"]:focus-visible {
+  outline: 3px solid #667eea !important;
+  outline-offset: 4px !important;
+  border-radius: 12px;
+}
+
+/* Canvas (charts) */
+canvas:focus-visible {
+  outline: 3px solid #667eea !important;
+  outline-offset: 4px !important;
+  border-radius: 8px;
+}
+
+/* Links */
+a:focus-visible {
+  outline: 3px solid #667eea !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+
+/* Checkboxes and radios - minimal styling to not break existing UI */
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 2px solid #667eea !important;
+  outline-offset: 1px !important;
+}
+
+/* ============================================
+   HIGH CONTRAST MODE
+   ============================================ */
+
+.high-contrast {
+  --a11y-bg-primary: #000000;
+  --a11y-bg-secondary: #1a1a1a;
+  --a11y-text-primary: #ffffff;
+  --a11y-text-secondary: #e0e0e0;
+  --a11y-accent: #00ffff;
+  --a11y-warning: #ffff00;
+  --a11y-error: #ff6666;
+  --a11y-success: #66ff66;
+  --a11y-border: #ffffff;
+}
+
+.high-contrast body {
+  background: var(--a11y-bg-primary) !important;
+  color: var(--a11y-text-primary) !important;
+}
+
+.high-contrast .sidebar,
+.high-contrast .topbar,
+.high-contrast .card,
+.high-contrast .chart-card,
+.high-contrast .modal-content {
+  background: var(--a11y-bg-secondary) !important;
+  border: 2px solid var(--a11y-border) !important;
+}
+
+.high-contrast a,
+.high-contrast button:not(.btn-primary),
+.high-contrast [role="button"] {
+  color: var(--a11y-accent) !important;
+  text-decoration: underline !important;
+}
+
+.high-contrast :focus-visible {
+  outline: 4px solid var(--a11y-warning) !important;
+  outline-offset: 4px !important;
+}
+
+.high-contrast .sidebar-item.active {
+  background: var(--a11y-text-primary) !important;
+  color: var(--a11y-bg-primary) !important;
+}
+
+.high-contrast .badge,
+.high-contrast .tag {
+  border: 2px solid currentColor !important;
+}
+
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .skip-link {
+    transition: none !important;
+  }
+}
+
+/* ============================================
+   MINIMUM TARGET SIZE (44x44px)
+   ============================================ */
+
+/* Ensure interactive elements meet minimum touch target size */
+button,
+[role="button"],
+.sidebar-item,
+.btn {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Checkboxes and radios - no size changes, keep native styling */
+
+/* Small buttons with adequate spacing */
+.btn-sm,
+.btn-icon {
+  min-height: 36px;
+  min-width: 36px;
+  padding: 8px 12px;
+}
+
+/* Icon-only buttons */
+button:has(> svg:only-child),
+button:has(> .icon:only-child) {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================
+   TEXT CONTRAST HELPERS
+   ============================================ */
+
+/* WCAG AA requires 4.5:1 for normal text, 3:1 for large text */
+
+.text-high-contrast {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.text-on-dark {
+  color: #e4e4e7 !important;
+}
+
+.text-on-light {
+  color: #1f2937 !important;
+}
+
+/* Muted text with better contrast */
+.text-muted {
+  color: #a1a1aa !important; /* 4.5:1 on #1e1e2e */
+}
+
+/* ============================================
+   LINK VISIBILITY
+   ============================================ */
+
+/* Links should be distinguishable from regular text */
+a:not(.btn):not(.sidebar-item):not(.skip-link) {
+  color: #60a5fa;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a:not(.btn):not(.sidebar-item):not(.skip-link):hover {
+  color: #93c5fd;
+  text-decoration-thickness: 2px;
+}
+
+a:not(.btn):not(.sidebar-item):not(.skip-link):visited {
+  color: #a78bfa;
+}
+
+/* ============================================
+   ERROR STATES
+   ============================================ */
+
+/* Don't rely on color alone for errors */
+.has-error,
+.is-invalid,
+[aria-invalid="true"] {
+  border-color: #ef4444 !important;
+  border-width: 2px !important;
+}
+
+.has-error::before,
+.is-invalid::before,
+[aria-invalid="true"]::before {
+  content: "⚠ ";
+}
+
+.error-message {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.error-message::before {
+  content: "⚠ Erro: ";
+}
+
+/* ============================================
+   SUCCESS STATES
+   ============================================ */
+
+.has-success,
+.is-valid,
+[aria-invalid="false"] {
+  border-color: #10b981 !important;
+}
+
+.success-message {
+  color: #10b981;
+}
+
+.success-message::before {
+  content: "✓ ";
+}
+
+/* ============================================
+   LOADING STATES
+   ============================================ */
+
+[aria-busy="true"] {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+[aria-busy="true"]::after {
+  content: " (carregando...)";
+  font-size: 0.85em;
+  color: #a1a1aa;
+}
+
+/* ============================================
+   DISABLED STATES
+   ============================================ */
+
+[disabled],
+[aria-disabled="true"],
+.disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+/* ============================================
+   LIVE REGIONS
+   ============================================ */
+
+[role="status"],
+[role="alert"],
+[aria-live] {
+  /* Ensure screen readers announce these */
+  contain: layout;
+}
+
+/* Visual indicator for live regions (optional) */
+[role="alert"]:not(.sr-only) {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  border-left: 4px solid #ef4444;
+}
+
+[role="status"]:not(.sr-only) {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 4px solid #3b82f6;
+}
+
+/* ============================================
+   TABLES
+   ============================================ */
+
+table {
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  font-weight: 600;
+}
+
+th,
+td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Row focus for keyboard navigation */
+tr:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: -2px;
+}
+
+/* Caption for screen readers */
+caption {
+  text-align: left;
+  font-weight: 600;
+  padding: 12px 0;
+  caption-side: top;
+}
+
+/* ============================================
+   FORMS
+   ============================================ */
+
+/* Labels */
+label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+/* Required fields */
+label[for]:has(+ input[required])::after,
+label[for]:has(+ select[required])::after,
+label[for]:has(+ textarea[required])::after {
+  content: " *";
+  color: #ef4444;
+}
+
+/* Fieldset and legend */
+fieldset {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+legend {
+  font-weight: 600;
+  padding: 0 8px;
+}
+
+/* ============================================
+   MODALS AND DIALOGS
+   ============================================ */
+
+[role="dialog"],
+[role="alertdialog"] {
+  /* Ensure proper focus management */
+  contain: content;
+}
+
+/* Trap focus indicator */
+[role="dialog"]:focus-within,
+[role="alertdialog"]:focus-within {
+  outline: none;
+}
+
+/* Modal backdrop */
+.modal-backdrop,
+.overlay {
+  /* Ensure it's not focusable */
+  pointer-events: all;
+}
+
+/* ============================================
+   TOOLTIPS
+   ============================================ */
+
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 12px;
+  background: #1e1e2e;
+  color: #e4e4e7;
+  font-size: 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  z-index: 1000;
+  margin-bottom: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   KEYBOARD NAVIGATION INDICATORS
+   ============================================ */
+
+/* Show keyboard navigation hint */
+.keyboard-user *:focus-visible {
+  outline: 3px solid #667eea !important;
+}
+
+/* Tab order indicator (dev mode) */
+.show-tab-order [tabindex]:not([tabindex="-1"])::before {
+  content: attr(tabindex);
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  background: #667eea;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  z-index: 10000;
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+  .skip-link,
+  #a11y-button,
+  #a11y-panel,
+  #realtime-indicator,
+  #realtime-panel {
+    display: none !important;
+  }
+  
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+  
+  body {
+    color: #000 !important;
+    background: #fff !important;
+  }
+}
+
+/* ============================================
+   ANIMATIONS FOR ACCESSIBILITY INDICATORS
+   ============================================ */
+
+@keyframes a11y-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes a11y-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Accessibility button pulse when there are issues */
+#a11y-button.has-issues {
+  animation: a11y-pulse 2s ease-in-out infinite;
+}
+
+/* Panel fade in */
+#a11y-panel {
+  animation: a11y-fadeIn 0.2s ease;
+}

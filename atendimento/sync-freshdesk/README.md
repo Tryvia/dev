@@ -241,14 +241,43 @@ Após a sincronização, as seguintes métricas estarão disponíveis:
 
 ## 📁 Arquivos do Módulo
 
+### Scripts Principais (usar estes):
 | Arquivo | Descrição |
 |---------|-----------|
-| `sync-tickets-v2.js` | Script principal de sincronização |
-| `.github/workflows/sync-freshdesk.yml` | Workflow do GitHub Actions |
-| `run-sync-local.ps1` | Script para rodar localmente (Windows) |
-| `sql/create-all-freshdesk-tables.sql` | SQL completo das tabelas |
+| `sync-smart.js` | **Script unificado de sincronização** (quick/full/verify) |
+| `integrity-check.js` | Verificação de integridade do banco |
+
+### Scripts Utilitários:
+| Arquivo | Descrição |
+|---------|-----------|
+| `sync-tickets-v2.js` | Sync completo (mantido para compatibilidade) |
+| `fix-incomplete-tickets.js` | Corrige tickets sem subject |
+| `sync-conversations-missing.js` | Sincroniza conversas faltantes |
+
+### Scripts Deprecated (pasta `deprecated/`):
+| Arquivo | Substituído por |
+|---------|-----------------|
+| `sync-quick.js` | `sync-smart.js quick` |
+| `sync-quick-recent.js` | `sync-smart.js quick` |
+| `sync-quick-status.js` | `sync-smart.js quick` |
+| `sync-conversations.js` | `sync-smart.js full` |
+| `sync-csat.js` | `sync-smart.js full` |
+| `sync-metadata.js` | `sync-smart.js full` |
+
+### Workflows do GitHub Actions:
+| Arquivo | Descrição |
+|---------|-----------|
+| `.github/workflows/sync-freshdesk.yml` | Sync a cada 3h (usa sync-smart.js) |
+| `.github/workflows/integrity-check.yml` | Verificação diária de integridade |
 
 ## 🆕 Changelog
+
+### v3.0 (Fev/2026)
+- ✅ Novo script unificado `sync-smart.js` com modos quick/full/verify
+- ✅ Novo `integrity-check.js` para verificação diária
+- ✅ Scripts antigos movidos para `deprecated/`
+- ✅ Proteção contra perda de dados e inconsistências
+- ✅ Detecção automática de tags desatualizadas
 
 ### v2.0 (Dez/2024)
 - ✅ Adicionado sync de `satisfaction_ratings` (CSAT)

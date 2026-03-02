@@ -20,14 +20,14 @@ class AnnotationsModule {
         this.activePriority = 'all';
         this.editingId = null;
         this.isConnected = false;
-        
+
         this.config = {
             notificationDuration: 5000,
         };
-        
+
         this.init();
     }
-    
+
     async init() {
         this.loadCurrentUser();
         this.injectStyles();
@@ -39,19 +39,18 @@ class AnnotationsModule {
         setTimeout(() => this.checkNewAnnotations(), 1500);
         console.log('📝 Anotações Premium v2.0 inicializado');
     }
-    
+
     // ========== SUPABASE ==========
-    
+
     async initSupabase() {
         try {
             if (typeof window.initSupabase === 'function') {
                 this.supabase = await window.initSupabase();
-            } else {
-                const SUPABASE_URL = 'https://mzjdmhgkrroajmsfwryu.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMzMwMzUsImV4cCI6MjA2MzgwOTAzNX0.tQCwUfFCV7sD-IexQviU0XEPcbn9j5uK9NSUbH-OeBc';
-                if (window.supabase?.createClient) {
-                    this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                }
+            } else if (window.EnvConfig?.supabase?.url && window.supabase?.createClient) {
+                this.supabase = window.supabase.createClient(
+                    window.EnvConfig.supabase.url,
+                    window.EnvConfig.supabase.key
+                );
             }
             if (this.supabase) {
                 this.isConnected = true;
@@ -63,21 +62,21 @@ class AnnotationsModule {
             return null;
         }
     }
-    
+
     async loadAnnotations() {
         if (!this.supabase) return;
         this.isLoading = true;
         this.showLoadingState();
-        
+
         try {
             const { data, error } = await this.supabase
                 .from(this.TABLE_NAME)
                 .select('*')
                 .order('created_at', { ascending: false })
                 .limit(500);
-            
+
             if (error) throw error;
-            
+
             this.annotations = (data || []).map(row => ({
                 id: row.id,
                 ticketId: row.ticket_id,
@@ -88,7 +87,7 @@ class AnnotationsModule {
                 createdAt: row.created_at,
                 readBy: row.read_by || []
             }));
-            
+
             this.updateUnreadCount();
             if (this.isOpen) this.renderAnnotationsList();
         } catch (e) {
@@ -98,7 +97,7 @@ class AnnotationsModule {
             this.hideLoadingState();
         }
     }
-    
+
     async saveAnnotation(annotation) {
         if (!this.supabase) return null;
         try {
@@ -123,7 +122,7 @@ class AnnotationsModule {
             return null;
         }
     }
-    
+
     async updateReadBy(annotationId, readByArray) {
         if (!this.supabase) return;
         try {
@@ -135,7 +134,7 @@ class AnnotationsModule {
             console.error('Erro ao atualizar leitura:', e);
         }
     }
-    
+
     async deleteAnnotationFromDB(annotationId) {
         if (!this.supabase) return false;
         try {
@@ -150,9 +149,9 @@ class AnnotationsModule {
             return false;
         }
     }
-    
+
     // ========== REALTIME ==========
-    
+
     setupRealtime() {
         if (!this.supabase) return;
         try {
@@ -171,7 +170,7 @@ class AnnotationsModule {
             console.error('Erro Realtime:', e);
         }
     }
-    
+
     handleRealtimeEvent(payload) {
         const mapRow = (row) => ({
             id: row.id,
@@ -183,7 +182,7 @@ class AnnotationsModule {
             createdAt: row.created_at,
             readBy: row.read_by || []
         });
-        
+
         if (payload.eventType === 'INSERT') {
             const newAnnotation = mapRow(payload.new);
             if (!this.annotations.find(a => a.id === newAnnotation.id)) {
@@ -209,32 +208,32 @@ class AnnotationsModule {
             if (this.isOpen) this.renderAnnotationsList();
         }
     }
-    
+
     playNotificationSound() {
         try {
             const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleVs2PZa7/9t1NQ0MbtT/znYRAABWy//9gS8AAFnS//yALgAAWNH/+4EvAABVzv/6gy8AAE/F//WJMQAASrz/8I44AABEvP/ukzwAAD63/+2WPwAAObb/7Jg/AAA0s//rmEAAADCx/+qZQQAALbD/6ZlBAAArr//omp');
             audio.volume = 0.3;
-            audio.play().catch(() => {});
-        } catch (e) {}
+            audio.play().catch(() => { });
+        } catch (e) { console.warn('⚠️ Erro ao tocar som de anotação:', e.message); }
     }
-    
+
     loadCurrentUser() {
         this.currentUser = localStorage.getItem(this.USER_KEY) || null;
     }
-    
+
     saveCurrentUser(name) {
         this.currentUser = name;
         localStorage.setItem(this.USER_KEY, name);
     }
-    
+
     // ========== GERENCIAMENTO ==========
-    
+
     async addAnnotation(ticketId, ticketSubject, message, priority = 'normal') {
         if (!this.currentUser) {
             this.promptUserName(() => this.addAnnotation(ticketId, ticketSubject, message, priority));
             return;
         }
-        
+
         const annotation = {
             id: `ann_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             ticketId: String(ticketId),
@@ -245,7 +244,7 @@ class AnnotationsModule {
             createdAt: new Date().toISOString(),
             readBy: [this.currentUser]
         };
-        
+
         const saved = await this.saveAnnotation(annotation);
         if (saved) {
             if (!this.annotations.find(a => a.id === annotation.id)) {
@@ -260,7 +259,7 @@ class AnnotationsModule {
         }
         return annotation;
     }
-    
+
     async editAnnotation(annotationId, newMessage) {
         const annotation = this.annotations.find(a => a.id === annotationId);
         if (!annotation || annotation.author !== this.currentUser) {
@@ -275,7 +274,7 @@ class AnnotationsModule {
             this.renderAnnotationsList();
         }
     }
-    
+
     async markAsRead(annotationId) {
         if (!this.currentUser) return;
         const annotation = this.annotations.find(a => a.id === annotationId);
@@ -285,7 +284,7 @@ class AnnotationsModule {
             this.updateUnreadCount();
         }
     }
-    
+
     async markAllAsRead() {
         if (!this.currentUser) return;
         const promises = [];
@@ -300,7 +299,7 @@ class AnnotationsModule {
         this.renderAnnotationsList();
         this.showNotification('success', '✓ Todas marcadas como lidas');
     }
-    
+
     async deleteAnnotation(annotationId) {
         const annotation = this.annotations.find(a => a.id === annotationId);
         if (!annotation) return;
@@ -309,7 +308,7 @@ class AnnotationsModule {
             return;
         }
         if (!confirm('Remover esta anotação?')) return;
-        
+
         const deleted = await this.deleteAnnotationFromDB(annotationId);
         if (deleted) {
             this.annotations = this.annotations.filter(a => a.id !== annotationId);
@@ -318,59 +317,59 @@ class AnnotationsModule {
             this.showNotification('info', '✓ Anotação removida');
         }
     }
-    
+
     getFilteredAnnotations() {
         let filtered = [...this.annotations];
-        
+
         // Filtro por tab
         if (this.activeFilter === 'unread') {
-            filtered = filtered.filter(a => 
+            filtered = filtered.filter(a =>
                 a.author !== this.currentUser && !a.readBy.includes(this.currentUser)
             );
         } else if (this.activeFilter === 'mine') {
             filtered = filtered.filter(a => a.author === this.currentUser);
         }
-        
+
         // Filtro por prioridade
         if (this.activePriority !== 'all') {
             filtered = filtered.filter(a => a.priority === this.activePriority);
         }
-        
+
         // Busca
         if (this.searchQuery) {
             const q = this.searchQuery.toLowerCase();
-            filtered = filtered.filter(a => 
+            filtered = filtered.filter(a =>
                 a.ticketId.toLowerCase().includes(q) ||
                 a.ticketSubject.toLowerCase().includes(q) ||
                 a.message.toLowerCase().includes(q) ||
                 a.author.toLowerCase().includes(q)
             );
         }
-        
+
         return filtered;
     }
-    
+
     getUnreadAnnotations() {
         if (!this.currentUser) return [];
-        return this.annotations.filter(a => 
+        return this.annotations.filter(a =>
             a.author !== this.currentUser && !a.readBy.includes(this.currentUser)
         );
     }
-    
+
     updateUnreadCount() {
         this.unreadCount = this.getUnreadAnnotations().length;
         this.updateBadge();
     }
-    
+
     checkNewAnnotations() {
         const unread = this.getUnreadAnnotations();
         if (unread.length > 0 && !this.isOpen) {
             this.showNotification('info', `📝 Você tem ${unread.length} anotação(ões) não lida(s)`, 6000);
         }
     }
-    
+
     // ========== ESTILOS PREMIUM ==========
-    
+
     injectStyles() {
         if (document.getElementById('annotations-premium-styles')) return;
         const styles = document.createElement('style');

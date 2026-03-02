@@ -1,0 +1,158 @@
+/**
+ * ============================================
+ * TEMPLATE PARA NOVO TEMA
+ * ============================================
+ * 
+ * Como usar:
+ * 1. Copie este arquivo e renomeie para o nome do tema (ex: meu-tema.css)
+ * 2. Substitua "NOME_DO_TEMA" pelo identificador do tema
+ * 3. Defina todas as cores nas variáveis CSS
+ * 4. Adicione as mesmas cores no js/theme-colors-config.js
+ * 5. Importe este CSS no HTML principal
+ * 6. Teste TODOS os componentes listados no final
+ */
+
+/* ============================================
+   VARIÁVEIS CSS DO TEMA
+   ============================================ */
+
+[data-theme="NOME_DO_TEMA"] {
+  /* --- FUNDOS --- */
+  --bg: #;               /* Fundo principal da página */
+  --bg-secondary: #;     /* Fundo de seções secundárias */
+  --card: #;             /* Fundo de cards */
+  --card-hover: #;       /* Hover em cards */
+  --surface: #;          /* Superfície de painéis */
+  --sidebar: #;          /* Fundo da sidebar */
+  
+  /* --- TEXTOS --- */
+  --text-primary: #;     /* Texto principal */
+  --text-secondary: #;   /* Texto secundário */
+  --text-muted: #;       /* Texto desabilitado/placeholder */
+  
+  /* --- BORDAS --- */
+  --border: #;           /* Bordas padrão */
+  --border-hover: #;     /* Bordas em hover */
+  
+  /* --- CORES DE AÇÃO --- */
+  --primary: #;          /* Cor principal de destaque */
+  --primary-hover: #;    /* Hover da cor principal */
+  --secondary: #;        /* Cor secundária */
+  
+  /* --- CORES SEMÂNTICAS --- */
+  --success: #;          /* Verde - sucesso */
+  --warning: #;          /* Amarelo - alerta */
+  --danger: #;           /* Vermelho - erro */
+  --info: #;             /* Azul - informação */
+  
+  /* --- GRÁFICOS/CANVAS --- */
+  --chart-bg: #;         /* Fundo dos gráficos */
+  --chart-text: #;       /* Texto dentro dos gráficos */
+  --chart-grid: #;       /* Linhas de grid */
+  --chart-label: #;      /* Labels dos eixos */
+}
+
+
+/* ============================================
+   OVERRIDES ESPECÍFICOS DO TEMA
+   ============================================ */
+
+/* Header/Topbar */
+[data-theme="NOME_DO_TEMA"] .topbar {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Sidebar */
+[data-theme="NOME_DO_TEMA"] .sidebar {
+  background: var(--sidebar);
+}
+
+/* Cards */
+[data-theme="NOME_DO_TEMA"] .card,
+[data-theme="NOME_DO_TEMA"] .bi-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+/* Botões */
+[data-theme="NOME_DO_TEMA"] button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+[data-theme="NOME_DO_TEMA"] button:hover {
+  background: var(--card-hover);
+  border-color: var(--border-hover);
+}
+
+[data-theme="NOME_DO_TEMA"] button.primary {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+/* Inputs/Selects */
+[data-theme="NOME_DO_TEMA"] input,
+[data-theme="NOME_DO_TEMA"] select,
+[data-theme="NOME_DO_TEMA"] textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+[data-theme="NOME_DO_TEMA"] input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Tabelas */
+[data-theme="NOME_DO_TEMA"] table {
+  background: var(--card);
+}
+
+[data-theme="NOME_DO_TEMA"] thead {
+  background: var(--bg-secondary);
+}
+
+[data-theme="NOME_DO_TEMA"] th,
+[data-theme="NOME_DO_TEMA"] td {
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+/* Modais */
+[data-theme="NOME_DO_TEMA"] .modal,
+[data-theme="NOME_DO_TEMA"] .modal-content {
+  background: var(--card);
+  color: var(--text-primary);
+}
+
+/* Canvas/Gráficos */
+[data-theme="NOME_DO_TEMA"] canvas {
+  background: var(--chart-bg);
+}
+
+
+/* ============================================
+   CHECKLIST DE TESTE
+   ============================================
+   
+   Antes de finalizar o tema, teste:
+   
+   [ ] Sidebar - navegação, hover, ativo
+   [ ] Topbar - título, botões, busca
+   [ ] Cards - fundo, borda, texto
+   [ ] Botões - normal, hover, primário, danger
+   [ ] Inputs - normal, focus, placeholder
+   [ ] Selects - dropdown, opções
+   [ ] Tabelas - header, linhas, hover
+   [ ] Modais - fundo, texto, botões
+   [ ] Gráficos canvas - fundo, texto, labels
+   [ ] Modo Apresentação - todos os slides
+   [ ] Toasts/Notificações
+   [ ] KPIs - números, labels
+   [ ] Glossário
+   [ ] Filtros de período/time
+   
+   ============================================ */

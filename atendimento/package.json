@@ -1,11 +1,11 @@
- {
+{
   "name": "freshdesk-proxy",
   "version": "1.0.0",
   "description": "Proxy local para API Freshdesk - Resolve problemas de CORS",
   "main": "freshdesk-proxy.js",
   "scripts": {
     "start": "node freshdesk-proxy.js",
-    "sync": "node sync-tickets.js",
+    "sync": "node sync-freshdesk/sync-tickets-v2.js",
     "install-deps": "npm install"
   },
   "dependencies": {
@@ -16,4 +16,4 @@
   },
   "author": "",
   "license": "MIT"
- }
+}

@@ -1,42 +1,87 @@
 /**
- * BI Acompanhamento Module - Análise por Tags
+ * BI Acompanhamento Module - Análise por cf_acompanhamento_atendimento
  * 
- * Este módulo analisa a "tratativa indireta" baseada na coluna tags:
- * - Mede quantos tickets cada pessoa do atendimento acompanhou
- * - Calcula % de tickets acompanhados que foram resolvidos
+ * Este módulo analisa o acompanhamento baseado no campo cf_acompanhamento_atendimento
+ * que corresponde ao campo "Acompanhamento Atendimento" do dashboard Freshdesk.
+ * 
+ * IMPORTANTE: O campo cf_acompanhamento_atendimento é mapeado de cf_analista no Freshdesk.
  * 
  * Diferente do BI por Tratativa (cf_tratativa) que mede quem RESOLVEU,
- * este BI mede quem ACOMPANHOU (tags).
+ * este BI mede quem ACOMPANHOU (cf_acompanhamento_atendimento).
+ * 
+ * FONTES DE DADOS (em ordem de prioridade):
+ * 1. cf_acompanhamento_atendimento - Campo principal (bate com Freshdesk)
+ * 2. tags - Fallback para tickets antigos sem cf_acompanhamento_atendimento
  */
 
 window.BIAcompanhamentoModule = {
-    // Cores do tema
-    colors: {
-        primary: '#8b5cf6',
-        accent: '#06b6d4',
-        success: '#10b981',
-        warning: '#f59e0b',
-        danger: '#ef4444',
-        text: '#e2e8f0',
-        textMuted: '#94a3b8',
-        surface: '#1e293b',
-        background: '#0f172a',
-        border: '#334155'
+    // Cores do tema - dinâmicas
+    getColors() {
+        const theme = document.documentElement.getAttribute('data-theme');
+        if (theme === 'tryvia-cyan') {
+            return {
+                primary: '#00e4ff',
+                accent: '#0099cc',
+                success: '#059669',
+                warning: '#d97706',
+                danger: '#dc2626',
+                text: '#1e293b',
+                textMuted: '#64748b',
+                surface: '#ffffff',
+                background: '#f5f7fa',
+                border: '#e2e8f0',
+                cardBg: '#ffffff'
+            };
+        }
+        return {
+            primary: '#8b5cf6',
+            accent: '#06b6d4',
+            success: '#10b981',
+            warning: '#f59e0b',
+            danger: '#ef4444',
+            text: '#e2e8f0',
+            textMuted: '#94a3b8',
+            surface: '#1e293b',
+            background: '#0f172a',
+            border: '#334155',
+            cardBg: '#1e293b'
+        };
     },
     
-    // Lista de pessoas do time de atendimento (sincronizada com TEAM_MEMBERS_CONFIG)
-    // Nota: A whitelist oficial está em bi-analytics.js (TEAM_MEMBERS_CONFIG)
+    get colors() {
+        return this.getColors();
+    },
+    
+    // Lista de pessoas do time de atendimento
+    // Inclui nomes completos e abreviados (tags no Supabase usam nomes abreviados)
     allowedPeople: [
-        'Adriana Florencio',
-        'Alianie Lanes',
-        'Andreia Ribeiro',
-        'Francisco Nascimento',
-        'Gabriel Oliveira',
-        'Gustavo Martins',
-        'João Peres',
-        'Jéssica Dias',
-        'Marciele Quintanilha'
+        'Adriana Florencio', 'Adriana',
+        'Alianie Lanes', 'Alianie',
+        'Andreia Ribeiro', 'Andreia', 'Andréia',
+        'Francisco Nascimento', 'Francisco',
+        'Gabriel Oliveira', 'Gabriel CS', 'Gabriel',
+        'Gustavo Martins', 'Gustavo',
+        'João Peres', 'Joao Peres',
+        'Jéssica Dias', 'Jéssica', 'Jessica',
+        'Marciele Quintanilha', 'Marciele'
     ],
+    
+    // Mapeamento de nomes abreviados para nomes completos
+    nameMapping: {
+        'adriana': 'Adriana Florencio',
+        'alianie': 'Alianie Lanes',
+        'andreia': 'Andreia Ribeiro',
+        'andréia': 'Andreia Ribeiro',
+        'francisco': 'Francisco Nascimento',
+        'gabriel cs': 'Gabriel CS',
+        'gabriel': 'Gabriel CS',
+        'gustavo': 'Gustavo Martins',
+        'joão peres': 'João Peres',
+        'joao peres': 'João Peres',
+        'jéssica': 'Jéssica Dias',
+        'jessica': 'Jéssica Dias',
+        'marciele': 'Marciele Quintanilha'
+    },
     
     // Filtros
     periodFilter: '30', // all, 7, 30, 90, 180, 365, custom
@@ -66,23 +111,74 @@ window.BIAcompanhamentoModule = {
     },
     
     /**
-     * Retorna o nome padronizado da pessoa (da lista allowedPeople)
+     * Retorna o nome padronizado da pessoa usando o mapeamento
      */
     getNormalizedPersonName(tag) {
         const normalizedTag = this.removeAccents(tag.toLowerCase().trim());
-        for (const person of this.allowedPeople) {
-            const normalizedPerson = this.removeAccents(person.toLowerCase().trim());
-            if (normalizedTag.startsWith(normalizedPerson) || 
-                normalizedPerson.startsWith(normalizedTag) ||
-                normalizedTag.includes(normalizedPerson) ||
-                normalizedPerson.includes(normalizedTag)) {
-                return person; // Retorna o nome padronizado da lista
+        
+        // Primeiro, verificar no mapeamento direto
+        if (this.nameMapping[normalizedTag]) {
+            return this.nameMapping[normalizedTag];
+        }
+        
+        // Tentar encontrar correspondência parcial no mapeamento
+        for (const [key, value] of Object.entries(this.nameMapping)) {
+            if (normalizedTag.includes(key) || key.includes(normalizedTag)) {
+                return value;
             }
         }
-        return tag;
+        
+        // Se não encontrou, retorna a tag como está (capitalizada)
+        return tag.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     },
     
     /**
+     * Obtém a pessoa responsável pelo acompanhamento do ticket
+     * PRIORIDADE: cf_acompanhamento_atendimento > tags
+     * Isso garante que os números batam com o dashboard do Freshdesk
+     */
+    getAcompanhamentoPessoa(ticket) {
+        // 1. PRIORIDADE: cf_acompanhamento_atendimento (campo oficial do Freshdesk)
+        const cfAnalista = ticket.cf_acompanhamento_atendimento;
+        if (cfAnalista && cfAnalista.trim()) {
+            const normalized = this.getNormalizedPersonName(cfAnalista.trim());
+            if (this.isAllowedPerson(cfAnalista)) {
+                return normalized;
+            }
+            // Mesmo não estando na lista, retorna o valor (pode ser pessoa nova)
+            return cfAnalista.trim();
+        }
+        
+        // 2. FALLBACK: Buscar nas tags (para tickets antigos sem cf_acompanhamento_atendimento)
+        const tags = this.getTagsArray(ticket);
+        for (const tag of tags) {
+            if (this.isAllowedPerson(tag)) {
+                return this.getNormalizedPersonName(tag);
+            }
+        }
+        
+        return null; // Nenhuma pessoa encontrada
+    },
+    
+    /**
+     * Extrai todas as pessoas únicas dos tickets
+     * Usa cf_acompanhamento_atendimento como fonte primária
+     */
+    extractPeopleFromTickets(tickets) {
+        const peopleSet = new Set();
+        
+        tickets.forEach(ticket => {
+            const pessoa = this.getAcompanhamentoPessoa(ticket);
+            if (pessoa) {
+                peopleSet.add(pessoa);
+            }
+        });
+        
+        return Array.from(peopleSet).sort();
+    },
+    
+    /**
+     * @deprecated Use extractPeopleFromTickets instead
      * Extrai todas as pessoas únicas das tags (apenas as permitidas)
      */
     extractPeopleFromTags(tickets) {
@@ -101,10 +197,11 @@ window.BIAcompanhamentoModule = {
     },
     
     /**
-     * Converte tags do ticket para array
-     * Tags podem vir como: array, string separada por vírgula, string JSON, ou objeto
+     * Converte a coluna tags do ticket para array de pessoas
+     * Tags no Supabase contém nomes como ["Andreia"], ["Gustavo"], ["João Peres"]
      */
     getTagsArray(ticket) {
+        // Usa a coluna 'tags' do Supabase que contém nomes como ["Andreia"], ["Gustavo"], etc.
         if (!ticket.tags) return [];
         
         let tags = ticket.tags;
@@ -188,6 +285,270 @@ window.BIAcompanhamentoModule = {
     },
     
     /**
+     * Retorna estatísticas globais (TODO PERÍODO) para comparar com Freshdesk
+     * Não aplica filtro de período - mostra TODOS os tickets
+     * USA cf_acompanhamento_atendimento como fonte primária para bater com Freshdesk
+     */
+    getGlobalStats() {
+        const allTickets = window.allTicketsCache || [];
+        const resolvedStatuses = [4, 5]; // 4=Resolvido, 5=Fechado
+        const statsByPerson = {};
+        
+        allTickets.forEach(t => {
+            // Usar cf_acompanhamento_atendimento como fonte primária
+            const pessoa = this.getAcompanhamentoPessoa(t);
+            if (!pessoa) return;
+            
+            const isResolved = resolvedStatuses.includes(t.status);
+            
+            if (!statsByPerson[pessoa]) {
+                statsByPerson[pessoa] = { person: pessoa, total: 0, ativos: 0, resolvidos: 0 };
+            }
+            
+            statsByPerson[pessoa].total++;
+            if (isResolved) {
+                statsByPerson[pessoa].resolvidos++;
+            } else {
+                statsByPerson[pessoa].ativos++;
+            }
+        });
+        
+        // Converter para array, calcular taxa e ordenar por ATIVOS
+        return Object.values(statsByPerson)
+            .map(p => ({
+                ...p,
+                taxaResolucao: p.total > 0 ? Math.round((p.resolvidos / p.total) * 100) : 0
+            }))
+            .sort((a, b) => b.ativos - a.ativos);
+    },
+    
+    /**
+     * Diagnóstico COMPLETO - compara tags vs cf_acompanhamento_atendimento
+     * Use: BIAcompanhamentoModule.diagnosticoCompleto('João Peres')
+     */
+    diagnosticoCompleto(nomePessoa) {
+        const allTickets = window.allTicketsCache || [];
+        const busca = nomePessoa.toLowerCase();
+        
+        console.log('═══════════════════════════════════════════════════════════════');
+        console.log(`🔍 DIAGNÓSTICO COMPLETO: "${nomePessoa}"`);
+        console.log('═══════════════════════════════════════════════════════════════');
+        console.log(`📊 Total de tickets no Supabase: ${allTickets.length}`);
+        
+        // 1. Buscar por TAGS
+        const porTags = allTickets.filter(t => {
+            const tags = this.getTagsArray(t);
+            return tags.some(tag => tag.toLowerCase().includes(busca) || busca.includes(tag.toLowerCase()));
+        });
+        
+        // 2. Buscar por CF_ACOMPANHAMENTO_ATENDIMENTO
+        const porCfAcompanhamento = allTickets.filter(t => {
+            const cf = t.cf_acompanhamento_atendimento || '';
+            return cf.toLowerCase().includes(busca);
+        });
+        
+        // 3. Contar status para cada grupo
+        const contarStatus = (tickets) => {
+            const count = { total: tickets.length, ativos: 0, resolvidos: 0, porStatus: {} };
+            tickets.forEach(t => {
+                const s = t.status;
+                count.porStatus[s] = (count.porStatus[s] || 0) + 1;
+                if (s === 4 || s === 5) count.resolvidos++;
+                else count.ativos++;
+            });
+            return count;
+        };
+        
+        const statsTags = contarStatus(porTags);
+        const statsCf = contarStatus(porCfAcompanhamento);
+        
+        console.log('\n📊 COMPARAÇÃO DE FONTES:');
+        console.log('─────────────────────────────────────────────────────────');
+        console.log(`   📌 Por TAGS:                    ${statsTags.total} tickets (${statsTags.ativos} ativos, ${statsTags.resolvidos} resolvidos)`);
+        console.log(`   📌 Por CF_ACOMPANHAMENTO:       ${statsCf.total} tickets (${statsCf.ativos} ativos, ${statsCf.resolvidos} resolvidos)`);
+        
+        // Verificar se há tickets com cf_acompanhamento_atendimento preenchido
+        const temCf = allTickets.filter(t => t.cf_acompanhamento_atendimento && t.cf_acompanhamento_atendimento.trim()).length;
+        console.log(`\n   📌 Tickets com cf_acompanhamento_atendimento preenchido: ${temCf}`);
+        
+        // Mostrar distribuição de status para TAGS
+        console.log('\n📊 DISTRIBUIÇÃO POR STATUS (TAGS):');
+        Object.entries(statsTags.porStatus).sort((a,b) => b[1] - a[1]).forEach(([s, c]) => {
+            const statusNames = { 2: 'Aberto', 3: 'Pendente', 4: 'Resolvido', 5: 'Fechado', 6: 'Aguard. Cliente', 7: 'Aguard. Terceiros' };
+            console.log(`   Status ${s} (${statusNames[s] || '?'}): ${c} tickets`);
+        });
+        
+        // Mostrar IDs para verificação
+        const ativosIds = porTags.filter(t => t.status !== 4 && t.status !== 5).map(t => t.id).slice(0, 15);
+        console.log(`\n📋 IDs dos primeiros 15 tickets ATIVOS (tags): ${ativosIds.join(', ')}`);
+        
+        console.log('═══════════════════════════════════════════════════════════════');
+        
+        return { porTags: statsTags, porCfAcompanhamento: statsCf, temCfPreenchido: temCf };
+    },
+    
+    /**
+     * Diagnóstico DETALHADO - mostra tickets por status para cada pessoa
+     * Use: BIAcompanhamentoModule.diagnosticoDetalhado('João Peres')
+     */
+    diagnosticoDetalhado(nomePessoa) {
+        const allTickets = window.allTicketsCache || [];
+        const statusNames = {
+            2: 'Aberto',
+            3: 'Pendente',
+            4: 'Resolvido',
+            5: 'Fechado',
+            6: 'Aguardando Cliente',
+            7: 'Aguardando Terceiros'
+        };
+        
+        // Buscar todos os tickets que têm a tag da pessoa
+        const ticketsDaPessoa = [];
+        const statusCount = {};
+        const tagsEncontradas = new Set();
+        
+        allTickets.forEach(t => {
+            const tags = this.getTagsArray(t);
+            
+            // Verificar se alguma tag corresponde à pessoa buscada
+            for (const tag of tags) {
+                const normalized = this.getNormalizedPersonName(tag);
+                if (normalized.toLowerCase().includes(nomePessoa.toLowerCase()) || 
+                    nomePessoa.toLowerCase().includes(normalized.toLowerCase())) {
+                    
+                    tagsEncontradas.add(tag);
+                    ticketsDaPessoa.push(t);
+                    
+                    const status = t.status || 'undefined';
+                    statusCount[status] = (statusCount[status] || 0) + 1;
+                    break; // Não contar o mesmo ticket duas vezes
+                }
+            }
+        });
+        
+        console.log('═══════════════════════════════════════════════════════════════');
+        console.log(`🔍 DIAGNÓSTICO DETALHADO: "${nomePessoa}"`);
+        console.log('═══════════════════════════════════════════════════════════════');
+        console.log(`📊 Total de tickets no Supabase: ${allTickets.length}`);
+        console.log(`📊 Tickets com tag "${nomePessoa}": ${ticketsDaPessoa.length}`);
+        console.log(`📊 Variações de tag encontradas: ${[...tagsEncontradas].join(', ')}`);
+        
+        console.log('\n📊 DISTRIBUIÇÃO POR STATUS:');
+        console.log('─────────────────────────────────────────────────────────');
+        
+        let totalAtivos = 0;
+        let totalResolvidos = 0;
+        
+        Object.entries(statusCount)
+            .sort((a,b) => b[1] - a[1])
+            .forEach(([status, count]) => {
+                const statusNum = Number(status);
+                const statusName = statusNames[statusNum] || `Status ${status}`;
+                const isResolved = statusNum === 4 || statusNum === 5;
+                const emoji = isResolved ? '✅' : '⚡';
+                
+                console.log(`   ${emoji} ${statusName} (${status}): ${count} tickets`);
+                
+                if (isResolved) {
+                    totalResolvidos += count;
+                } else {
+                    totalAtivos += count;
+                }
+            });
+        
+        console.log('─────────────────────────────────────────────────────────');
+        console.log(`   ⚡ TOTAL ATIVOS (não 4/5): ${totalAtivos}`);
+        console.log(`   ✅ TOTAL RESOLVIDOS (4+5): ${totalResolvidos}`);
+        console.log(`   📊 TOTAL GERAL: ${ticketsDaPessoa.length}`);
+        console.log('═══════════════════════════════════════════════════════════════');
+        
+        // Mostrar alguns IDs de tickets ativos para verificação
+        const ticketsAtivos = ticketsDaPessoa.filter(t => t.status !== 4 && t.status !== 5);
+        console.log(`\n📋 Primeiros 10 tickets ATIVOS (para verificar no Freshdesk):`);
+        ticketsAtivos.slice(0, 10).forEach(t => {
+            const statusName = statusNames[t.status] || `Status ${t.status}`;
+            console.log(`   #${t.id} - ${statusName} - ${t.subject?.substring(0, 50)}...`);
+        });
+        
+        return { 
+            total: ticketsDaPessoa.length, 
+            ativos: totalAtivos, 
+            resolvidos: totalResolvidos,
+            porStatus: statusCount,
+            tagsEncontradas: [...tagsEncontradas]
+        };
+    },
+    
+    /**
+     * Diagnóstico - verifica quantos tickets têm tags válidas do time
+     * Separa: ATIVOS (não resolvidos) vs RESOLVIDOS vs TOTAL
+     */
+    diagnostico(tickets) {
+        const allTickets = tickets || window.allTicketsCache || [];
+        console.log('═══════════════════════════════════════════════════════');
+        console.log('🔍 DIAGNÓSTICO BI ACOMPANHAMENTO (via TAGS)');
+        console.log('═══════════════════════════════════════════════════════');
+        console.log(`📊 Total de tickets no sistema: ${allTickets.length}`);
+        
+        // Verificar campo tags
+        const comTags = allTickets.filter(t => t.tags && (Array.isArray(t.tags) ? t.tags.length > 0 : t.tags.trim()));
+        console.log(`📊 Tickets com tags: ${comTags.length}`);
+        
+        // Status que indicam ticket resolvido/fechado
+        const resolvedStatuses = [4, 5]; // 4=Resolvido, 5=Fechado
+        
+        // Contadores por pessoa: total, ativos, resolvidos
+        const statsByPerson = {};
+        
+        comTags.forEach(t => {
+            const tags = this.getTagsArray(t);
+            const isResolved = resolvedStatuses.includes(t.status);
+            
+            tags.forEach(tag => {
+                if (!this.isAllowedPerson(tag)) return;
+                
+                const normalized = this.getNormalizedPersonName(tag);
+                
+                if (!statsByPerson[normalized]) {
+                    statsByPerson[normalized] = { total: 0, ativos: 0, resolvidos: 0 };
+                }
+                
+                statsByPerson[normalized].total++;
+                if (isResolved) {
+                    statsByPerson[normalized].resolvidos++;
+                } else {
+                    statsByPerson[normalized].ativos++;
+                }
+            });
+        });
+        
+        console.log('\n📊 VISÃO GERAL POR PESSOA (comparar ATIVOS com Freshdesk):');
+        console.log('─────────────────────────────────────────────────────────');
+        console.log('   Pessoa                  | ATIVOS | Resolvidos | Total ');
+        console.log('─────────────────────────────────────────────────────────');
+        
+        Object.entries(statsByPerson)
+            .sort((a,b) => b[1].ativos - a[1].ativos)
+            .forEach(([pessoa, stats]) => {
+                const nome = pessoa.padEnd(24);
+                const ativos = String(stats.ativos).padStart(6);
+                const resolvidos = String(stats.resolvidos).padStart(10);
+                const total = String(stats.total).padStart(6);
+                console.log(`   ${nome} | ${ativos} | ${resolvidos} | ${total}`);
+            });
+        
+        console.log('─────────────────────────────────────────────────────────');
+        console.log('💡 ATIVOS = Tickets não resolvidos (deve bater com Freshdesk)');
+        console.log('═══════════════════════════════════════════════════════');
+        
+        return { 
+            total: allTickets.length, 
+            comTags: comTags.length, 
+            statsByPerson: statsByPerson 
+        };
+    },
+    
+    /**
      * Calcula estatísticas de acompanhamento por pessoa
      * APENAS pessoas da lista allowedPeople são contabilizadas
      * Inclui métricas avançadas similares ao BI de Pessoas
@@ -195,6 +556,9 @@ window.BIAcompanhamentoModule = {
     calculateStats(tickets) {
         // Aplicar filtro de período
         const filteredTickets = this.filterByPeriod(tickets, this.periodFilter);
+        
+        // DEBUG: Log para verificar dados
+        console.log(`📊 BI Acompanhamento: ${filteredTickets.length} tickets no período ${this.periodFilter}`);
         
         // Mapa: pessoa -> { total, resolved, tickets[], byHour, byDayOfWeek, etc }
         const statsMap = new Map();
@@ -216,20 +580,16 @@ window.BIAcompanhamentoModule = {
         const totalDays = Math.max(1, Math.ceil((maxDate - minDate) / (1000*60*60*24)));
         
         filteredTickets.forEach(ticket => {
-            const tags = this.getTagsArray(ticket);
+            // Usar cf_acompanhamento_atendimento como fonte primária (bate com Freshdesk)
+            const person = this.getAcompanhamentoPessoa(ticket);
             const isResolved = this.isTicketResolved(ticket);
             const created = new Date(ticket.created_at);
             const validDate = created && !isNaN(created.getTime());
             
-            // Verificar se este ticket tem pelo menos uma tag do time
-            let temTagDoTime = false;
+            // Verificar se este ticket tem pessoa de acompanhamento
+            const temPessoaAcompanhamento = !!person;
             
-            tags.forEach(tag => {
-                // FILTRO: Apenas pessoas permitidas
-                if (!this.isAllowedPerson(tag)) return;
-                
-                temTagDoTime = true;
-                const person = this.getNormalizedPersonName(tag);
+            if (person) {
                 
                 if (!statsMap.has(person)) {
                     statsMap.set(person, {
@@ -289,10 +649,10 @@ window.BIAcompanhamentoModule = {
                     created_at: ticket.created_at,
                     resolved_at: ticket.stats_resolved_at || ticket.resolved_at
                 });
-            });
+            }
             
-            // Contagens globais (apenas tickets com tag do time)
-            if (temTagDoTime) {
+            // Contagens globais (apenas tickets com pessoa de acompanhamento)
+            if (temPessoaAcompanhamento) {
                 ticketsComTagDoTime++;
                 if (isResolved) ticketsResolvidosComTag++;
                 
@@ -2128,21 +2488,36 @@ window.BIAcompanhamentoModule = {
         };
         
         // Função para detectar fatia pelo mouse
-        const getSliceAt = (x, y) => {
+        const getSliceAt = (mouseX, mouseY) => {
+            // Aplicar a escala do DPR para coordenadas corretas
+            const dpr = window.devicePixelRatio || 1;
+            const x = mouseX / dpr;
+            const y = mouseY / dpr;
+            
             const dx = x - cx;
             const dy = y - cy;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist > radius + 15) return -1;
+            if (dist > radius + 15 || dist < 5) return -1;
             
-            let angle = Math.atan2(dy, dx);
-            if (angle < -Math.PI / 2) angle += Math.PI * 2;
+            // Calcular ângulo normalizado (0 a 2*PI, começando do topo)
+            let angle = Math.atan2(dy, dx) + Math.PI / 2;
+            if (angle < 0) angle += Math.PI * 2;
             
+            // Verificar cada fatia
             for (let i = 0; i < slices.length; i++) {
-                let start = slices[i].startAngle;
-                let end = slices[i].endAngle;
-                if (start < -Math.PI / 2) start += Math.PI * 2;
-                if (end < -Math.PI / 2) end += Math.PI * 2;
-                if (angle >= start && angle <= end) return i;
+                // Normalizar ângulos da fatia
+                let start = slices[i].startAngle + Math.PI / 2;
+                let end = slices[i].endAngle + Math.PI / 2;
+                if (start < 0) start += Math.PI * 2;
+                if (end < 0) end += Math.PI * 2;
+                
+                // Verificar se o ângulo está dentro da fatia
+                if (start <= end) {
+                    if (angle >= start && angle <= end) return i;
+                } else {
+                    // Fatia cruza o ponto 0
+                    if (angle >= start || angle <= end) return i;
+                }
             }
             return -1;
         };
@@ -2650,10 +3025,50 @@ window.BIAcompanhamentoModule = {
                 </div>
                 
                 ${people.length > 0 ? `
+                    <!-- Comparativo com Freshdesk (TODOS os tickets, sem filtro de período) -->
+                    <div class="bi-card" style="background: linear-gradient(135deg, #1a1a2e 0%, #0f172a 100%); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(139,92,246,0.3); margin-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                                <h3 style="margin: 0; color: #a78bfa; font-size: 1rem; font-weight: 600;">📊 Comparativo com Freshdesk</h3>
+                                <span style="font-size: 0.75rem; color: #71717a; background: rgba(139,92,246,0.1); padding: 2px 8px; border-radius: 10px;">TODO PERÍODO</span>
+                            </div>
+                        </div>
+                        <p style="color: #94a3b8; font-size: 0.8rem; margin: 0 0 1rem 0;">
+                            Coluna <strong style="color: #a78bfa;">ATIVOS</strong> = tickets não resolvidos (deve bater com Freshdesk)
+                        </p>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                                <thead>
+                                    <tr style="background: rgba(139,92,246,0.1); border-bottom: 2px solid rgba(139,92,246,0.3);">
+                                        <th style="padding: 10px 12px; text-align: left; color: #a78bfa; font-weight: 600;">Pessoa</th>
+                                        <th style="padding: 10px 12px; text-align: center; color: #f59e0b; font-weight: 600;">⚡ ATIVOS</th>
+                                        <th style="padding: 10px 12px; text-align: center; color: #10b981; font-weight: 600;">✓ Resolvidos</th>
+                                        <th style="padding: 10px 12px; text-align: center; color: #e2e8f0; font-weight: 600;">Total Histórico</th>
+                                        <th style="padding: 10px 12px; text-align: center; color: #94a3b8; font-weight: 600;">% Resolução</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${this.getGlobalStats().map((p, i) => `
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); ${i % 2 === 0 ? 'background: rgba(255,255,255,0.02);' : ''}">
+                                            <td style="padding: 10px 12px; color: #e2e8f0; font-weight: 500;">${p.person}</td>
+                                            <td style="padding: 10px 12px; text-align: center; color: #fbbf24; font-weight: 700; font-size: 1rem;">${p.ativos}</td>
+                                            <td style="padding: 10px 12px; text-align: center; color: #34d399;">${p.resolvidos}</td>
+                                            <td style="padding: 10px 12px; text-align: center; color: #94a3b8;">${p.total}</td>
+                                            <td style="padding: 10px 12px; text-align: center;">
+                                                <span style="background: ${p.taxaResolucao >= 80 ? 'rgba(16,185,129,0.2)' : p.taxaResolucao >= 50 ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)'}; color: ${p.taxaResolucao >= 80 ? '#34d399' : p.taxaResolucao >= 50 ? '#fbbf24' : '#f87171'}; padding: 3px 10px; border-radius: 12px; font-weight: 600; font-size: 0.8rem;">${p.taxaResolucao}%</span>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
                     <!-- Gráficos - Visão Geral Premium -->
                     <div style="margin: 1rem 0 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
-                        <h3 style="margin: 0; color: #e4e4e7; font-size: 0.95rem; font-weight: 600;">Visão Geral</h3>
+                        <h3 style="margin: 0; color: #e4e4e7; font-size: 0.95rem; font-weight: 600;">Visão Geral (Período Selecionado)</h3>
                     </div>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1rem;">
                         ${this.createChartCard('acompChartRanking', 'Ranking por Volume', 280)}

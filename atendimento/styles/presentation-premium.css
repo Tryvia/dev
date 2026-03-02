@@ -824,3 +824,200 @@
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
 }
+
+/* ==============================================
+   TEMA TRYVIA CYAN - Modo Apresentação Claro
+   ============================================== */
+[data-theme="tryvia-cyan"] .presentation-premium {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%) !important;
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .presentation-premium::before {
+  background: 
+    radial-gradient(ellipse at 20% 20%, rgba(0, 228, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(0, 153, 204, 0.08) 0%, transparent 50%) !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-header {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9)) !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-header h1,
+[data-theme="tryvia-cyan"] .pres-header p {
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-sidebar {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-sidebar-section h3 {
+  color: #475569 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-slide-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-slide-card:hover {
+  border-color: #00e4ff !important;
+  box-shadow: 0 4px 20px rgba(0, 228, 255, 0.15) !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-slide-card.selected {
+  border-color: #00e4ff !important;
+  background: #f0fdff !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-main {
+  background: transparent !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-btn {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-btn:hover {
+  background: #f0f9ff !important;
+  border-color: #00e4ff !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-btn-primary {
+  background: linear-gradient(135deg, #00e4ff, #0099cc) !important;
+  color: #0c4a6e !important;
+  border: none !important;
+}
+
+[data-theme="tryvia-cyan"] .slide-preview-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-filter-btn {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-filter-btn.active {
+  background: #00e4ff !important;
+  color: #0c4a6e !important;
+  border-color: #00e4ff !important;
+}
+
+[data-theme="tryvia-cyan"] select {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+/* Templates Section - Tema Claro */
+[data-theme="tryvia-cyan"] .pres-templates-section input {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-templates-section input::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-templates-section > div > div {
+  background: #f8fafc !important;
+}
+
+/* Loading Spinner - Tema Claro */
+[data-theme="tryvia-cyan"] #presLoading > div > div {
+  background: #ffffff !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="tryvia-cyan"] #presLoading p {
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-spinner {
+  border-color: #e2e8f0 !important;
+  border-top-color: #0099cc !important;
+}
+
+/* Fullscreen Controls - Tema Claro */
+[data-theme="tryvia-cyan"] .pres-fullscreen {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%) !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-fullscreen-header {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-fullscreen-title h2 {
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-fullscreen-btn {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-fullscreen-btn:hover {
+  background: #f0f9ff !important;
+  border-color: #0099cc !important;
+  color: #0099cc !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-fullscreen-btn.danger {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #ef4444 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-fullscreen-slide {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-fullscreen-footer {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-nav-btn {
+  background: linear-gradient(135deg, #0099cc, #00b8e6) !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-progress-bar {
+  background: rgba(0, 153, 204, 0.2) !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-progress-fill {
+  background: linear-gradient(90deg, #0099cc, #00e4ff) !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-progress-text {
+  color: #475569 !important;
+}
+
+/* Tooltip - Tema Claro */
+[data-theme="tryvia-cyan"] #chartTooltip {
+  background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98)) !important;
+  color: #1e293b !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Select de intervalo autoplay */
+[data-theme="tryvia-cyan"] .pres-fullscreen-controls select {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}

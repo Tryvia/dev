@@ -304,6 +304,12 @@ class AITransformers {
             return this.embeddingsCache.get(cacheKey);
         }
         
+        // Limitar cache a 500 itens para evitar memory leak
+        if (this.embeddingsCache.size >= 500) {
+            const firstKey = this.embeddingsCache.keys().next().value;
+            this.embeddingsCache.delete(firstKey);
+        }
+        
         // Se modelo não está disponível, retornar null
         if (this.loadingStatus.embeddings !== 'ready') {
             return null;

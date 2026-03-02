@@ -1,37 +1,13 @@
 /**
  * BI Analytics Module - Unified Business Intelligence Dashboard
  * Combina análises de Pessoas e Times em uma única interface moderna
+ * 
+ * DEPENDÊNCIAS:
+ * - js/config/team-members.js (TEAM_MEMBERS_CONFIG)
+ * - js/theme-colors-config.js (THEME_COLORS_CONFIG)
  */
 
-// ========== CONFIGURAÇÃO DE MEMBROS POR TIME (Whitelist) ==========
-// Define quais pessoas pertencem oficialmente a cada time
-window.TEAM_MEMBERS_CONFIG = {
-    'Atendimento': [
-        'Adriana Florencio',
-        'Alianie Lanes',
-        'Andreia Ribeiro',
-        'Francisco Nascimento',
-        'Gabriel Oliveira',
-        'Gustavo Martins',
-        'João Peres',
-        'Jéssica Dias',
-        'Marciele Quintanilha'
-    ],
-    // Acompanhamento usa a mesma lista do Atendimento (modo Tags)
-    'Acompanhamento': [
-        'Adriana Florencio',
-        'Alianie Lanes',
-        'Andreia Ribeiro',
-        'Francisco Nascimento',
-        'Gabriel Oliveira',
-        'Gustavo Martins',
-        'João Peres',
-        'Jéssica Dias',
-        'Marciele Quintanilha'
-    ]
-    // Adicione outros times conforme necessário:
-    // 'OutroTime': ['Pessoa1', 'Pessoa2', ...]
-};
+// TEAM_MEMBERS_CONFIG agora está em js/config/team-members.js
 
 // ========== ESTADO DE EXPANSÃO DE GRÁFICOS (encapsulado) ==========
 // Estado movido para dentro do biAnalytics quando disponível
@@ -116,6 +92,15 @@ window.expandChart = function(chartId, title) {
             ">
                 <h2 style="margin: 0; color: white; font-size: 1.4rem; display: flex; align-items: center; gap: 0.75rem;">
                     ${title}
+                    <span id="expandedHelperBtn" data-chart-id="${chartId}" style="
+                        display: inline-flex; align-items: center; justify-content: center;
+                        width: 22px; height: 22px; border-radius: 50%;
+                        background: rgba(102, 126, 234, 0.2); border: 1px solid rgba(102, 126, 234, 0.4);
+                        color: #667eea; font-size: 13px; font-weight: 600; cursor: help;
+                        margin-left: 8px; transition: all 0.2s;
+                    " onmouseenter="window.BIHelpers?.showTooltip('${chartId}', this)" 
+                       onmouseleave="window.BIHelpers?.hideTooltip()"
+                       title="Clique para ver informações sobre este gráfico">?</span>
                 </h2>
                 <button onclick="const m=document.getElementById('chartExpandModal'); if(m && m._restoreChatbot) m._restoreChatbot(); m.remove();" style="
                     background: rgba(255,255,255,0.1);
@@ -307,6 +292,12 @@ window.renderExpandedChart = function() {
         case 'chartSLAByEntity':
             renderExpandedSLAByEntityFixed(ctx, width, height, metrics, colors, bi);
             break;
+        case 'chartSLAResolutionByEntity':
+            renderExpandedSLAResolutionByEntity(ctx, width, height, metrics, colors, bi);
+            break;
+        case 'chartSLACountByEntity':
+            renderExpandedSLACountByEntity(ctx, width, height, metrics, colors, bi);
+            break;
         case 'chartStatus':
             renderExpandedStatus(ctx, width, height, metrics, colors, bi);
             break;
@@ -381,6 +372,9 @@ window.renderExpandedChart = function() {
             break;
         case 'chartAguardando':
             renderExpandedAguardando(ctx, width, height, bi);
+            break;
+        case 'chartPendentes':
+            renderExpandedPendentes(ctx, width, height, bi);
             break;
         default:
             // Fallback: copiar original com melhor qualidade
@@ -620,6 +614,7 @@ function renderExpandedRanking(ctx, width, height, metrics, colors, gradients, p
     const barHeight = Math.min(45, (height - padding.top - padding.bottom) / pageData.length - 10);
     const borderRadius = 8;
     
+    const regions = [];
     pageData.forEach(([entity, data], i) => {
         const globalIndex = start + i;
         const y = padding.top + i * (barHeight + 10);
@@ -685,6 +680,30 @@ function renderExpandedRanking(ctx, width, height, metrics, colors, gradients, p
         ctx.textAlign = 'left';
         const displayVal = mode === 'resolution' ? `${value.toFixed(1)}%` : value.toLocaleString();
         ctx.fillText(displayVal, padding.left + barWidth + 15, y + barHeight/2 + 5);
+        
+        // Região para tooltip
+        regions.push({
+            contains: (mx, my) => mx >= padding.left && mx <= padding.left + barWidth && my >= y && my <= y + barHeight,
+            data: { entity, value, data, mode, color: colorSet.main, rank: globalIndex + 1 }
+        });
+    });
+    
+    // Configurar tooltip
+    const canvas = document.getElementById('expandedChart');
+    window.setupExpandedTooltip(canvas, regions, (d) => {
+        if (d.mode === 'resolution') {
+            return `
+                <strong>#${d.rank} ${d.entity}</strong><br>
+                <span style="color:${d.color}; font-size:1.3rem; font-weight:bold;">${d.value.toFixed(1)}%</span> de resolução<br>
+                <span style="color:#94a3b8;">Resolvidos: ${d.data.resolved || 0} de ${d.data.total}</span>
+            `;
+        }
+        return `
+            <strong>#${d.rank} ${d.entity}</strong><br>
+            <span style="color:${d.color}; font-size:1.3rem; font-weight:bold;">${d.value.toLocaleString()}</span> tickets<br>
+            <span style="color:#10b981;">Resolvidos: ${d.data.resolved || 0}</span><br>
+            <span style="color:#94a3b8;">Taxa: ${d.data.resolutionRate || 0}%</span>
+        `;
     });
 }
 
@@ -755,7 +774,7 @@ function renderExpandedSLAByEntity(ctx, width, height, metrics, colors, page) {
     });
 }
 
-// Status expandido em alta resolução (Barras Horizontais)
+// Status expandido em alta resolução (DONUT - mantém formato original)
 function renderExpandedStatus(ctx, width, height, metrics, colors, bi) {
     const statusData = { 'Resolvido': 0, 'Aberto': 0, 'Pendente': 0, 'Aguardando': 0, 'Em Progresso': 0 };
     
@@ -790,57 +809,99 @@ function renderExpandedStatus(ctx, width, height, metrics, colors, bi) {
         'Em Progresso': '#3b82f6'
     };
     
-    // Ordenar por quantidade (maior primeiro)
     const sortedStatus = Object.entries(statusData)
         .filter(([, count]) => count > 0)
         .sort((a, b) => b[1] - a[1]);
     
-    // BARRAS HORIZONTAIS
-    const padding = { top: 70, bottom: 30, left: 150, right: 150 };
-    const barHeight = Math.min(50, (height - padding.top - padding.bottom) / sortedStatus.length - 15);
-    const barGap = 15;
-    const maxValue = Math.max(...sortedStatus.map(([, v]) => v));
-    const maxBarWidth = width - padding.left - padding.right;
+    // DONUT em alta resolução
+    const centerX = width / 2 - 120;
+    const centerY = height / 2;
+    const outerRadius = Math.min(width, height) / 2 - 80;
+    const innerRadius = outerRadius * 0.55;
+    const regions = [];
     
-    // Título com total
-    ctx.fillStyle = colors.text;
-    ctx.font = 'bold 20px system-ui';
-    ctx.textAlign = 'center';
-    ctx.fillText(`Total: ${total.toLocaleString()} tickets`, width / 2, 40);
+    let startAngle = -Math.PI / 2;
     
     sortedStatus.forEach(([status, count], index) => {
-        const y = padding.top + index * (barHeight + barGap);
-        const barWidth = (count / maxValue) * maxBarWidth;
-        const percent = Math.round((count / total) * 100);
+        const percent = count / total;
+        const endAngle = startAngle + percent * Math.PI * 2;
         const color = statusColors[status];
         
-        // Sombra
+        // Desenhar fatia com sombra
+        ctx.save();
         ctx.shadowColor = color;
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 20;
         
-        // Barra
-        ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.roundRect(padding.left, y, barWidth, barHeight, 8);
+        ctx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
+        ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = color;
         ctx.fill();
+        ctx.restore();
         
-        ctx.shadowBlur = 0;
+        // Região para tooltip
+        const midAngle = startAngle + (endAngle - startAngle) / 2;
+        regions.push({
+            contains: (mx, my) => {
+                const dx = mx - centerX;
+                const dy = my - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < innerRadius || dist > outerRadius + 10) return false;
+                let angle = Math.atan2(dy, dx);
+                if (angle < -Math.PI / 2) angle += Math.PI * 2;
+                return angle >= startAngle && angle <= endAngle;
+            },
+            data: { status, count, percent: Math.round(percent * 100), color, total }
+        });
         
-        // Label (nome do status)
-        ctx.fillStyle = colors.text;
-        ctx.font = 'bold 16px system-ui';
-        ctx.textAlign = 'right';
-        ctx.fillText(status, padding.left - 15, y + barHeight / 2 + 6);
+        startAngle = endAngle;
+    });
+    
+    // Total no centro (maior)
+    ctx.fillStyle = colors.text;
+    ctx.font = 'bold 42px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(total.toLocaleString(), centerX, centerY + 10);
+    ctx.font = '16px system-ui';
+    ctx.fillStyle = colors.textMuted;
+    ctx.fillText('tickets', centerX, centerY + 35);
+    
+    // Legenda à direita (maior)
+    const legendX = width - 200;
+    let legendY = 80;
+    sortedStatus.forEach(([status, count]) => {
+        const percent = Math.round((count / total) * 100);
         
-        // Valor e percentual
+        ctx.fillStyle = statusColors[status];
+        ctx.fillRect(legendX, legendY - 12, 16, 16);
+        
         ctx.fillStyle = colors.text;
         ctx.font = 'bold 16px system-ui';
         ctx.textAlign = 'left';
-        ctx.fillText(`${count.toLocaleString()} (${percent}%)`, padding.left + barWidth + 15, y + barHeight / 2 + 6);
+        ctx.fillText(status, legendX + 25, legendY);
+        ctx.fillStyle = colors.textMuted;
+        ctx.font = '14px system-ui';
+        ctx.fillText(`${count.toLocaleString()} (${percent}%)`, legendX + 25, legendY + 20);
+        
+        legendY += 55;
     });
+    
+    // Configurar tooltip
+    const canvas = document.getElementById('expandedChart');
+    window.setupExpandedTooltip(canvas, regions, (d) => `
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="display:inline-block; width:12px; height:12px; border-radius:3px; background:${d.color};"></span>
+            <strong>${d.status}</strong>
+        </div>
+        <div style="margin-top:6px;">
+            <span style="font-size:1.3rem; font-weight:bold; color:${d.color};">${d.count.toLocaleString()}</span> tickets<br>
+            <span style="color:#94a3b8;">${d.percent}% do total (${d.total.toLocaleString()})</span>
+        </div>
+    `);
 }
 
-// Priority expandido em alta resolução
+// Priority expandido em alta resolução (DONUT - mantém formato original)
 function renderExpandedPriority(ctx, width, height, metrics, colors, bi) {
     const priorityData = { 'Urgente': 0, 'Alta': 0, 'Média': 0, 'Baixa': 0 };
     
@@ -852,7 +913,7 @@ function renderExpandedPriority(ctx, width, height, metrics, colors, bi) {
         else priorityData['Baixa']++;
     });
     
-    const entries = Object.entries(priorityData).filter(([, v]) => v > 0);
+    const entries = Object.entries(priorityData).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
     if (!entries.length) {
         ctx.fillStyle = colors.textMuted;
         ctx.font = '20px system-ui';
@@ -861,38 +922,94 @@ function renderExpandedPriority(ctx, width, height, metrics, colors, bi) {
         return;
     }
     
-    const maxVal = Math.max(...entries.map(([, v]) => v));
     const priorityColors = { 'Urgente': '#ef4444', 'Alta': '#f59e0b', 'Média': '#3b82f6', 'Baixa': '#10b981' };
+    const total = entries.reduce((a, [, v]) => a + v, 0);
     
-    const padding = { left: 150, right: 120, top: 50, bottom: 50 };
-    const barHeight = Math.min(60, (height - padding.top - padding.bottom) / entries.length - 20);
+    // DONUT em alta resolução
+    const centerX = width / 2 - 120;
+    const centerY = height / 2;
+    const outerRadius = Math.min(width, height) / 2 - 80;
+    const innerRadius = outerRadius * 0.55;
+    const regions = [];
     
-    entries.forEach(([priority, count], i) => {
-        const y = padding.top + i * (barHeight + 20);
-        const barWidth = (count / maxVal) * (width - padding.left - padding.right);
+    let startAngle = -Math.PI / 2;
+    
+    entries.forEach(([priority, count], index) => {
+        const percent = count / total;
+        const endAngle = startAngle + percent * Math.PI * 2;
+        const color = priorityColors[priority];
         
-        ctx.shadowColor = priorityColors[priority];
-        ctx.shadowBlur = 15;
+        // Desenhar fatia com sombra
+        ctx.save();
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 20;
+        
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
+        ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.restore();
+        
+        // Região para tooltip
+        regions.push({
+            contains: (mx, my) => {
+                const dx = mx - centerX;
+                const dy = my - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < innerRadius || dist > outerRadius + 10) return false;
+                let angle = Math.atan2(dy, dx);
+                if (angle < -Math.PI / 2) angle += Math.PI * 2;
+                return angle >= startAngle && angle <= endAngle;
+            },
+            data: { priority, count, percent: Math.round(percent * 100), color, total }
+        });
+        
+        startAngle = endAngle;
+    });
+    
+    // Total no centro (maior)
+    ctx.fillStyle = colors.text;
+    ctx.font = 'bold 42px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(total.toLocaleString(), centerX, centerY + 10);
+    ctx.font = '16px system-ui';
+    ctx.fillStyle = colors.textMuted;
+    ctx.fillText('tickets', centerX, centerY + 35);
+    
+    // Legenda à direita (maior)
+    const legendX = width - 180;
+    let legendY = 100;
+    entries.forEach(([priority, count]) => {
+        const percent = Math.round((count / total) * 100);
         
         ctx.fillStyle = priorityColors[priority];
-        ctx.beginPath();
-        ctx.roundRect(padding.left, y, barWidth, barHeight, 10);
-        ctx.fill();
+        ctx.fillRect(legendX, legendY - 12, 16, 16);
         
-        ctx.shadowBlur = 0;
-        
-        // Label
         ctx.fillStyle = colors.text;
-        ctx.font = 'bold 18px system-ui';
-        ctx.textAlign = 'right';
-        ctx.fillText(priority, padding.left - 20, y + barHeight/2 + 7);
-        
-        // Valor
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 20px system-ui';
+        ctx.font = 'bold 16px system-ui';
         ctx.textAlign = 'left';
-        ctx.fillText(count.toLocaleString(), padding.left + barWidth + 20, y + barHeight/2 + 7);
+        ctx.fillText(priority, legendX + 25, legendY);
+        ctx.fillStyle = colors.textMuted;
+        ctx.font = '14px system-ui';
+        ctx.fillText(`${count.toLocaleString()} (${percent}%)`, legendX + 25, legendY + 20);
+        
+        legendY += 55;
     });
+    
+    // Configurar tooltip
+    const canvas = document.getElementById('expandedChart');
+    window.setupExpandedTooltip(canvas, regions, (d) => `
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="display:inline-block; width:12px; height:12px; border-radius:3px; background:${d.color};"></span>
+            <strong>Prioridade ${d.priority}</strong>
+        </div>
+        <div style="margin-top:6px;">
+            <span style="font-size:1.3rem; font-weight:bold; color:${d.color};">${d.count.toLocaleString()}</span> tickets<br>
+            <span style="color:#94a3b8;">${d.percent}% do total (${d.total.toLocaleString()})</span>
+        </div>
+    `);
 }
 
 // Timeline expandido em alta resolução (igual ao original: últimos 30 dias, 2 linhas)
@@ -1052,7 +1169,7 @@ function renderExpandedSystems(ctx, width, height, metrics, colors, bi) {
         let sistema = null;
         if (t.custom_fields) {
             let cf = t.custom_fields;
-            if (typeof cf === 'string') try { cf = JSON.parse(cf); } catch(e) {}
+            if (typeof cf === 'string') try { cf = JSON.parse(cf); } catch { /* JSON inválido */ }
             if (cf && typeof cf === 'object') sistema = cf.cf_teste || cf.cf_sistema || null;
         }
         if (!sistema) sistema = t.cf_teste || t.cf_sistema || null;
@@ -1124,6 +1241,7 @@ function renderExpandedSLATrend(ctx, width, height, metrics, colors, bi) {
     bi.filteredData.forEach(ticket => {
         const typeNorm = (ticket.type || '').toString().toLowerCase().replace(/\s+/g,' ').trim();
         if (bi.ignoreTypesForSLA && bi.ignoreTypesForSLA.has(typeNorm)) return;
+        // Não filtrar por status atual - queremos medir 1ª resposta de todos os tickets
         const first = ticket.stats_first_responded_at || ticket.stats_first_response_at;
         if (!first || !ticket.created_at) return;
         const d = new Date(ticket.created_at);
@@ -1225,6 +1343,11 @@ function renderExpandedSLAByEntityFixed(ctx, width, height, metrics, colors, bi)
     
     const byEntity = new Map();
     bi.filteredData.forEach(ticket => {
+        // Ignorar tipos configurados para SLA (consistente com gráfico pequeno)
+        const typeNorm = (ticket.type || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
+        if (bi.ignoreTypesForSLA && bi.ignoreTypesForSLA.has(typeNorm)) return;
+        // Não filtrar por status atual - queremos medir 1ª resposta de todos os tickets
+        
         const first = ticket.stats_first_responded_at || ticket.stats_first_response_at;
         if (!first || !ticket.created_at) return;
         const entities = ticket[entityField] ? ticket[entityField].split(/[,;\/]/).map(e=>e.trim()).filter(e=>e&&bi.selectedEntities.has(e)) : [];
@@ -1290,6 +1413,203 @@ function renderExpandedSLAByEntityFixed(ctx, width, height, metrics, colors, bi)
         <span style="color:#10b981">✓ Dentro: ${d.within}</span><br>
         <span style="color:#ef4444">✗ Fora: ${d.outside}</span><br>
         <span style="color:#94a3b8">Total: ${d.total} tickets</span>
+    `);
+}
+
+// SLA de Resolução por Entidade (meta: 24 horas)
+function renderExpandedSLAResolutionByEntity(ctx, width, height, metrics, colors, bi) {
+    const SLA_RESOLUTION_LIMIT = 24 * 60 * 60 * 1000; // 24 horas em ms
+    const entityField = bi.currentView === 'pessoa' ? 'cf_tratativa' : 'cf_grupo_tratativa';
+    
+    const byEntity = new Map();
+    bi.filteredData.forEach(ticket => {
+        // Ignorar tipos configurados para SLA (consistente com gráfico pequeno)
+        const typeNorm = (ticket.type || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
+        if (bi.ignoreTypesForSLA && bi.ignoreTypesForSLA.has(typeNorm)) return;
+        // Ignorar status sem cronômetro de SLA (não se aplica a resolvidos pois queremos medir tempo total)
+        // Para SLA de resolução, mantemos tickets resolvidos/fechados mesmo com toggle desligado
+        
+        // Só conta tickets resolvidos/fechados
+        if (![4, 5].includes(ticket.status)) return;
+        
+        const resolved = ticket.stats_resolved_at || ticket.stats_closed_at || ticket.resolved_at || ticket.closed_at;
+        if (!resolved || !ticket.created_at) return;
+        
+        const entities = ticket[entityField] ? ticket[entityField].split(/[,;\/]/).map(e=>e.trim()).filter(e=>e&&bi.selectedEntities.has(e)) : [];
+        const rt = new Date(resolved) - new Date(ticket.created_at);
+        
+        entities.forEach(ent => {
+            if (!byEntity.has(ent)) byEntity.set(ent, { within: 0, outside: 0 });
+            const d = byEntity.get(ent);
+            if (rt <= SLA_RESOLUTION_LIMIT) d.within++; else d.outside++;
+        });
+    });
+    
+    const items = Array.from(byEntity.entries()).map(([label, d]) => {
+        const total = d.within + d.outside;
+        return { label, percent: total > 0 ? Math.round((d.within/total)*100) : 0, total };
+    }).sort((a,b) => b.percent - a.percent).slice(0, 15);
+    
+    if (items.length === 0) {
+        ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
+        ctx.fillText('Sem dados de resolução para as entidades selecionadas', width/2, height/2); return;
+    }
+    
+    const padding = { top: 40, right: 100, bottom: 40, left: 200 };
+    const chartWidth = width - padding.left - padding.right;
+    const barHeight = Math.min(38, (height - padding.top - padding.bottom) / items.length - 8);
+    
+    // Linha meta 80%
+    const metaX = padding.left + (80/100)*chartWidth;
+    ctx.save(); ctx.strokeStyle = '#f59e0b'; ctx.setLineDash([6,4]); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(metaX, padding.top - 10); ctx.lineTo(metaX, height - padding.bottom + 10); ctx.stroke();
+    ctx.restore();
+    
+    // Título indicando meta
+    ctx.fillStyle = colors.textMuted; ctx.font = '12px system-ui'; ctx.textAlign = 'right';
+    ctx.fillText('Meta: resolver em até 24h', width - 20, 20);
+    
+    const regions = [];
+    
+    items.forEach((item, i) => {
+        const y = padding.top + i * (barHeight + 8);
+        const w = (item.percent / 100) * chartWidth;
+        const color = item.percent >= 80 ? '#10b981' : item.percent >= 60 ? '#f59e0b' : '#ef4444';
+        
+        ctx.shadowColor = color; ctx.shadowBlur = 10;
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.roundRect(padding.left, y, Math.max(5, w), barHeight, 6); ctx.fill();
+        ctx.shadowBlur = 0;
+        
+        ctx.fillStyle = colors.text; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'right';
+        const disp = item.label.length > 20 ? item.label.slice(0,18)+'..' : item.label;
+        ctx.fillText(`${i+1}. ${disp}`, padding.left - 12, y + barHeight/2 + 5);
+        
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
+        ctx.fillText(`${item.percent}%`, padding.left + w + 12, y + barHeight/2 + 5);
+        
+        const entityData = byEntity.get(item.label);
+        regions.push({
+            contains: (mx, my) => mx >= padding.left && mx <= padding.left + Math.max(5, w) && my >= y && my <= y + barHeight,
+            data: { label: item.label, percent: item.percent, total: item.total, within: entityData?.within || 0, outside: entityData?.outside || 0, color }
+        });
+    });
+    
+    // Configurar tooltip
+    const canvas = document.getElementById('expandedChart');
+    window.setupExpandedTooltip(canvas, regions, (d) => `
+        <strong>${d.label}</strong><br>
+        <span style="color:${d.color}; font-size:1.2rem; font-weight:bold;">${d.percent}%</span> no SLA Resolução<br>
+        <span style="color:#10b981">✓ Até 24h: ${d.within}</span><br>
+        <span style="color:#ef4444">✗ Após 24h: ${d.outside}</span><br>
+        <span style="color:#94a3b8">Total resolvidos: ${d.total}</span>
+    `);
+}
+
+// Quantidade SLA por Entidade (números absolutos)
+function renderExpandedSLACountByEntity(ctx, width, height, metrics, colors, bi) {
+    const SLA_LIMIT = 4 * 60 * 60 * 1000; // 4 horas
+    const entityField = bi.currentView === 'pessoa' ? 'cf_tratativa' : 'cf_grupo_tratativa';
+    
+    const byEntity = new Map();
+    bi.filteredData.forEach(ticket => {
+        // Ignorar tipos configurados para SLA (consistente com outros gráficos)
+        const typeNorm = (ticket.type || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
+        if (bi.ignoreTypesForSLA && bi.ignoreTypesForSLA.has(typeNorm)) return;
+        // Não filtrar por status atual - queremos medir 1ª resposta de todos os tickets
+        
+        const first = ticket.stats_first_responded_at || ticket.stats_first_response_at;
+        if (!first || !ticket.created_at) return;
+        
+        const entities = ticket[entityField] ? ticket[entityField].split(/[,;\/]/).map(e=>e.trim()).filter(e=>e&&bi.selectedEntities.has(e)) : [];
+        const rt = new Date(first) - new Date(ticket.created_at);
+        
+        entities.forEach(ent => {
+            if (!byEntity.has(ent)) byEntity.set(ent, { within: 0, outside: 0 });
+            const d = byEntity.get(ent);
+            if (rt <= SLA_LIMIT) d.within++; else d.outside++;
+        });
+    });
+    
+    const items = Array.from(byEntity.entries()).map(([label, d]) => {
+        const total = d.within + d.outside;
+        const percent = total > 0 ? Math.round((d.within/total)*100) : 0;
+        return { label, within: d.within, outside: d.outside, total, percent };
+    }).sort((a,b) => b.total - a.total).slice(0, 20);
+    
+    if (items.length === 0) {
+        ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
+        ctx.fillText('Sem dados de SLA para as entidades selecionadas', width/2, height/2); return;
+    }
+    
+    const padding = { top: 50, right: 50, bottom: 40, left: 200 };
+    const chartWidth = width - padding.left - padding.right;
+    const barHeight = Math.min(32, (height - padding.top - padding.bottom) / items.length - 6);
+    const maxTotal = Math.max(...items.map(i => i.total));
+    
+    // Título
+    ctx.fillStyle = colors.text; ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('Quantidade de Tickets por SLA (1ª Resposta)', width/2, 25);
+    
+    // Legenda
+    ctx.font = '12px system-ui';
+    ctx.fillStyle = '#10b981'; ctx.fillRect(width - 180, 15, 12, 12);
+    ctx.fillStyle = colors.text; ctx.textAlign = 'left'; ctx.fillText('Dentro (≤4h)', width - 165, 25);
+    ctx.fillStyle = '#ef4444'; ctx.fillRect(width - 90, 15, 12, 12);
+    ctx.fillStyle = colors.text; ctx.fillText('Fora (>4h)', width - 75, 25);
+    
+    const regions = [];
+    
+    items.forEach((item, i) => {
+        const y = padding.top + i * (barHeight + 6);
+        const totalWidth = (item.total / maxTotal) * chartWidth;
+        const withinWidth = (item.within / maxTotal) * chartWidth;
+        const outsideWidth = (item.outside / maxTotal) * chartWidth;
+        
+        // Barra "dentro" (verde)
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath(); ctx.roundRect(padding.left, y, Math.max(2, withinWidth), barHeight, [4, 0, 0, 4]); ctx.fill();
+        
+        // Barra "fora" (vermelho) - continua onde a verde terminou
+        if (item.outside > 0) {
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath(); ctx.roundRect(padding.left + withinWidth, y, Math.max(2, outsideWidth), barHeight, [0, 4, 4, 0]); ctx.fill();
+        }
+        
+        // Nome da entidade
+        ctx.fillStyle = colors.text; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'right';
+        const disp = item.label.length > 22 ? item.label.slice(0,20)+'..' : item.label;
+        ctx.fillText(`${i+1}. ${disp}`, padding.left - 10, y + barHeight/2 + 4);
+        
+        // Números dentro das barras
+        ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
+        if (withinWidth > 25) {
+            ctx.fillStyle = '#fff';
+            ctx.fillText(item.within.toString(), padding.left + withinWidth/2, y + barHeight/2 + 4);
+        }
+        if (outsideWidth > 25) {
+            ctx.fillStyle = '#fff';
+            ctx.fillText(item.outside.toString(), padding.left + withinWidth + outsideWidth/2, y + barHeight/2 + 4);
+        }
+        
+        // Total no final
+        ctx.fillStyle = colors.textMuted; ctx.font = '12px system-ui'; ctx.textAlign = 'left';
+        ctx.fillText(`${item.total} (${item.percent}%)`, padding.left + totalWidth + 8, y + barHeight/2 + 4);
+        
+        regions.push({
+            contains: (mx, my) => mx >= padding.left && mx <= padding.left + totalWidth && my >= y && my <= y + barHeight,
+            data: item
+        });
+    });
+    
+    // Tooltip
+    const canvas = document.getElementById('expandedChart');
+    window.setupExpandedTooltip(canvas, regions, (d) => `
+        <strong>${d.label}</strong><br>
+        <span style="color:#10b981; font-weight:bold;">✓ Dentro SLA: ${d.within}</span><br>
+        <span style="color:#ef4444; font-weight:bold;">✗ Fora SLA: ${d.outside}</span><br>
+        <span style="color:#94a3b8;">Total: ${d.total} tickets</span><br>
+        <span style="color:#3b82f6; font-weight:bold;">${d.percent}% no SLA</span>
     `);
 }
 
@@ -1597,6 +1917,7 @@ function renderExpandedByDayOfWeek(ctx, width, height, metrics, colors, bi) {
     ctx.fillStyle = colors.text; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
     ctx.fillText('Tickets por Dia da Semana', width/2, 30);
     
+    const regions = [];
     totals.forEach((val, i) => {
         const x = padding.left + i * (barWidth + 20) + 10;
         const barH = (val / maxVal) * chartHeight;
@@ -1616,7 +1937,19 @@ function renderExpandedByDayOfWeek(ctx, width, height, metrics, colors, bi) {
         ctx.fillText(daysShort[i], x + barWidth/2, height - 35);
         ctx.font = '12px system-ui'; ctx.fillStyle = colors.textMuted;
         ctx.fillText(`${percent}%`, x + barWidth/2, height - 18);
+        
+        regions.push({
+            contains: (mx, my) => mx >= x && mx <= x + barWidth && my >= y && my <= padding.top + chartHeight,
+            data: { day: days[i], dayShort: daysShort[i], count: val, percent, color, total, isWeekend: i === 0 || i === 6 }
+        });
     });
+    
+    const canvas = document.getElementById('expandedChart');
+    window.setupExpandedTooltip(canvas, regions, (d) => `
+        <strong>${d.day}</strong>${d.isWeekend ? ' <span style="color:#8b5cf6">(fim de semana)</span>' : ''}<br>
+        <span style="color:${d.color}; font-size:1.3rem; font-weight:bold;">${d.count.toLocaleString()}</span> tickets<br>
+        <span style="color:#94a3b8;">${d.percent}% do total (${d.total.toLocaleString()})</span>
+    `);
 }
 
 // By Hour expandido
@@ -1645,11 +1978,14 @@ function renderExpandedByHour(ctx, width, height, metrics, colors, bi) {
     ctx.fillStyle = colors.text; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
     ctx.fillText('Tickets por Hora do Dia', width/2, 30);
     
+    const regions = [];
     totals.forEach((val, i) => {
         const x = padding.left + i * (barWidth + 4) + 2;
         const barH = Math.max(2, (val / maxVal) * chartHeight);
         const y = padding.top + chartHeight - barH;
-        const color = i >= 8 && i <= 18 ? '#10b981' : '#3b82f6';
+        const isBusinessHour = i >= 8 && i <= 18;
+        const color = isBusinessHour ? '#10b981' : '#3b82f6';
+        const percent = Math.round((val / total) * 100);
         
         ctx.fillStyle = color;
         ctx.beginPath(); ctx.roundRect(x, y, barWidth, barH, 3); ctx.fill();
@@ -1664,6 +2000,11 @@ function renderExpandedByHour(ctx, width, height, metrics, colors, bi) {
             ctx.fillStyle = colors.textMuted; ctx.font = '12px system-ui'; ctx.textAlign = 'center';
             ctx.fillText(`${i}h`, x + barWidth/2, height - 40);
         }
+        
+        regions.push({
+            contains: (mx, my) => mx >= x && mx <= x + barWidth && my >= y && my <= padding.top + chartHeight,
+            data: { hour: i, count: val, percent, color, total, isBusinessHour }
+        });
     });
     
     // Linha de horário comercial
@@ -1676,6 +2017,13 @@ function renderExpandedByHour(ctx, width, height, metrics, colors, bi) {
     
     ctx.fillStyle = '#f59e0b'; ctx.font = '14px system-ui'; ctx.textAlign = 'center';
     ctx.fillText('Horário Comercial (8h-18h)', (startX + endX)/2, padding.top - 15);
+    
+    const canvas = document.getElementById('expandedChart');
+    window.setupExpandedTooltip(canvas, regions, (d) => `
+        <strong>${d.hour}:00 - ${d.hour}:59</strong>${d.isBusinessHour ? ' <span style="color:#10b981">(comercial)</span>' : ''}<br>
+        <span style="color:${d.color}; font-size:1.3rem; font-weight:bold;">${d.count.toLocaleString()}</span> tickets<br>
+        <span style="color:#94a3b8;">${d.percent}% do total (${d.total.toLocaleString()})</span>
+    `);
 }
 
 // SLA expandido em alta resolução
@@ -1684,6 +2032,11 @@ function renderExpandedSLA(ctx, width, height, metrics, colors, bi) {
     let slaWithin = 0, slaOutside = 0;
     
     bi.filteredData.forEach(ticket => {
+        // Ignorar tipos configurados para SLA (consistente com gráfico pequeno)
+        const typeNorm = (ticket.type || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
+        if (bi.ignoreTypesForSLA && bi.ignoreTypesForSLA.has(typeNorm)) return;
+        // Não filtrar por status atual - queremos medir 1ª resposta de todos os tickets
+        
         const first = ticket.stats_first_responded_at || ticket.stats_first_response_at;
         if (first && ticket.created_at) {
             const rt = new Date(first) - new Date(ticket.created_at);
@@ -2122,6 +2475,11 @@ function renderExpandedRankingSLA(ctx, width, height, bi) {
     const personSLA = {};
     const treatField = bi.currentView === 'pessoa' ? 'cf_tratativa' : 'cf_grupo_tratativa';
     bi.filteredData.forEach(t => {
+        // Ignorar tipos configurados para SLA (consistente com gráfico pequeno)
+        const typeNorm = (t.type || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
+        if (bi.ignoreTypesForSLA && bi.ignoreTypesForSLA.has(typeNorm)) return;
+        // Não filtrar por status atual - queremos medir 1ª resposta de todos os tickets
+        
         const p = t.custom_fields?.[treatField] || t[treatField];
         const fr = t.stats_first_responded_at || t.first_responded_at;
         if (!p || !fr || !t.created_at) return;
@@ -2220,6 +2578,7 @@ function renderExpandedRankingBars(ctx, width, height, items, suffix, bi, title)
     ctx.textAlign = 'center';
     ctx.fillText(title, width / 2, 35);
     
+    const regions = [];
     items.forEach((item, i) => {
         const y = pad.top + i * (barH + 12);
         const bw = Math.max(20, (item.rate / maxVal) * chartWidth);
@@ -2274,7 +2633,21 @@ function renderExpandedRankingBars(ctx, width, height, items, suffix, bi, title)
         ctx.font = 'bold 15px system-ui';
         ctx.textAlign = 'left';
         ctx.fillText(`${item.rate.toFixed(1)}${suffix}`, pad.left + bw + 15, y + barH / 2 + 5);
+        
+        // Região para tooltip
+        regions.push({
+            contains: (mx, my) => mx >= pad.left && mx <= pad.left + bw && my >= y && my <= y + barH,
+            data: { ...item, rank: i + 1, color: colorSet.main, suffix, title }
+        });
     });
+    
+    // Configurar tooltip
+    const canvas = document.getElementById('expandedChart');
+    window.setupExpandedTooltip(canvas, regions, (d) => `
+        <strong>#${d.rank} ${d.name}</strong><br>
+        <span style="color:${d.color}; font-size:1.3rem; font-weight:bold;">${d.rate.toFixed(1)}${d.suffix}</span><br>
+        <span style="color:#94a3b8;">Total: ${d.total} tickets</span>
+    `);
 }
 
 function renderExpandedParados(ctx, width, height, bi) {
@@ -2357,6 +2730,140 @@ function renderExpandedAguardando(ctx, width, height, bi) {
         ctx.fillStyle = '#fff'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'left';
         ctx.fillText(item.count.toString(), pad.left + bw + 15, y + barH / 2 + 6);
     });
+}
+
+// Tickets Pendentes expandido (DONUT em alta resolução)
+function renderExpandedPendentes(ctx, width, height, bi) {
+    const now = new Date();
+    const openStatuses = [2, 6, 8, 10, 11, 12, 13, 14, 15, 18, 19, 20];
+    
+    const categories = {
+        'Aguardando Cliente': { color: '#f59e0b', count: 0 },
+        'Aguardando Parceiros': { color: '#a855f7', count: 0 },
+        'Pausado': { color: '#64748b', count: 0 },
+        'Parado (sem atividade)': { color: '#ef4444', count: 0 }
+    };
+    
+    bi.filteredData.forEach(t => {
+        const status = Number(t.status);
+        if (status === 7) categories['Aguardando Cliente'].count++;
+        else if (status === 16) categories['Aguardando Parceiros'].count++;
+        else if (status === 17) categories['Pausado'].count++;
+        else if (openStatuses.includes(status)) {
+            const lastUpdate = new Date(t.updated_at || t.created_at);
+            const daysSinceUpdate = (now - lastUpdate) / (1000 * 60 * 60 * 24);
+            if (daysSinceUpdate >= 5) categories['Parado (sem atividade)'].count++;
+        }
+    });
+    
+    const items = Object.entries(categories).filter(([, d]) => d.count > 0).sort((a, b) => b[1].count - a[1].count);
+    const total = items.reduce((sum, [, d]) => sum + d.count, 0);
+    
+    if (total === 0) {
+        ctx.fillStyle = bi.colors.textMuted;
+        ctx.font = '24px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('✅ Nenhum ticket pendente!', width / 2, height / 2);
+        return;
+    }
+    
+    // Título
+    ctx.fillStyle = bi.colors.text;
+    ctx.font = 'bold 24px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(`⏳ ${total} Tickets Pendentes`, width / 2, 40);
+    
+    // DONUT em alta resolução
+    const centerX = width / 2 - 150;
+    const centerY = height / 2 + 20;
+    const outerRadius = Math.min(width, height) / 2 - 100;
+    const innerRadius = outerRadius * 0.55;
+    const regions = [];
+    
+    let startAngle = -Math.PI / 2;
+    
+    items.forEach(([label, data], index) => {
+        const percent = data.count / total;
+        const endAngle = startAngle + percent * Math.PI * 2;
+        
+        ctx.save();
+        ctx.shadowColor = data.color;
+        ctx.shadowBlur = 25;
+        
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
+        ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = data.color;
+        ctx.fill();
+        ctx.restore();
+        
+        regions.push({
+            contains: (mx, my) => {
+                const dx = mx - centerX;
+                const dy = my - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < innerRadius || dist > outerRadius + 10) return false;
+                let angle = Math.atan2(dy, dx);
+                if (angle < -Math.PI / 2) angle += Math.PI * 2;
+                return angle >= startAngle && angle <= endAngle;
+            },
+            data: { label, count: data.count, percent: Math.round(percent * 100), color: data.color }
+        });
+        
+        startAngle = endAngle;
+    });
+    
+    // Total no centro
+    ctx.fillStyle = bi.colors.text;
+    ctx.font = 'bold 48px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(total.toString(), centerX, centerY + 15);
+    ctx.font = '18px system-ui';
+    ctx.fillStyle = bi.colors.textMuted;
+    ctx.fillText('pendentes', centerX, centerY + 45);
+    
+    // Legenda à direita
+    const legendX = width - 250;
+    let legendY = 100;
+    items.forEach(([label, data]) => {
+        const percent = Math.round((data.count / total) * 100);
+        
+        ctx.fillStyle = data.color;
+        ctx.fillRect(legendX, legendY - 12, 18, 18);
+        
+        ctx.fillStyle = bi.colors.text;
+        ctx.font = 'bold 18px system-ui';
+        ctx.textAlign = 'left';
+        ctx.fillText(label, legendX + 30, legendY + 2);
+        ctx.fillStyle = bi.colors.textMuted;
+        ctx.font = '16px system-ui';
+        ctx.fillText(`${data.count} (${percent}%)`, legendX + 30, legendY + 25);
+        
+        legendY += 60;
+    });
+    
+    // Badge informativo
+    ctx.fillStyle = 'rgba(102, 126, 234, 0.15)';
+    ctx.beginPath();
+    ctx.roundRect(width / 2 - 200, height - 50, 400, 35, 8);
+    ctx.fill();
+    ctx.fillStyle = '#667eea';
+    ctx.font = '14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('🔗 Unifica: Parados + Aguardando Cliente/Parceiros', width / 2, height - 27);
+    
+    // Tooltip
+    const canvas = document.getElementById('expandedChart');
+    window.setupExpandedTooltip(canvas, regions, (d) => `
+        <div style="display:flex;align-items:center;gap:10px;">
+            <span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:${d.color};"></span>
+            <strong style="font-size:1.1rem;">${d.label}</strong>
+        </div>
+        <div style="margin-top:8px;">
+            <span style="font-size:1.4rem;font-weight:bold;color:${d.color};">${d.count}</span> tickets (${d.percent}%)
+        </div>
+    `);
 }
 
 // Helper para criar card de gráfico com botão de expansão - Premium SaaS
@@ -2452,7 +2959,9 @@ class BIAnalytics {
         // Paginação para gráficos
         this.pagination = {
             top10: { page: 0, perPage: 10 },
-            slaByEntity: { page: 0, perPage: 10 }
+            slaByEntity: { page: 0, perPage: 10 },
+            slaResolutionByEntity: { page: 0, perPage: 10 },
+            slaCountByEntity: { page: 0, perPage: 10 }
         };
         
         // Estado de expansão de gráficos (encapsulado na instância)
@@ -2515,18 +3024,8 @@ class BIAnalytics {
             21: '#10b981'  // Em Produção - verde
         };
         
-        // Design System
-        this.colors = {
-            primary: '#3b82f6',
-            secondary: '#10b981',
-            accent: '#f59e0b',
-            danger: '#ef4444',
-            dark: '#1e1e2e',
-            surface: '#2a2a3e',
-            border: '#374151',
-            text: '#e5e7eb',
-            textMuted: '#9ca3af'
-        };
+        // Design System - Usa variáveis CSS para suportar temas
+        this.colors = this.getThemeColors();
         
         // Gradientes para gráficos
         this.gradients = [
@@ -2554,10 +3053,27 @@ class BIAnalytics {
             'melhoria telemetria',
             'melhoria yuv'
         ].map(s => s.toLowerCase().replace(/\s+/g, ' ').trim()));
+        
+        // Status a ignorar em cálculos de SLA (IDs do Freshdesk sem cronômetro de SLA)
+        // Conforme configuração do Freshdesk: status com toggle de "Cronômetro de SLA" desligado
+        this.ignoreStatusForSLA = new Set([
+            3,   // Pendente
+            4,   // Resolvido
+            5,   // Fechado
+            7,   // Aguardando Cliente
+            10,  // Em Análise
+            11,  // Interno
+            12,  // Aguardando publicar HML
+            13,  // Aguardando publicar em Prod
+            16,  // Aguardando Parceiros
+            17,  // Pausado
+            19   // Levantamento de esforço
+        ]);
     }
     
     initialize() {
         console.log('🚀 Inicializando BI Analytics');
+        console.log(`📊 window.allTicketsCache contém: ${window.allTicketsCache?.length || 0} tickets`);
         
         // Verificar dados disponíveis
         if (!window.allTicketsCache || window.allTicketsCache.length === 0) {
@@ -2565,7 +3081,9 @@ class BIAnalytics {
             return;
         }
         
+        // SEMPRE usar dados mais recentes do cache
         this.ticketsData = window.allTicketsCache;
+        console.log(`📊 ticketsData atualizado com: ${this.ticketsData.length} tickets`);
         this.extractEntities();
         this.injectStyles();
         
@@ -2585,6 +3103,42 @@ class BIAnalytics {
         } else {
             this.render();
         }
+    }
+    
+    // Método para obter cores do tema atual
+    // CENTRALIZADO em js/theme-colors-config.js
+    getThemeColors() {
+        // Usar função global centralizada
+        if (window.getThemeColorsForBI) {
+            return window.getThemeColorsForBI();
+        }
+        
+        // Fallback se theme-colors-config.js não estiver carregado
+        const config = window.getCurrentThemeColors?.() || {};
+        return {
+            primary: config.primary || '#3b82f6',
+            secondary: config.secondary || '#10b981',
+            accent: config.accent || '#f59e0b',
+            danger: config.danger || '#ef4444',
+            dark: config.background || '#1e1e2e',
+            surface: config.surface || '#2a2a3e',
+            border: config.border || '#374151',
+            text: config.text || '#e5e7eb',
+            textMuted: config.textMuted || '#9ca3af',
+            cardBg: config.cardBg || '#1e1e2e',
+            canvasBg: config.canvasBg || '#1e1e2e',
+            chartText: config.chartText || config.text || '#e5e7eb',
+            chartLabel: config.chartLabel || config.textMuted || '#9ca3af',
+            chartGrid: config.chartGrid || config.border || '#374151',
+            selectorBg: config.selectorBg || config.background || '#1e1e2e',
+            selectorBorder: config.selectorBorder || config.border || '#374151',
+            selectorText: config.selectorText || config.text || '#e5e7eb'
+        };
+    }
+    
+    // Atualizar cores quando tema mudar
+    refreshThemeColors() {
+        this.colors = this.getThemeColors();
     }
     
     // Helper para obter pessoa do ticket (com fallback)
@@ -2641,15 +3195,19 @@ class BIAnalytics {
             }
             
             // Times: APENAS cf_grupo_tratativa (sem fallback para group_name)
+            // FILTRO: Apenas times válidos, exclui nomes de pessoas que foram erroneamente colocados
+            const VALID_TEAMS = ['Atendimento', 'DEV', 'Técnico', 'Produto', 'Implantação', 'Comercial', 'Melhoria', 'CS'];
             const timeField = ticket.cf_grupo_tratativa;
             if (timeField) {
                 const times = timeField.split(/[,;\/]/).map(t => t.trim()).filter(t => t);
-                times.forEach(t => this.allTimes.add(t));
+                // Filtrar apenas times válidos (ignorar nomes de pessoas)
+                const validTimes = times.filter(t => VALID_TEAMS.includes(t));
+                validTimes.forEach(t => this.allTimes.add(t));
                 
-                // Mapear pessoas por time
+                // Mapear pessoas por time (apenas times válidos)
                 if (pessoaField) {
                     const pessoas = pessoaField.split(/[,;\/]/).map(p => p.trim()).filter(p => p);
-                    times.forEach(time => {
+                    validTimes.forEach(time => {
                         if (!this.pessoasByTeam[time]) {
                             this.pessoasByTeam[time] = new Set();
                         }
@@ -3025,10 +3583,10 @@ class BIAnalytics {
                     
                     ${this.pessoasTeamFilter !== 'all' ? `
                     <!-- SELETOR DE PESSOAS DO TIME -->
-                    <div style="background: ${this.colors.dark}; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; border: 1px solid ${this.colors.border};">
+                    <div class="pessoa-selector-container" style="border-radius: 10px; padding: 1rem; margin-bottom: 1rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                            <span style="color: ${this.colors.textMuted}; font-size: 0.85rem;">
-                                Selecionar pessoas específicas do time <strong style="color: ${this.colors.primary}">${this.pessoasTeamFilter}</strong>:
+                            <span class="pessoa-selector-title" style="font-size: 0.85rem;">
+                                Selecionar pessoas específicas do time <strong>${this.pessoasTeamFilter}</strong>:
                             </span>
                             <div style="display: flex; gap: 0.5rem;">
                                 <button onclick="window.biAnalytics.selectAllTeamPessoas()" style="
@@ -3041,7 +3599,7 @@ class BIAnalytics {
                                 ">✗ Nenhuma</button>
                             </div>
                         </div>
-                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; max-height: 150px; overflow-y: auto;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; max-height: 150px; overflow-y: auto; background: ${this.colors.surface}; padding: 0.75rem; border-radius: 8px;">
                             ${Array.from(this.pessoasByTeam[this.pessoasTeamFilter] || []).sort().map(pessoa => {
                                 const isSelected = this.selectedEntities.has(pessoa);
                                 return `
@@ -3482,6 +4040,7 @@ class BIAnalytics {
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; padding: 0 1rem;">
                 ${createChartCard('chartTop10', '🏆 Ranking: Volume de Tickets', 300)}
+                ${createChartCard('chartTicketsTratativa', '👤 Quant. de ticket p/tratativa', 320)}
                 ${createChartCard('chartResolution', '📊 Taxa de Resolução (%)', 250)}
                 ${createChartCard('chartStatus', '📋 Status Agrupado dos Tickets', 280)}
                 ${createChartCard('chartPriority', '⚡ Distribuição por Prioridade', 250)}
@@ -3496,7 +4055,9 @@ class BIAnalytics {
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; padding: 0 1rem;">
                 ${createChartCard('chartSLA', '🎯 SLA 1ª Resposta: Dentro vs Fora', 250)}
-                ${createChartCard('chartSLAByEntity', '📊 % SLA Cumprido por ' + (this.currentView === 'pessoa' ? 'Pessoa' : 'Time'), 300)}
+                ${createChartCard('chartSLAByEntity', '⚡ % SLA 1ª Resposta por ' + (this.currentView === 'pessoa' ? 'Pessoa' : 'Time'), 300)}
+                ${createChartCard('chartSLAResolutionByEntity', '✅ % SLA Resolução por ' + (this.currentView === 'pessoa' ? 'Pessoa' : 'Time'), 300)}
+                ${createChartCard('chartSLACountByEntity', '📊 Qtd. SLA por ' + (this.currentView === 'pessoa' ? 'Pessoa' : 'Time'), 300)}
                 ${createChartCard('chartFirstResponse', '⏱️ Tempo Médio 1ª Resposta', 250)}
             </div>
             
@@ -3510,8 +4071,8 @@ class BIAnalytics {
                 ${createChartCard('chartByHour', '🕐 Tickets por Hora do Dia', 250)}
                 ${createChartCard('chartHeatmap', '🔥 Mapa de Calor: Dia vs Hora', 280)}
                 ${createChartCard('chartWorkload', '📦 Carga de Trabalho Atual', 280)}
-                ${createChartCard('chartStatusStacked', '📋 Status Detalhado (Todos)', 280)}
             </div>
+            <!-- REMOVIDO: chartStatusStacked (Status Detalhado) - unificado em chartStatus (Donut) -->
             
             <!-- Charts Grid - Comparativos -->
             <div style="margin: 1.5rem 1rem 1rem; display: flex; align-items: center; gap: 0.5rem;">
@@ -3523,31 +4084,26 @@ class BIAnalytics {
                 ${createChartCard('chartTendencia', '📈 Tendência das Últimas 4 Semanas', 250)}
             </div>
             
-            <!-- Charts Grid - Rankings -->
-            <div style="margin: 1.5rem 1rem 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                <h3 style="color: #e4e4e7; font-size: 1rem; font-weight: 600; margin: 0;">Rankings</h3>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; padding: 0 1rem;">
-                ${createChartCard('chartRankingSLA', '🥇 Ranking: Melhor SLA', 280)}
-                ${createChartCard('chartRankingResolucao', '🥈 Ranking: Mais Resoluções', 280)}
-                ${createChartCard('chartEficiencia', '⚡ Índice de Eficiência', 280)}
-            </div>
+            <!-- SEÇÃO RANKINGS REMOVIDA - BIs foram unificados:
+                 - Ranking SLA → agora em "SLA por Entidade"
+                 - Ranking Resolução → agora em "Taxa de Resolução"  
+                 - Índice Eficiência → removido (fórmula confusa) -->
             
             <!-- Charts Grid - Pipeline -->
             <div style="margin: 1.5rem 1rem 1rem; display: flex; align-items: center; gap: 0.5rem;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                <h3 style="color: #e4e4e7; font-size: 1rem; font-weight: 600; margin: 0;">Pipeline</h3>
+                <h3 style="color: #e4e4e7; font-size: 1rem; font-weight: 600; margin: 0;">Pipeline & Pendências</h3>
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1rem; margin-bottom: 2rem; padding: 0 1rem;">
                 ${createChartCard('chartAgingHistogram', '⏳ Idade do Backlog (dias parado)', 250)}
-                ${createChartCard('chartPipelineFunnel', '🔄 Funil: Tickets em Andamento', 280)}
-                ${createChartCard('chartParados', '🚨 Tickets Parados > 7 dias', 250)}
-                ${createChartCard('chartAguardando', '⏸️ Aguardando Resposta Cliente', 250)}
-                ${createChartCard('chartFinalized', '✅ Total Resolvido + Fechado', 150)}
+                ${createChartCard('chartPendentes', '⏳ Tickets Pendentes', 300)}
                 <!-- Business Hours Card -->
                 <div id="businessHoursCard"></div>
             </div>
+            <!-- REMOVIDOS: Gráficos redundantes -->
+            <!-- chartPipelineFunnel → unificado em chartStatus (Donut) -->
+            <!-- chartParados + chartAguardando → unificados em chartPendentes -->
+            <!-- chartFinalized → unificado em chartStatus (Donut) -->
             
             <!-- Advanced Metrics -->
             ${this.renderAdvancedMetricsCards ? this.renderAdvancedMetricsCards() : ''}
