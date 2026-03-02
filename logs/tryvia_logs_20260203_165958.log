@@ -1,0 +1,22 @@
+[02/03/2026 16:59:58,95] Servidor iniciado 
+::1 - - [02/Mar/2026 17:00:19] "GET /login/index.html HTTP/1.1" 304 -
+::1 - - [02/Mar/2026 17:00:32] "GET /tryvia.png HTTP/1.1" 304 -
+::1 - - [02/Mar/2026 17:03:36] "GET /Portal.html HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:03:36] "GET /tryvia.png HTTP/1.1" 304 -
+::1 - - [02/Mar/2026 17:04:50] "GET /Portal.html HTTP/1.1" 304 -
+::1 - - [02/Mar/2026 17:04:56] "GET /Portal.html HTTP/1.1" 304 -
+::1 - - [02/Mar/2026 17:05:15] "GET /Portal.html HTTP/1.1" 304 -
+::1 - - [02/Mar/2026 17:05:22] "GET /Portal.html HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:05:22] "GET /css/portal.css HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:05:22] "GET /portal-function/function-ocultarabas.js HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:05:22] "GET /logo111.png HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:05:22] "GET /tryvia.png HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:05:22] "GET /portal-function/audit.js HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:05:22] "GET /portal-function/audit-utility.js HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:05:22] "GET /SING-Service/consultar_integracao_IDCliente.js HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:05:22] "GET /SING-Service/obter-token.js HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:05:23] "GET /raio-x/index.html HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:05:23] "GET /raio-x/styles.css HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:05:23] "GET /raio-x/script.js HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:05:23] "GET /portal-function/portal.js HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:05:27] "GET /tryvia.png HTTP/1.1" 200 -
