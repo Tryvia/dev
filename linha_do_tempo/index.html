@@ -761,12 +761,13 @@ tbody tr:hover {
     </style>
     <script>
 
-        (function(){
-            // botao para voltar ao portal 
-            document.getElementById('botao-voltar-portal').addEventListener('click', function() {
-                window.location.href = '../Portal.html';
-            });
-        })
+     function configurarEventListeners() {
+    // Botão voltar para o portal
+    document.getElementById("btn-voltar-portal").addEventListener("click", function () {
+        // navegar para o arquivo no nível acima, evitando dependência do servidor
+        window.location.href = "../Portal.html";
+    });
+    }
 
         (function() {
             // Verificar se o usuário veio da página Portal.html
@@ -788,7 +789,7 @@ tbody tr:hover {
     </script>
 </head>
 <body>
-<button id="botao-voltar-portal" class="btn-voltar-portal">
+<button id="btn-voltar-portal" class="btn-voltar-portal">
     Voltar para o portal
 </button>
 
