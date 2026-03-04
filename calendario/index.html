@@ -402,7 +402,7 @@
     </style>
 </head>
 <body>
-     <button id="btn-voltar-portal" class="btn-voltar-portal">Voltar para o portal</button>
+    <a href="../Portal.html" class="back-button">Voltar para o portal</a>
     <div class="container">
         <!-- Header -->
         <div class="header">
@@ -929,7 +929,7 @@
                 (function () {
             // Verificar se o usuário veio da página Portal.html
             const referrerPermitido = '/Portal.html';  
-            const paginaLogin = `/login/index.html`;  
+            const paginaLogin = `../login/index.html`;  
 
             // Obter o referrer atual
             const referrerAtual = document.referrer;
