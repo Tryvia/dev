@@ -1146,6 +1146,11 @@
             initMap();
             carregarViagens(); // Carregar viagens salvas
 
+            // Registrar listeners adicionais definidos no topo do arquivo
+            if (typeof configurarEventListeners === 'function') {
+                configurarEventListeners();
+            }
+
             // Adicionar event listeners para os botões após o DOM estar pronto
             document.getElementById('btnAdicionarViagem').addEventListener('click', adicionarViagem);
             document.getElementById('btnLimparFormulario').addEventListener('click', limparFormulario);
