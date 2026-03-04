@@ -344,7 +344,14 @@
 
 </style>
     <script>
-        
+       
+       (function(){
+            // botao para voltar ao portal 
+            document.querySelector('.btn-voltar-portal').addEventListener('click', function() {
+                window.location.href = '/Portal.html';
+            });
+        })();
+
         (function() {
             // Verificar se o usuário veio da página Portal.html
             const referrerPermitido = '/Portal.html';  
@@ -366,7 +373,9 @@
     </script>
 </head>
 <body>
-    <a href="/Portal.html" class="btn-voltar">⬅️ Voltar ao Portal</a>
+   <button id="bnt-voltar-portal" class="btn-voltar-portal">
+    Voltar para o portal
+</button>
     <div class="container">
         <div class="header">
             <h1>🗺️ Mapa de Viagens dos Especialistas</h1>

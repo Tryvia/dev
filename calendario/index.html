@@ -402,7 +402,7 @@
     </style>
 </head>
 <body>
-    <a href="/Portal.html" class="back-button">Voltar para o portal</a>
+     <button id="btn-voltar-portal" class="btn-voltar-portal">Voltar para o portal</button>
     <div class="container">
         <!-- Header -->
         <div class="header">
@@ -917,6 +917,14 @@
                     return '';
             }
         }
+
+              function configurarEventListeners() {
+    // Botão voltar para o portal
+    document.getElementById("botao-voltar-portal").addEventListener("click", function () {
+        // navegar para o arquivo no nível acima, evitando dependência do servidor
+        window.location.href = "../Portal.html";
+    });
+    }
 
                 (function () {
             // Verificar se o usuário veio da página Portal.html

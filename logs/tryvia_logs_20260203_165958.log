@@ -20,3 +20,8 @@
 ::1 - - [02/Mar/2026 17:05:23] "GET /raio-x/script.js HTTP/1.1" 200 -
 ::1 - - [02/Mar/2026 17:05:23] "GET /portal-function/portal.js HTTP/1.1" 200 -
 ::1 - - [02/Mar/2026 17:05:27] "GET /tryvia.png HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:06:28] "GET /atendimento/BI_por_Time(2).html HTTP/1.1" 304 -
+::1 - - [02/Mar/2026 17:06:28] "GET /atendimento/js/env-config.js?v=20260224T1630 HTTP/1.1" 200 -
+::1 - - [02/Mar/2026 17:06:39] "GET /login/index.html HTTP/1.1" 304 -
+::1 - - [02/Mar/2026 17:07:14] "GET /Portal.html HTTP/1.1" 304 -
+::1 - - [02/Mar/2026 17:07:14] "GET /portal-function/portal.js HTTP/1.1" 200 -

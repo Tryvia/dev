@@ -760,6 +760,14 @@ tbody tr:hover {
 
     </style>
     <script>
+
+        (function(){
+            // botao para voltar ao portal 
+            document.getElementById('botao-voltar-portal').addEventListener('click', function() {
+                window.location.href = '../Portal.html';
+            });
+        })
+
         (function() {
             // Verificar se o usuário veio da página Portal.html
             const referrerPermitido = '/Portal.html';  
@@ -780,9 +788,9 @@ tbody tr:hover {
     </script>
 </head>
 <body>
-<a href="/Portal.html" class="btn-voltar-portal">
+<button id="botao-voltar-portal" class="btn-voltar-portal">
     Voltar para o portal
-</a>
+</button>
 
 <!-- Loading indicator -->
 <div id="loadingIndicator" class="loading">
