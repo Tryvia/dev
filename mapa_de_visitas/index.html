@@ -345,12 +345,13 @@
 </style>
     <script>
        
-       (function(){
-            // botao para voltar ao portal 
-            document.querySelector('.btn-voltar-portal').addEventListener('click', function() {
-                window.location.href = '/Portal.html';
-            });
-        })();
+          function configurarEventListeners() {
+    // Botão voltar para o portal
+    document.getElementById("btn-voltar-portal").addEventListener("click", function () {
+        // navegar para o arquivo no nível acima, evitando dependência do servidor
+        window.location.href = "../Portal.html";
+    });
+    }
 
         (function() {
             // Verificar se o usuário veio da página Portal.html
