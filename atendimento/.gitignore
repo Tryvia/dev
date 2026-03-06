@@ -1,0 +1,83 @@
+# ============================================
+# GITIGNORE - Projeto Atendimento
+# ============================================
+
+# Dependências
+node_modules/
+# package-lock.json (necessário para npm ci no GitHub Actions)
+
+# Variáveis de ambiente (NUNCA commitar!)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Cache
+.cache/
+.npm/
+.eslintcache
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build/Output
+dist/
+build/
+out/
+
+# Temporários
+tmp/
+temp/
+*.tmp
+
+# Dados sensíveis
+secrets/
+credentials/
+credenciais.txt
+*.pem
+*.key
+
+# Configuração de ambiente com keys (usar template)
+js/env-config.js
+
+# Backups
+*.bak
+*.backup
+
+# Arquivos de teste locais
+test-data/
+*.test.json
+
+# Cobertura de testes
+coverage/
+
+# Relatórios
+reports/
+
+# Arquivos grandes (dados)
+*.xlsx
+*.csv
+!templates/*.xlsx
+!templates/*.csv
+
+# Antigravity/Agent internal
+.gemini/
+
+# Pastas com código legado/backup (contém keys antigas)
+arquivos git/
+TryviaBI/
+versão antiga/

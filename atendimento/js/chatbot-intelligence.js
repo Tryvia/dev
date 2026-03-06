@@ -9,7 +9,7 @@
  * - Insights automáticos
  */
 
-(function() {
+(function () {
     'use strict';
 
     const TryvianoIntelligence = {
@@ -50,10 +50,10 @@
 
             // Calcular média móvel (7 dias)
             const movingAvg = this.calculateMovingAverage(values, 7);
-            
+
             // Calcular tendência (regressão linear simples)
             const trend = this.calculateTrend(values);
-            
+
             // Gerar previsões
             const predictions = [];
             const lastAvg = movingAvg[movingAvg.length - 1];
@@ -62,7 +62,7 @@
             for (let i = 1; i <= daysAhead; i++) {
                 const date = new Date(baseDate);
                 date.setDate(date.getDate() + i);
-                
+
                 // Ajustar por dia da semana (menos tickets no fim de semana)
                 const dayOfWeek = date.getDay();
                 let weekendFactor = 1;
@@ -70,7 +70,7 @@
                 if (dayOfWeek === 6) weekendFactor = 0.5; // Sábado
 
                 const predicted = Math.round((lastAvg + (trend.slope * i)) * weekendFactor);
-                
+
                 predictions.push({
                     date: date.toISOString().slice(0, 10),
                     dateFormatted: date.toLocaleDateString('pt-BR'),
@@ -83,8 +83,8 @@
             // Resumo da previsão
             const totalPredicted = predictions.reduce((sum, p) => sum + p.predicted, 0);
             const avgDaily = (totalPredicted / daysAhead).toFixed(1);
-            const trendDirection = trend.slope > 0.5 ? '📈 Aumentando' : 
-                                   trend.slope < -0.5 ? '📉 Diminuindo' : '➡️ Estável';
+            const trendDirection = trend.slope > 0.5 ? '📈 Aumentando' :
+                trend.slope < -0.5 ? '📉 Diminuindo' : '➡️ Estável';
 
             return {
                 success: true,
@@ -120,10 +120,10 @@
             const dailyCounts = this.getDailyCounts(tickets, 30);
             const values = Object.values(dailyCounts);
             const stats = this.calculateStats(values);
-            
+
             const today = now.toISOString().slice(0, 10);
             const todayCount = dailyCounts[today] || 0;
-            
+
             if (todayCount > stats.mean + (this.config.anomalyThreshold * stats.stdDev)) {
                 anomalies.push({
                     type: 'volume_alto',
@@ -142,7 +142,7 @@
                 if ([4, 5].includes(Number(t.status))) return false;
                 if (t.stats_first_responded_at) return false;
                 if (!t.created_at) return false;
-                
+
                 const age = (now - new Date(t.created_at)) / (1000 * 60 * 60);
                 return age > 24; // Mais de 24h sem resposta
             });
@@ -164,7 +164,7 @@
             }
 
             // 3. Acúmulo de urgentes
-            const urgentOpen = tickets.filter(t => 
+            const urgentOpen = tickets.filter(t =>
                 t.priority == 4 && ![4, 5].includes(Number(t.status))
             );
 
@@ -191,7 +191,7 @@
                 });
 
                 const slaRate = ((withResponse.length - outsideSLA.length) / withResponse.length) * 100;
-                
+
                 if (slaRate < 80) {
                     anomalies.push({
                         type: 'sla_baixo',
@@ -451,7 +451,7 @@
 
             if (previous7Days > 0) {
                 const change = ((last7Days - previous7Days) / previous7Days) * 100;
-                
+
                 if (Math.abs(change) > 20) {
                     insights.push({
                         type: 'trend',
@@ -572,7 +572,7 @@
             }
 
             const { predictions, summary, historical } = data;
-            
+
             let html = `
                 <div style="margin-bottom:12px">
                     <span class="try-ai-badge">🔮 PREVISÃO IA</span>
@@ -703,7 +703,7 @@
         getDailyCounts(tickets, days) {
             const counts = {};
             const now = new Date();
-            
+
             for (let i = 0; i < days; i++) {
                 const date = new Date(now);
                 date.setDate(date.getDate() - i);
@@ -737,7 +737,7 @@
             if (n < 2) return { slope: 0, intercept: 0 };
 
             let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-            
+
             for (let i = 0; i < n; i++) {
                 sumX += i;
                 sumY += values[i];
@@ -753,11 +753,11 @@
 
         calculateStats(values) {
             if (values.length === 0) return { mean: 0, stdDev: 0 };
-            
+
             const mean = values.reduce((a, b) => a + b, 0) / values.length;
             const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
             const stdDev = Math.sqrt(variance);
-            
+
             return { mean, stdDev };
         },
 
@@ -774,7 +774,7 @@
             const dataFactor = Math.min(1, values.length / 30);
             // Menor variação = maior confiança
             const variationFactor = stats.mean > 0 ? Math.max(0.5, 1 - (stats.stdDev / stats.mean)) : 0.5;
-            
+
             return Math.round((dataFactor * 0.4 + variationFactor * 0.6) * 100);
         }
     };
@@ -786,6 +786,65 @@
     if (window.TryvianoPremium) {
         window.TryvianoPremium.intelligence = TryvianoIntelligence;
     }
+
+    // Iniciar monitoramento proativo se houver permissão
+    if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+    }
+
+    // Sistema de Monitoramento Proativo
+    TryvianoIntelligence.monitoringInterval = null;
+    
+    TryvianoIntelligence.startMonitoring = function () {
+        // Limpar intervalo anterior se existir
+        if (this.monitoringInterval) {
+            clearInterval(this.monitoringInterval);
+        }
+        
+        console.log('👁️ Monitoramento proativo iniciado...');
+
+        // Verificar a cada 5 minutos
+        this.monitoringInterval = setInterval(() => {
+            const tickets = window.allTicketsCache || [];
+            if (tickets.length === 0) return;
+
+            const analysis = this.detectAnomalies(tickets);
+
+            if (analysis.success && analysis.anomalies.length > 0) {
+                // Filtrar apenas críticas ou warnings novos
+                const critical = analysis.anomalies.filter(a => a.severity === 'critical');
+
+                if (critical.length > 0) {
+                    this.sendNotification(
+                        '🚨 Atenção Necessária',
+                        `${critical.length} anomalias críticas detectadas no atendimento.`
+                    );
+                }
+            }
+        }, 5 * 60 * 1000);
+    };
+    
+    TryvianoIntelligence.stopMonitoring = function () {
+        if (this.monitoringInterval) {
+            clearInterval(this.monitoringInterval);
+            this.monitoringInterval = null;
+            console.log('👁️ Monitoramento proativo parado.');
+        }
+    };
+
+    TryvianoIntelligence.sendNotification = function (title, body) {
+        if (Notification.permission === 'granted') {
+            new Notification(title, {
+                body: body,
+                icon: 'assets/tryviano-icon.png' // Ajustar caminho se necessário
+            });
+        } else if (window.showToast) {
+            window.showToast(`${title}: ${body}`, 'warning');
+        }
+    };
+
+    // Iniciar após breve delay para garantir carregamento
+    setTimeout(() => TryvianoIntelligence.startMonitoring(), 10000);
 
     console.log('🧠 Módulo de Inteligência Tryviano carregado!');
 

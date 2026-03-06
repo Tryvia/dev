@@ -298,7 +298,9 @@ body {
   border-radius: 12px;
   border: 1px solid hsl(214, 20%, 90%);
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  overflow: hidden;
+  /* Permite que barras/overlays e tooltips apareçam fora do contêiner
+     e evita recorte quando houver muitos itens ou overlays grandes. */
+  overflow: visible;
 }
 
 .gantt-wrapper {
@@ -485,7 +487,8 @@ body {
 .gantt-tooltip {
   display: none;
   position: fixed;
-  z-index: 1000;
+  /* Elevar z-index para garantir que o tooltip apareça sobre outros elementos */
+  z-index: 100000;
   background: hsl(215, 35%, 15%);
   color: #fff;
   border-radius: 8px;

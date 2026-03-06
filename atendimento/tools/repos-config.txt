@@ -1,0 +1,7 @@
+# CONFIGURAÇÃO DE REPOSITÓRIOS
+# Adicione seus repositórios aqui no formato: NOME|URL
+# Exemplo: github1|https://github.com/user/repo.git
+
+# Repositórios configurados:
+supabasedas|https://github.com/supabasedas/atendimento.git
+onjoao|https://github.com/OnJoaoclosed/atendimento.git

@@ -1,0 +1,276 @@
+/* ========================================
+   CSS VARIABLES - Centralized Theme System
+   Version: 3.0
+   
+   Este arquivo contém TODAS as variáveis CSS do sistema.
+   Edite aqui para mudar cores globalmente.
+   ======================================== */
+
+/* ============================================
+   DESIGN TOKENS - Valores base reutilizáveis
+   ============================================ */
+:root {
+  /* Spacing Scale */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  --transition-bounce: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Z-Index Scale */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
+  
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+}
+
+/* ============================================
+   TEMA DARK (Padrão)
+   ============================================ */
+:root, [data-theme="dark"] {
+  /* === CORES SEMÂNTICAS === */
+  
+  /* Backgrounds */
+  --bg: #0f0f0f;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #252525;
+  --card: #1e1e1e;
+  --card-hover: #252525;
+  --sidebar: #141414;
+  --surface: #2a2a3e;
+  --surface-elevated: #2e2e42;
+  
+  /* Text */
+  --text-primary: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --text-inverse: #0f0f0f;
+  
+  /* Accent Colors */
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+  --accent-green: #10b981;
+  --accent-orange: #f97316;
+  --accent-yellow: #f59e0b;
+  --accent-pink: #ec4899;
+  --accent-cyan: #06b6d4;
+  --accent-red: #ef4444;
+  
+  /* Status Colors */
+  --success: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.1);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --danger: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.1);
+  --info: #3b82f6;
+  --info-bg: rgba(59, 130, 246, 0.1);
+  
+  /* Primary Brand */
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-active: #1d4ed8;
+  --secondary: #8b5cf6;
+  --secondary-hover: #7c3aed;
+  
+  /* Borders */
+  --border: #27272a;
+  --border-light: #3f3f46;
+  --border-focus: #3b82f6;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  
+  /* Gradients */
+  --gradient: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+  --gradient-success: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  --gradient-danger: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  --gradient-info: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  
+  /* Header/Topbar */
+  --header-bg: #1a1a1a;
+  --header-text: #e4e4e7;
+  --header-border: #27272a;
+  
+  /* Charts & Canvas */
+  --chart-bg: #1e1e1e;
+  --chart-text: #e5e7eb;
+  --chart-label: #9ca3af;
+  --chart-grid: #374151;
+  
+  /* Inputs & Forms */
+  --input-bg: #1e1e1e;
+  --input-border: #3f3f46;
+  --input-focus: #3b82f6;
+  --input-placeholder: #71717a;
+  
+  /* Scrollbar */
+  --scrollbar-track: #1a1a1a;
+  --scrollbar-thumb: #3f3f46;
+  --scrollbar-thumb-hover: #52525b;
+}
+
+/* ============================================
+   TEMA TRYVIA CYAN (Claro)
+   Sidebar escura + Conteúdo claro
+   ============================================ */
+[data-theme="tryvia-cyan"] {
+  /* === CORES SEMÂNTICAS === */
+  
+  /* Backgrounds - Fundo claro */
+  --bg: #f5f7fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f0f4f8;
+  --card: #ffffff;
+  --card-hover: #f8fafc;
+  --sidebar: hsl(215, 35%, 18%);
+  --surface: #f0f4f8;
+  --surface-elevated: #ffffff;
+  
+  /* Text - Escuro para legibilidade */
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+  
+  /* Accent Colors */
+  --accent-blue: #00e4ff;
+  --accent-purple: #8b5cf6;
+  --accent-green: #10b981;
+  --accent-orange: #f97316;
+  --accent-yellow: #f59e0b;
+  --accent-pink: #ec4899;
+  --accent-cyan: #00e4ff;
+  --accent-red: #ef4444;
+  
+  /* Status Colors */
+  --success: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.1);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --danger: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.1);
+  --info: #00e4ff;
+  --info-bg: rgba(0, 228, 255, 0.1);
+  
+  /* Primary Brand - Cyan */
+  --primary: #00e4ff;
+  --primary-hover: #00c8e0;
+  --primary-active: #00a8c0;
+  --secondary: hsl(215, 35%, 18%);
+  --secondary-hover: hsl(215, 35%, 25%);
+  
+  /* Borders */
+  --border: #e2e8f0;
+  --border-light: #cbd5e1;
+  --border-focus: #00e4ff;
+  
+  /* Shadows - Mais suaves */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* Gradients */
+  --gradient: linear-gradient(135deg, #00e4ff 0%, #0099cc 100%);
+  --gradient-success: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  --gradient-danger: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  --gradient-info: linear-gradient(135deg, #00e4ff 0%, #0099cc 100%);
+  
+  /* Header/Topbar - Azul escuro igual sidebar */
+  --header-bg: hsl(215, 35%, 18%);
+  --header-text: #ffffff;
+  --header-border: hsl(215, 35%, 25%);
+  
+  /* Charts & Canvas */
+  --chart-bg: #ffffff;
+  --chart-text: #1e293b;
+  --chart-label: #334155;
+  --chart-grid: #e2e8f0;
+  
+  /* Inputs & Forms */
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --input-focus: #00e4ff;
+  --input-placeholder: #94a3b8;
+  
+  /* Scrollbar */
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+}
+
+/* ============================================
+   COMPONENTES ESPECÍFICOS - Variáveis
+   ============================================ */
+
+/* Seletor de Pessoas */
+:root, [data-theme="dark"] {
+  --selector-bg: #1e1e2e;
+  --selector-border: #374151;
+  --selector-text: #e5e7eb;
+  --selector-highlight: #00e4ff;
+}
+
+[data-theme="tryvia-cyan"] {
+  --selector-bg: hsl(215, 35%, 18%);
+  --selector-border: hsl(215, 35%, 25%);
+  --selector-text: #ffffff;
+  --selector-highlight: #00e4ff;
+}
+
+/* Chart Colors Palette */
+:root {
+  --chart-color-1: #3b82f6;
+  --chart-color-2: #8b5cf6;
+  --chart-color-3: #06b6d4;
+  --chart-color-4: #10b981;
+  --chart-color-5: #f59e0b;
+  --chart-color-6: #ef4444;
+  --chart-color-7: #ec4899;
+  --chart-color-8: #6366f1;
+  --chart-color-9: #14b8a6;
+  --chart-color-10: #f97316;
+}

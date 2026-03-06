@@ -40,8 +40,13 @@
         }
 
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
+    /* full width layout for implanted panel; no fixed max-width */
+    width: 100%;
+    /* keep some horizontal padding instead of centering margins */
+    margin: 0;
+    padding: 20px;
+    background-color: white;
+    min-height: 100vh;
         }
 
         .header {
@@ -402,7 +407,7 @@
     </style>
 </head>
 <body>
-    <a href="/Portal.html" class="back-button">Voltar para o portal</a>
+    <a href="../Portal.html" class="back-button">Voltar para o portal</a>
     <div class="container">
         <!-- Header -->
         <div class="header">
@@ -918,10 +923,18 @@
             }
         }
 
+              function configurarEventListeners() {
+    // Botão voltar para o portal
+    document.getElementById("botao-voltar-portal").addEventListener("click", function () {
+        // navegar para o arquivo no nível acima, evitando dependência do servidor
+        window.location.href = "../Portal.html";
+    });
+    }
+
                 (function () {
             // Verificar se o usuário veio da página Portal.html
             const referrerPermitido = '/Portal.html';  
-            const paginaLogin = `/login/index.html`;  
+            const paginaLogin = `../login/index.html`;  
 
             // Obter o referrer atual
             const referrerAtual = document.referrer;

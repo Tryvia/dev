@@ -46,9 +46,13 @@ body {
 }
 
 .container {
-    max-width: 1400px;
-    margin: 0 auto;
+    /* full width layout for implanted panel; no fixed max-width */
+    width: 100%;
+    /* keep some horizontal padding instead of centering margins */
+    margin: 0;
     padding: 20px;
+    background-color: white;
+    min-height: 100vh;
 }
 
 /* Cabeçalho aprimorado */
@@ -760,10 +764,19 @@ tbody tr:hover {
 
     </style>
     <script>
+
+     function configurarEventListeners() {
+    // Botão voltar para o portal
+    document.getElementById("btn-voltar-portal").addEventListener("click", function () {
+        // navegar para o arquivo no nível acima, evitando dependência do servidor
+        window.location.href = "../Portal.html";
+    });
+    }
+
         (function() {
             // Verificar se o usuário veio da página Portal.html
             const referrerPermitido = '/Portal.html';  
-            const paginaLogin = `/login/index.html`;  
+            const paginaLogin = `../login/index.html`;  
             
             // Obter o referrer atual
             const referrerAtual = document.referrer;
@@ -780,9 +793,9 @@ tbody tr:hover {
     </script>
 </head>
 <body>
-<a href="/Portal.html" class="btn-voltar-portal">
+<button id="btn-voltar-portal" class="btn-voltar-portal">
     Voltar para o portal
-</a>
+</button>
 
 <!-- Loading indicator -->
 <div id="loadingIndicator" class="loading">
@@ -971,6 +984,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     showLoading();
     try {
         await loadMVPs();
+        // Registrar listeners adicionais definidos no topo do arquivo
+        if (typeof configurarEventListeners === 'function') {
+            configurarEventListeners();
+        }
         document.getElementById('editForm').addEventListener('submit', handleFormSubmit);
         setInterval(checkOverdueMVPs, 60000);
     } catch (error) {

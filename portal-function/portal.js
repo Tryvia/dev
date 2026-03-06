@@ -4278,6 +4278,11 @@ async function carregarReunioes() {
         container.appendChild(card);
     });
 
+        // Garantir que o filtro de participantes seja populado após as reuniões serem carregadas
+        try {
+            setTimeout(populateFiltroParticipantes, 0);
+        } catch (e) { console.warn('Erro ao popular filtro de participantes', e); }
+
     // Exibe o total de reuniões filtradas no final da página
     let totalDiv = document.getElementById('totalReunioesFiltradas');
     if (!totalDiv) {
@@ -4559,16 +4564,28 @@ function populateFiltroParticipantes() {
     select.innerHTML = '<option value="">Todos os participantes</option>';
     // Coletar todos os nomes individuais de participantes das reuniões já carregadas
     const participantesSet = new Set();
-    document.querySelectorAll("#listaReunioes .document-card p").forEach(p => {
-        if (p.innerText.startsWith("Participantes:")) {
-            const txt = p.innerText.replace("Participantes:", "").trim();
-            // Suporta separadores: vírgula, ponto e vírgula, " e ", quebra de linha
+    // Preferir usar o cache de reuniões se disponível (mais confiável que procurar no DOM)
+    if (window.reunioesCache && Array.isArray(window.reunioesCache)) {
+        window.reunioesCache.forEach(r => {
+            const txt = r.participantes || '';
             txt.split(/,|;| e |\n/gi).forEach(nome => {
                 const nomeLimpo = nome.trim();
                 if (nomeLimpo) participantesSet.add(nomeLimpo);
             });
-        }
-    });
+        });
+    } else {
+        // Fallback: procurar no DOM (compatibilidade com versões anteriores)
+        document.querySelectorAll("#listaReunioes .document-card p").forEach(p => {
+            if (p.innerText && p.innerText.startsWith("Participantes:")) {
+                const txt = p.innerText.replace("Participantes:", "").trim();
+                txt.split(/,|;| e |\n/gi).forEach(nome => {
+                    const nomeLimpo = nome.trim();
+                    if (nomeLimpo) participantesSet.add(nomeLimpo);
+                });
+            }
+        });
+    }
+
     Array.from(participantesSet).sort((a, b) => a.localeCompare(b, 'pt-BR')).forEach(nome => {
         select.innerHTML += `<option value="${nome}">${nome}</option>`;
     });

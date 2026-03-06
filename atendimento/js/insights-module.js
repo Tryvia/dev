@@ -12,7 +12,7 @@ class InsightsModule {
         this.isAIAnalyzing = false;
         this.lastAnalysis = null;
         this.aiInitialized = false;
-        
+
         // Configurações
         this.config = {
             minSimilarity: 0.6, // Similaridade mínima para agrupar tickets
@@ -20,7 +20,7 @@ class InsightsModule {
             trendDays: 30, // Dias para análise de tendência
             useAI: true // Habilitar análise com IA
         };
-        
+
         // Stopwords em português para análise de texto
         this.stopwords = new Set([
             'a', 'o', 'e', 'de', 'do', 'da', 'dos', 'das', 'em', 'no', 'na', 'nos', 'nas',
@@ -40,7 +40,7 @@ class InsightsModule {
             'olá', 'oi', 'bom', 'dia', 'boa', 'tarde', 'noite', 'obrigado', 'obrigada',
             'prezado', 'prezada', 'atenciosamente', 'cordialmente', 'grato', 'grata'
         ]);
-        
+
         // Categorias de problemas comuns
         this.problemCategories = {
             'acesso': ['login', 'senha', 'acesso', 'autenticação', 'permissão', 'bloqueado', 'liberação'],
@@ -52,7 +52,7 @@ class InsightsModule {
             'configuração': ['configurar', 'configuração', 'setup', 'parametrização'],
             'novo': ['novo', 'criar', 'adicionar', 'implementar', 'feature', 'melhoria']
         };
-        
+
         // Design
         this.colors = {
             primary: '#3b82f6',
@@ -69,22 +69,22 @@ class InsightsModule {
             textMuted: '#9ca3af'
         };
     }
-    
+
     initialize() {
         console.log('💡 Inicializando módulo de Insights...');
-        
+
         if (!window.allTicketsCache || window.allTicketsCache.length === 0) {
             this.showNoDataMessage();
             return;
         }
-        
+
         this.ticketsData = window.allTicketsCache;
         this.injectStyles();
-        
+
         // Verificar se já temos análise em cache
         if (this.insights && this.lastAnalysis) {
             console.log('💡 Restaurando insights do cache...');
-            
+
             // Se temos análise com IA, restaurar ela
             if (this.aiInsights) {
                 this.render();
@@ -100,11 +100,11 @@ class InsightsModule {
             this.analyzeData();
         }
     }
-    
+
     showNoDataMessage() {
         const container = document.getElementById('insightsContainer');
         if (!container) return;
-        
+
         container.innerHTML = `
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; color: ${this.colors.textMuted};">
                 <div style="font-size: 4rem; margin-bottom: 1rem;">💡</div>
@@ -113,16 +113,16 @@ class InsightsModule {
             </div>
         `;
     }
-    
+
     render() {
         const container = document.getElementById('insightsContainer');
         if (!container) return;
-        
+
         const aiStatus = window.aiTransformers?.getStatus();
         const aiAvailable = aiStatus?.isLoaded;
         const hasAIInsights = this.aiInsights !== null;
         const hasCachedInsights = this.insights !== null && this.lastAnalysis !== null;
-        
+
         // Texto do banner baseado no estado
         let bannerIcon, bannerText, bannerClass;
         if (hasAIInsights) {
@@ -138,7 +138,7 @@ class InsightsModule {
             bannerText = 'Clique em "Carregar IA" para habilitar análise de sentimento e similaridade avançada (Transformers.js)';
             bannerClass = 'not-loaded';
         }
-        
+
         container.innerHTML = `
             <div class="insights-page">
                 <!-- Header -->
@@ -192,20 +192,20 @@ class InsightsModule {
             </div>
         `;
     }
-    
+
     async runAIAnalysis() {
         if (this.isAIAnalyzing) return;
-        
+
         const loading = document.getElementById('insightsLoading');
         const content = document.getElementById('insightsContent');
         const progressDiv = document.getElementById('loadingProgress');
         const loadingText = document.getElementById('loadingText');
         const loadingSubtext = document.getElementById('loadingSubtext');
-        
+
         if (loading) loading.style.display = 'block';
         if (content) content.style.display = 'none';
         if (progressDiv) progressDiv.style.display = 'block';
-        
+
         const updateProgress = (text, percent) => {
             if (loadingSubtext) loadingSubtext.textContent = text;
             const fill = document.querySelector('.progress-fill');
@@ -213,17 +213,17 @@ class InsightsModule {
             if (fill) fill.style.width = `${percent}%`;
             if (pctText) pctText.textContent = `${percent}%`;
         };
-        
+
         try {
             this.isAIAnalyzing = true;
-            
+
             // Inicializar IA se necessário
             if (!window.aiTransformers?.isLoaded) {
                 if (loadingText) loadingText.textContent = '🤖 Carregando modelos de IA...';
                 updateProgress('Baixando Transformers.js (primeira vez pode demorar)...', 5);
-                
+
                 await window.aiTransformers.initialize(updateProgress);
-                
+
                 // Atualizar banner
                 const banner = document.getElementById('aiStatusBanner');
                 if (banner) {
@@ -234,24 +234,24 @@ class InsightsModule {
                     `;
                 }
             }
-            
+
             // Executar análise rápida primeiro
             if (loadingText) loadingText.textContent = '📊 Executando análise básica...';
             updateProgress('Calculando métricas...', 20);
-            
+
             await this.analyzeData();
-            
+
             // Executar análise de IA
             if (loadingText) loadingText.textContent = '🤖 Executando análise de IA...';
-            
+
             this.aiInsights = await window.aiTransformers.generateAIInsights(
                 this.ticketsData,
                 updateProgress
             );
-            
+
             // Renderizar com insights de IA
             this.renderInsightsWithAI(this.insights, this.aiInsights);
-            
+
         } catch (error) {
             console.error('Erro na análise de IA:', error);
             if (content) {
@@ -272,19 +272,19 @@ class InsightsModule {
             if (content) content.style.display = 'block';
         }
     }
-    
+
     renderInsightsWithAI(basicInsights, aiInsights) {
         const content = document.getElementById('insightsContent');
         if (!content || !basicInsights) return;
-        
+
         // Usar o render básico como base
         this.renderInsights(basicInsights);
-        
+
         // Adicionar seção de IA no topo
         if (aiInsights) {
             const aiSection = document.createElement('div');
             aiSection.innerHTML = this.renderAISection(aiInsights);
-            
+
             // Inserir após o resumo geral
             const firstSection = content.querySelector('.insights-section');
             if (firstSection && firstSection.nextSibling) {
@@ -292,10 +292,10 @@ class InsightsModule {
             }
         }
     }
-    
+
     renderAISection(aiInsights) {
         if (!aiInsights) return '';
-        
+
         return `
             <section class="insights-section ai-section">
                 <h2 class="section-title">🤖 Análise de IA</h2>
@@ -395,21 +395,21 @@ class InsightsModule {
             </section>
         `;
     }
-    
+
     async analyzeData() {
         if (this.isAnalyzing) return;
-        
+
         this.isAnalyzing = true;
         const loading = document.getElementById('insightsLoading');
         const content = document.getElementById('insightsContent');
-        
+
         if (loading) loading.style.display = 'block';
         if (content) content.style.display = 'none';
-        
+
         try {
             // Executar análises em paralelo usando setTimeout para não bloquear UI
             await new Promise(resolve => setTimeout(resolve, 100));
-            
+
             const insights = {
                 summary: this.generateSummary(),
                 trends: this.analyzeTrends(),
@@ -425,12 +425,12 @@ class InsightsModule {
                 csatAnalysis: this.analyzeCSAT(),
                 timestamp: new Date()
             };
-            
+
             this.insights = insights;
             this.lastAnalysis = new Date();
-            
+
             this.renderInsights(insights);
-            
+
         } catch (error) {
             console.error('Erro na análise:', error);
             if (content) {
@@ -447,18 +447,18 @@ class InsightsModule {
             if (content) content.style.display = 'block';
         }
     }
-    
+
     generateSummary() {
         const total = this.ticketsData.length;
         const resolved = this.ticketsData.filter(t => [4, 5].includes(Number(t.status))).length;
         const open = this.ticketsData.filter(t => Number(t.status) === 2).length;
         const pending = this.ticketsData.filter(t => Number(t.status) === 3).length;
-        
+
         // Tempo médio de resolução
-        const resolvedTickets = this.ticketsData.filter(t => 
+        const resolvedTickets = this.ticketsData.filter(t =>
             t.stats_resolved_at && t.created_at && [4, 5].includes(Number(t.status))
         );
-        
+
         let avgResolutionHours = 0;
         if (resolvedTickets.length > 0) {
             const totalHours = resolvedTickets.reduce((sum, t) => {
@@ -468,7 +468,7 @@ class InsightsModule {
             }, 0);
             avgResolutionHours = totalHours / resolvedTickets.length;
         }
-        
+
         // Tickets por prioridade
         const byPriority = {
             urgent: this.ticketsData.filter(t => t.priority === 4).length,
@@ -476,17 +476,17 @@ class InsightsModule {
             medium: this.ticketsData.filter(t => t.priority === 2).length,
             low: this.ticketsData.filter(t => t.priority === 1).length
         };
-        
+
         // Tickets últimos 7 dias
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         const last7Days = this.ticketsData.filter(t => new Date(t.created_at) >= sevenDaysAgo).length;
-        
+
         // Tickets últimos 30 dias
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const last30Days = this.ticketsData.filter(t => new Date(t.created_at) >= thirtyDaysAgo).length;
-        
+
         return {
             total,
             resolved,
@@ -500,58 +500,58 @@ class InsightsModule {
             avgPerDay: last30Days / 30
         };
     }
-    
+
     analyzeTrends() {
         const now = new Date();
         const trends = [];
-        
+
         // Agrupar por semana nos últimos 8 semanas
         const weeks = [];
         for (let i = 7; i >= 0; i--) {
             const weekStart = new Date(now);
             weekStart.setDate(now.getDate() - (i * 7) - now.getDay());
             weekStart.setHours(0, 0, 0, 0);
-            
+
             const weekEnd = new Date(weekStart);
             weekEnd.setDate(weekStart.getDate() + 7);
-            
+
             const count = this.ticketsData.filter(t => {
                 const d = new Date(t.created_at);
                 return d >= weekStart && d < weekEnd;
             }).length;
-            
+
             weeks.push({
                 start: weekStart,
                 count
             });
         }
-        
+
         // Calcular tendência
         if (weeks.length >= 2) {
             const recent = weeks.slice(-2).reduce((sum, w) => sum + w.count, 0) / 2;
             const previous = weeks.slice(-4, -2).reduce((sum, w) => sum + w.count, 0) / 2;
-            
+
             if (previous > 0) {
                 const change = ((recent - previous) / previous) * 100;
                 trends.push({
                     type: change > 10 ? 'warning' : change < -10 ? 'success' : 'info',
                     icon: change > 10 ? '📈' : change < -10 ? '📉' : '➡️',
                     title: 'Volume de Tickets',
-                    description: change > 10 
+                    description: change > 10
                         ? `Aumento de ${Math.abs(change).toFixed(0)}% nas últimas 2 semanas`
-                        : change < -10 
+                        : change < -10
                             ? `Redução de ${Math.abs(change).toFixed(0)}% nas últimas 2 semanas`
                             : 'Volume estável nas últimas semanas'
                 });
             }
         }
-        
+
         // Análise de prioridade crítica
         const urgentRecent = this.ticketsData.filter(t => {
             const d = new Date(t.created_at);
             return d >= new Date(now - 7 * 24 * 60 * 60 * 1000) && t.priority === 4;
         }).length;
-        
+
         if (urgentRecent > 5) {
             trends.push({
                 type: 'danger',
@@ -560,43 +560,43 @@ class InsightsModule {
                 description: `${urgentRecent} tickets urgentes nos últimos 7 dias`
             });
         }
-        
+
         return { weeks, trends };
     }
-    
+
     analyzeFrequentProblems() {
         const wordFrequency = new Map();
         const phraseFrequency = new Map();
         const categoryCount = {};
-        
+
         // Inicializar categorias
         Object.keys(this.problemCategories).forEach(cat => {
             categoryCount[cat] = { count: 0, tickets: [] };
         });
-        
+
         this.ticketsData.forEach(ticket => {
             const text = this.normalizeText(
                 (ticket.subject || '') + ' ' + (ticket.description_text || '')
             );
-            
+
             const words = this.tokenize(text);
-            
+
             // Contar palavras
             words.forEach(word => {
                 if (word.length > 3 && !this.stopwords.has(word)) {
                     wordFrequency.set(word, (wordFrequency.get(word) || 0) + 1);
                 }
             });
-            
+
             // Extrair bigramas (pares de palavras)
             for (let i = 0; i < words.length - 1; i++) {
-                if (words[i].length > 2 && words[i+1].length > 2 &&
-                    !this.stopwords.has(words[i]) && !this.stopwords.has(words[i+1])) {
-                    const bigram = words[i] + ' ' + words[i+1];
+                if (words[i].length > 2 && words[i + 1].length > 2 &&
+                    !this.stopwords.has(words[i]) && !this.stopwords.has(words[i + 1])) {
+                    const bigram = words[i] + ' ' + words[i + 1];
                     phraseFrequency.set(bigram, (phraseFrequency.get(bigram) || 0) + 1);
                 }
             }
-            
+
             // Categorizar
             Object.entries(this.problemCategories).forEach(([category, keywords]) => {
                 if (keywords.some(kw => text.includes(kw))) {
@@ -607,63 +607,63 @@ class InsightsModule {
                 }
             });
         });
-        
+
         // Top palavras
         const topWords = Array.from(wordFrequency.entries())
             .sort((a, b) => b[1] - a[1])
             .slice(0, 20)
             .map(([word, count]) => ({ word, count }));
-        
+
         // Top frases
         const topPhrases = Array.from(phraseFrequency.entries())
             .filter(([_, count]) => count >= 3)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 10)
             .map(([phrase, count]) => ({ phrase, count }));
-        
+
         // Ordenar categorias
         const sortedCategories = Object.entries(categoryCount)
             .sort((a, b) => b[1].count - a[1].count)
             .filter(([_, data]) => data.count > 0);
-        
+
         return {
             topWords,
             topPhrases,
             categories: sortedCategories
         };
     }
-    
+
     findSimilarTickets() {
         const groups = [];
         const processed = new Set();
-        
+
         // Criar índice de palavras-chave por ticket
         const ticketKeywords = this.ticketsData.map(ticket => {
             const text = this.normalizeText(ticket.subject || '');
             const words = this.tokenize(text).filter(w => w.length > 3 && !this.stopwords.has(w));
             return { ticket, words: new Set(words) };
         });
-        
+
         // Encontrar tickets similares (apenas os primeiros 500 para performance)
         const sampleSize = Math.min(500, ticketKeywords.length);
         const sample = ticketKeywords.slice(0, sampleSize);
-        
+
         sample.forEach((item, i) => {
             if (processed.has(i) || item.words.size < 2) return;
-            
+
             const similar = [item.ticket];
-            
+
             for (let j = i + 1; j < sample.length; j++) {
                 if (processed.has(j)) continue;
-                
+
                 const similarity = this.calculateJaccard(item.words, sample[j].words);
-                
+
                 if (similarity >= this.config.minSimilarity) {
                     similar.push(sample[j].ticket);
                     processed.add(j);
                 }
             }
-            
+
             if (similar.length >= 3) {
                 groups.push({
                     count: similar.length,
@@ -673,14 +673,14 @@ class InsightsModule {
                 processed.add(i);
             }
         });
-        
+
         return groups.sort((a, b) => b.count - a.count).slice(0, 10);
     }
-    
+
     generateRecommendations() {
         const recommendations = [];
         const summary = this.generateSummary();
-        
+
         // Taxa de resolução baixa
         if (summary.resolutionRate < 70) {
             recommendations.push({
@@ -695,7 +695,7 @@ class InsightsModule {
                 ]
             });
         }
-        
+
         // Muitos tickets urgentes
         if (summary.byPriority.urgent > summary.total * 0.15) {
             recommendations.push({
@@ -710,7 +710,7 @@ class InsightsModule {
                 ]
             });
         }
-        
+
         // Tempo médio de resolução alto
         if (summary.avgResolutionHours > 48) {
             recommendations.push({
@@ -725,7 +725,7 @@ class InsightsModule {
                 ]
             });
         }
-        
+
         // Volume crescente
         if (summary.avgPerDay > 50) {
             recommendations.push({
@@ -740,7 +740,7 @@ class InsightsModule {
                 ]
             });
         }
-        
+
         // Backlog grande
         const backlog = summary.open + summary.pending;
         if (backlog > 100) {
@@ -756,7 +756,7 @@ class InsightsModule {
                 ]
             });
         }
-        
+
         // Análise de acompanhamento
         const acompanhamento = this.analyzeAcompanhamento();
         if (acompanhamento.percentWithAcompanhamento < 30 && acompanhamento.ranking.length > 0) {
@@ -772,7 +772,7 @@ class InsightsModule {
                 ]
             });
         }
-        
+
         // Análise de CSAT
         const csat = this.analyzeCSAT();
         if (csat.hasData) {
@@ -803,7 +803,7 @@ class InsightsModule {
                 });
             }
         }
-        
+
         // Análise de aging
         const status = this.analyzeStatusDetailed();
         if (status.aging && status.aging.moreThanWeek > 10) {
@@ -819,7 +819,7 @@ class InsightsModule {
                 ]
             });
         }
-        
+
         // Sempre adicionar boas práticas
         recommendations.push({
             priority: 'info',
@@ -833,24 +833,24 @@ class InsightsModule {
                 'Revisar métricas semanalmente'
             ]
         });
-        
+
         return recommendations.sort((a, b) => {
             const priorityOrder = { high: 0, medium: 1, low: 2, info: 3 };
             return priorityOrder[a.priority] - priorityOrder[b.priority];
         });
     }
-    
+
     analyzeSLA() {
         const SLA_FIRST_RESPONSE = 4 * 60 * 60 * 1000; // 4 horas
         const SLA_RESOLUTION = 24 * 60 * 60 * 1000; // 24 horas
-        
+
         let withinFirstResponse = 0;
         let outsideFirstResponse = 0;
         let withinResolution = 0;
         let outsideResolution = 0;
-        
+
         const violations = [];
-        
+
         this.ticketsData.forEach(ticket => {
             // SLA Primeira Resposta
             if (ticket.stats_first_responded_at && ticket.created_at) {
@@ -869,7 +869,7 @@ class InsightsModule {
                     }
                 }
             }
-            
+
             // SLA Resolução
             if (ticket.stats_resolved_at && ticket.created_at) {
                 const resolutionTime = new Date(ticket.stats_resolved_at) - new Date(ticket.created_at);
@@ -880,10 +880,10 @@ class InsightsModule {
                 }
             }
         });
-        
+
         const totalFirstResponse = withinFirstResponse + outsideFirstResponse;
         const totalResolution = withinResolution + outsideResolution;
-        
+
         return {
             firstResponse: {
                 within: withinFirstResponse,
@@ -898,13 +898,13 @@ class InsightsModule {
             violations
         };
     }
-    
+
     analyzeTeamPerformance() {
         const teamStats = new Map();
-        
+
         this.ticketsData.forEach(ticket => {
             const team = ticket.cf_grupo_tratativa || 'Não atribuído';
-            
+
             if (!teamStats.has(team)) {
                 teamStats.set(team, {
                     total: 0,
@@ -913,13 +913,13 @@ class InsightsModule {
                     responseTimes: []
                 });
             }
-            
+
             const stats = teamStats.get(team);
             stats.total++;
-            
+
             if ([4, 5].includes(Number(ticket.status))) {
                 stats.resolved++;
-                
+
                 if (ticket.created_at && ticket.stats_resolved_at) {
                     const hours = (new Date(ticket.stats_resolved_at) - new Date(ticket.created_at)) / (1000 * 60 * 60);
                     if (hours > 0 && hours < 10000) {
@@ -927,7 +927,7 @@ class InsightsModule {
                     }
                 }
             }
-            
+
             if (ticket.created_at && ticket.stats_first_responded_at) {
                 const hours = (new Date(ticket.stats_first_responded_at) - new Date(ticket.created_at)) / (1000 * 60 * 60);
                 if (hours > 0 && hours < 1000) {
@@ -935,17 +935,17 @@ class InsightsModule {
                 }
             }
         });
-        
+
         // Calcular métricas
         const teams = Array.from(teamStats.entries()).map(([name, stats]) => {
             const avgResolution = stats.resolutionTimes.length > 0
                 ? stats.resolutionTimes.reduce((a, b) => a + b, 0) / stats.resolutionTimes.length
                 : 0;
-            
+
             const avgResponse = stats.responseTimes.length > 0
                 ? stats.responseTimes.reduce((a, b) => a + b, 0) / stats.responseTimes.length
                 : 0;
-            
+
             return {
                 name,
                 total: stats.total,
@@ -955,13 +955,13 @@ class InsightsModule {
                 avgResponseHours: avgResponse
             };
         });
-        
+
         return teams.sort((a, b) => b.total - a.total).slice(0, 10);
     }
-    
+
     detectPatterns() {
         const patterns = [];
-        
+
         // Padrão por dia da semana
         const byDayOfWeek = [0, 0, 0, 0, 0, 0, 0];
         this.ticketsData.forEach(t => {
@@ -969,17 +969,17 @@ class InsightsModule {
                 byDayOfWeek[new Date(t.created_at).getDay()]++;
             }
         });
-        
+
         const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
         const maxDayIdx = byDayOfWeek.indexOf(Math.max(...byDayOfWeek));
         const minDayIdx = byDayOfWeek.indexOf(Math.min(...byDayOfWeek));
-        
+
         patterns.push({
             icon: '📅',
             title: 'Padrão Semanal',
             description: `${dayNames[maxDayIdx]} é o dia com mais tickets (${byDayOfWeek[maxDayIdx]}). ${dayNames[minDayIdx]} tem menos (${byDayOfWeek[minDayIdx]}).`
         });
-        
+
         // Padrão por hora
         const byHour = new Array(24).fill(0);
         this.ticketsData.forEach(t => {
@@ -987,21 +987,21 @@ class InsightsModule {
                 byHour[new Date(t.created_at).getHours()]++;
             }
         });
-        
+
         const peakHour = byHour.indexOf(Math.max(...byHour));
         patterns.push({
             icon: '⏰',
             title: 'Horário de Pico',
             description: `Maior volume de tickets às ${peakHour}h (${byHour[peakHour]} tickets).`
         });
-        
+
         // Padrão de tipo
         const byType = new Map();
         this.ticketsData.forEach(t => {
             const type = t.type || 'Não classificado';
             byType.set(type, (byType.get(type) || 0) + 1);
         });
-        
+
         const topType = Array.from(byType.entries()).sort((a, b) => b[1] - a[1])[0];
         if (topType) {
             patterns.push({
@@ -1010,12 +1010,12 @@ class InsightsModule {
                 description: `"${topType[0]}" representa ${(topType[1] / this.ticketsData.length * 100).toFixed(1)}% dos tickets.`
             });
         }
-        
+
         return patterns;
     }
-    
+
     // ========== NOVAS ANÁLISES ==========
-    
+
     /**
      * Analisa acompanhamento por tags (tratativa indireta)
      */
@@ -1023,7 +1023,7 @@ class InsightsModule {
         const allowedPeople = ['Andreia', 'Gustavo', 'Adriana', 'Jéssica', 'Francisco', 'Alianie', 'Gabriel CS', 'João Peres'];
         const normalizeForMatch = (str) => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
         const allowedNorm = allowedPeople.map(p => normalizeForMatch(p));
-        
+
         const extractTags = (ticket) => {
             const tags = ticket.tags;
             if (!tags) return [];
@@ -1034,20 +1034,20 @@ class InsightsModule {
                     try {
                         const parsed = JSON.parse(trimmed);
                         if (Array.isArray(parsed)) return parsed.map(t => (t || '').toString().trim()).filter(t => t);
-                    } catch (e) { /* continua */ }
+                    } catch (e) { console.warn('⚠️ Erro ao parsear tags JSON:', e.message); }
                 }
                 return tags.split(/[,;|]/).map(t => t.trim()).filter(t => t);
             }
             return [];
         };
-        
+
         const personStats = {};
         let ticketsWithAcompanhamento = 0;
-        
+
         this.ticketsData.forEach(ticket => {
             const ticketTags = extractTags(ticket);
             let hasAcompanhamento = false;
-            
+
             ticketTags.forEach(tag => {
                 const tagNorm = normalizeForMatch(tag);
                 const matchIdx = allowedNorm.findIndex(n => tagNorm.includes(n) || n.includes(tagNorm));
@@ -1057,7 +1057,7 @@ class InsightsModule {
                         personStats[canonicalName] = { total: 0, resolved: 0 };
                     }
                     personStats[canonicalName].total++;
-                    
+
                     // Verificar se resolvido
                     const status = Number(ticket.status);
                     if ([4, 5].includes(status)) {
@@ -1066,10 +1066,10 @@ class InsightsModule {
                     hasAcompanhamento = true;
                 }
             });
-            
+
             if (hasAcompanhamento) ticketsWithAcompanhamento++;
         });
-        
+
         const ranking = Object.entries(personStats)
             .map(([name, stats]) => ({
                 name,
@@ -1078,28 +1078,28 @@ class InsightsModule {
                 resolutionRate: stats.total > 0 ? (stats.resolved / stats.total * 100) : 0
             }))
             .sort((a, b) => b.total - a.total);
-        
+
         return {
             totalTicketsWithAcompanhamento: ticketsWithAcompanhamento,
-            percentWithAcompanhamento: this.ticketsData.length > 0 
-                ? (ticketsWithAcompanhamento / this.ticketsData.length * 100) 
+            percentWithAcompanhamento: this.ticketsData.length > 0
+                ? (ticketsWithAcompanhamento / this.ticketsData.length * 100)
                 : 0,
             ranking,
             topPerformer: ranking.length > 0 ? ranking[0] : null
         };
     }
-    
+
     /**
      * Análise detalhada de status usando categorias
      */
     analyzeStatusDetailed() {
         // Usar TicketStatusManager se disponível
         const useStatusManager = window.TicketStatusManager && typeof window.TicketStatusManager.getStatusStatistics === 'function';
-        
+
         if (useStatusManager) {
             return window.TicketStatusManager.getStatusStatistics(this.ticketsData);
         }
-        
+
         // Fallback manual
         const statusGroups = {
             open: { label: 'Abertos', color: '#ef4444', tickets: [] },
@@ -1107,7 +1107,7 @@ class InsightsModule {
             waiting: { label: 'Aguardando', color: '#3b82f6', tickets: [] },
             resolved: { label: 'Resolvidos', color: '#10b981', tickets: [] }
         };
-        
+
         const statusMap = {
             2: 'open',      // Open
             3: 'pending',   // Pending
@@ -1119,13 +1119,13 @@ class InsightsModule {
             10: 'open',     // Em Análise
             17: 'pending'   // Pausado
         };
-        
+
         this.ticketsData.forEach(ticket => {
             const status = Number(ticket.status);
             const group = statusMap[status] || 'open';
             statusGroups[group].tickets.push(ticket);
         });
-        
+
         const total = this.ticketsData.length;
         const result = {
             total,
@@ -1137,7 +1137,7 @@ class InsightsModule {
                 percent: total > 0 ? (data.tickets.length / total * 100) : 0
             }))
         };
-        
+
         // Calcular aging de tickets abertos
         const now = new Date();
         const openTickets = [...statusGroups.open.tickets, ...statusGroups.pending.tickets, ...statusGroups.waiting.tickets];
@@ -1147,7 +1147,7 @@ class InsightsModule {
             threeToSevenDays: 0,
             moreThanWeek: 0
         };
-        
+
         openTickets.forEach(ticket => {
             const created = new Date(ticket.created_at);
             const days = (now - created) / (1000 * 60 * 60 * 24);
@@ -1156,31 +1156,31 @@ class InsightsModule {
             else if (days < 7) aging.threeToSevenDays++;
             else aging.moreThanWeek++;
         });
-        
+
         result.aging = aging;
         result.openCount = openTickets.length;
-        
+
         return result;
     }
-    
+
     /**
      * Análise de satisfação do cliente (CSAT)
      */
     analyzeCSAT() {
         const ratings = [];
         const byScore = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-        
+
         this.ticketsData.forEach(ticket => {
             const sr = ticket.satisfaction_rating;
             if (!sr) return;
-            
+
             let score = null;
             if (typeof sr === 'object' && sr.score) {
                 score = sr.score;
             } else if (typeof sr === 'number') {
                 score = sr;
             }
-            
+
             if (score && score >= 1 && score <= 5) {
                 ratings.push({
                     ticketId: ticket.id,
@@ -1190,22 +1190,22 @@ class InsightsModule {
                 byScore[score]++;
             }
         });
-        
+
         if (ratings.length === 0) {
             return {
                 hasData: false,
                 message: 'Nenhum dado de satisfação disponível'
             };
         }
-        
+
         const avg = ratings.reduce((sum, r) => sum + r.score, 0) / ratings.length;
         const satisfaction = (avg / 5) * 100;
-        
+
         // NPS simplificado (promotores 4-5, neutros 3, detratores 1-2)
         const promoters = byScore[4] + byScore[5];
         const detractors = byScore[1] + byScore[2];
         const nps = ((promoters - detractors) / ratings.length) * 100;
-        
+
         return {
             hasData: true,
             total: ratings.length,
@@ -1217,7 +1217,7 @@ class InsightsModule {
             highScores: ratings.filter(r => r.score >= 4).slice(0, 5)
         };
     }
-    
+
     // Helpers
     normalizeText(text) {
         return (text || '')
@@ -1228,21 +1228,21 @@ class InsightsModule {
             .replace(/\s+/g, ' ')
             .trim();
     }
-    
+
     tokenize(text) {
         return text.split(/\s+/).filter(w => w.length > 0);
     }
-    
+
     calculateJaccard(setA, setB) {
         const intersection = new Set([...setA].filter(x => setB.has(x)));
         const union = new Set([...setA, ...setB]);
         return union.size > 0 ? intersection.size / union.size : 0;
     }
-    
+
     renderInsights(insights) {
         const content = document.getElementById('insightsContent');
         if (!content) return;
-        
+
         content.innerHTML = `
             <!-- Resumo Geral -->
             <section class="insights-section">
@@ -1534,7 +1534,7 @@ class InsightsModule {
                     </div>
                 </div>
                 <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
-                    ${[1,2,3,4,5].map(score => `
+                    ${[1, 2, 3, 4, 5].map(score => `
                         <div style="flex: 1; min-width: 60px; text-align: center; padding: 0.75rem; background: ${this.colors.surfaceLight}; border-radius: 8px;">
                             <div style="font-size: 1.5rem;">${'⭐'.repeat(score)}</div>
                             <div style="font-size: 1.25rem; font-weight: 700; color: ${score >= 4 ? this.colors.secondary : score >= 3 ? this.colors.accent : this.colors.danger};">${insights.csatAnalysis.distribution[score]}</div>
@@ -1558,7 +1558,7 @@ class InsightsModule {
             </div>
         `;
     }
-    
+
     getCategoryIcon(category) {
         const icons = {
             'acesso': '🔐',
@@ -1572,7 +1572,7 @@ class InsightsModule {
         };
         return icons[category] || '📌';
     }
-    
+
     getCategoryLabel(category) {
         const labels = {
             'acesso': 'Acesso/Autenticação',
@@ -1586,13 +1586,13 @@ class InsightsModule {
         };
         return labels[category] || category;
     }
-    
+
     exportInsights() {
         if (!this.insights) {
             alert('Execute a análise primeiro!');
             return;
         }
-        
+
         // Criar JSON para export
         const exportData = {
             timestamp: this.lastAnalysis,
@@ -1606,7 +1606,7 @@ class InsightsModule {
             teamPerformance: this.insights.teamPerformance,
             patterns: this.insights.patterns
         };
-        
+
         const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1615,10 +1615,10 @@ class InsightsModule {
         a.click();
         URL.revokeObjectURL(url);
     }
-    
+
     injectStyles() {
         if (document.getElementById('insights-styles')) return;
-        
+
         const styles = document.createElement('style');
         styles.id = 'insights-styles';
         styles.textContent = `

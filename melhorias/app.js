@@ -331,8 +331,40 @@ function showTooltip(event, id) {
 
 function moveTooltip(event) {
   const tip = document.getElementById('tooltip');
-  tip.style.left = (event.clientX + 12) + 'px';
-  tip.style.top = (event.clientY - 10) + 'px';
+  if (!tip) return;
+  const padding = 8;
+  // Inicial posição ao lado do cursor
+  let left = event.clientX + 12;
+  let top = event.clientY - 10;
+
+  // Forçar exibição para medir tamanho (se ainda estiver escondido)
+  const wasVisible = tip.classList.contains('visible');
+  if (!wasVisible) {
+    tip.style.display = 'block';
+  }
+
+  const tipW = tip.offsetWidth || 220;
+  const tipH = tip.offsetHeight || 120;
+
+  // Ajustar horizontalmente se sair da tela
+  if (left + tipW + padding > window.innerWidth) {
+    left = window.innerWidth - tipW - padding;
+  }
+
+  // Ajustar verticalmente: preferir abaixo do cursor, caso não caiba colocar acima
+  if (top + tipH + padding > window.innerHeight) {
+    // colocar acima do cursor
+    top = event.clientY - tipH - 12;
+  }
+  if (top < padding) top = padding;
+
+  tip.style.left = left + 'px';
+  tip.style.top = top + 'px';
+
+  if (!wasVisible) {
+    // restaurar estado: visible class gerencia display
+    tip.style.display = '';
+  }
 }
 
 function hideTooltip() {
