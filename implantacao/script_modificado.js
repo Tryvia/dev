@@ -144,6 +144,7 @@ function projetoDeveAparecerNoAno(implantacao, ano) {
 let implantacoes = [];
 let implantacaoAtual = null;
 let anoSelecionado = new Date().getFullYear(); // Ano atual por padrão
+let modoVisualizacao = 'tabela'; // 'tabela' ou 'gantt'
 const meses = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -159,7 +160,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     inicializarFiltroAno();
+    inicializarToggleVisualizacao();
     carregarPainelProjetos();
+    renderDashboard();
     configurarEventListeners();
 });
 
@@ -324,6 +327,13 @@ function carregarDadosLocais() {
 
 // Carregar painel de projetos
 function carregarPainelProjetos() {
+    if (modoVisualizacao === 'gantt') {
+        renderizarGantt();
+        // atualizar dashboard para o ano atual também
+        renderDashboard();
+        return;
+    }
+
     const tbody = document.getElementById('tabela-body');
     tbody.innerHTML = '';
 
@@ -347,6 +357,8 @@ function carregarPainelProjetos() {
         `;
         tbody.appendChild(row);
     }
+    // Atualizar dashboard após carregar a tabela
+    renderDashboard();
 }
 
 // Criar linha da tabela para uma implantação
@@ -1634,20 +1646,34 @@ async function adicionarNovaImplantacao(e) {
 
 // Filtrar implantações
 function filtrarImplantacoes() {
-    const filtro = document.getElementById('filtro-busca').value.toLowerCase();
+    const filtro = (document.getElementById('filtro-busca') && document.getElementById('filtro-busca').value || '').toLowerCase();
     const rows = document.querySelectorAll('#tabela-body tr');
 
     rows.forEach(row => {
-        const empresa = row.cells[0].textContent.toLowerCase();
-        const projeto = row.cells[1].textContent.toLowerCase();
-        const sistema = row.cells[2].textContent.toLowerCase();
+        // Ignorar linhas que não tenham as células esperadas (ex.: linha "Nenhuma implantação encontrada")
+        if (!row.cells || row.cells.length < 3) {
+            // Mostrar mensagem de "nenhum dado" apenas quando não houver filtro
+            if (row.cells && row.cells.length === 1) {
+                row.style.display = filtro ? 'none' : '';
+            }
+            return;
+        }
 
-        const corresponde = empresa.includes(filtro) ||
-            projeto.includes(filtro) ||
-            sistema.includes(filtro);
+        const empresa = (row.cells[0].textContent || '').toLowerCase();
+        const projeto = (row.cells[1].textContent || '').toLowerCase();
+        const sistema = (row.cells[2].textContent || '').toLowerCase();
+
+        const corresponde = empresa.includes(filtro) || projeto.includes(filtro) || sistema.includes(filtro);
 
         row.style.display = corresponde ? '' : 'none';
     });
+
+    // Se estivermos no modo Gantt, re-renderizar o Gantt para aplicar o filtro
+    if (modoVisualizacao === 'gantt') {
+        renderizarGantt();
+    }
+    // Atualizar dashboard também
+    renderDashboard();
 }
 
 // Mostrar mensagem de feedback
@@ -1721,6 +1747,25 @@ style.textContent = `
         background-color: #FF9800 !important;
         color: white !important;
     }
+    /* Dashboard styles (improved) */
+    .dashboard { padding: 18px; background: #fff; border-radius:10px; margin: 12px 0; box-shadow: 0 6px 18px rgba(0,0,0,0.06);} 
+    .dashboard .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap:16px; margin-bottom:18px; }
+    .kpi-card { background: linear-gradient(180deg,#fff,#fbfbfb); border-radius:10px; padding:18px 14px; text-align:center; border:1px solid #eee; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
+    .kpi-value { font-size:28px; font-weight:800; color:#222; }
+    .kpi-label { font-size:13px; color:#777; margin-top:6px; }
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap:16px; }
+    .chart { background:#fff; border-radius:10px; padding:18px; border:1px solid #eee; min-height:220px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
+    .chart-title { font-weight:700; margin-bottom:12px; font-size:16px; color:#222; }
+    .chart-body { display:flex; align-items:center; gap:18px; }
+    .pie-container { flex:0 0 54%; display:flex; align-items:center; justify-content:center; }
+    .legend { flex:1; padding-left:10px; }
+    .legend-item { display:flex; align-items:center; gap:10px; font-size:14px; color:#444; margin-bottom:8px; }
+    .legend-dot { width:14px; height:14px; border-radius:50%; display:inline-block; }
+    .lt-chart { display:flex; align-items:flex-end; gap:10px; height:160px; padding:10px 4px; }
+    .lt-bar { width:28px; display:flex; flex-direction:column; align-items:center; }
+    .lt-bar-fill { width:100%; background:linear-gradient(180deg,#4facfe,#36a2f5); border-radius:6px 6px 0 0; transition:height 0.25s; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    .lt-bar-label { font-size:12px; margin-top:8px; color:#555; }
+    .lt-debug { margin-top:10px; font-size:12px; color:#666; background:#fafafa; padding:8px; border-radius:6px; max-height:120px; overflow:auto; display:block; }
 `;
 document.head.appendChild(style);
 
@@ -1861,4 +1906,556 @@ async function removerObservacao(index) {
             implantacaoAtual.resumoOperacional.splice(index, 0, observacaoRemovida);
         }
     }
+}
+
+// =============================================
+// GANTT VIEW
+// =============================================
+
+// ---------- Dashboard / Indicadores ----------
+function obterImplantacoesVisiveis() {
+    const filtroBusca = (document.getElementById('filtro-busca') && document.getElementById('filtro-busca').value || '').toLowerCase();
+    return implantacoes.filter(imp => {
+        if (!projetoDeveAparecerNoAno(imp, anoSelecionado)) return false;
+        if (!filtroBusca) return true;
+        const empresa = (imp.empresa || '').toLowerCase();
+        const projeto = (imp.projeto || '').toLowerCase();
+        const sistema = (imp.sistema || '').toLowerCase();
+        return empresa.includes(filtroBusca) || projeto.includes(filtroBusca) || sistema.includes(filtroBusca);
+    });
+}
+
+function renderDashboard() {
+    const container = document.getElementById('dashboard');
+    if (!container) return;
+
+    const visiveis = obterImplantacoesVisiveis();
+    console.log('[Dashboard] anoSelecionado:', anoSelecionado, 'implantações visíveis:', visiveis.length);
+
+    // Resumo geral
+    const total = visiveis.length;
+    const concluidos = visiveis.filter(i => temGoLiveConcluido(i)).length;
+    const atrasados = visiveis.filter(i => obterStatusDominante(i) === 'atrasado').length;
+
+    document.getElementById('kpi-total-value').textContent = total;
+    document.getElementById('kpi-concluidos-value').textContent = total > 0 ? Math.round((concluidos / total) * 100) + '%' : '0%';
+    document.getElementById('kpi-atrasados-value').textContent = atrasados;
+
+    // SLA
+    const sla = calcularMetricasSLA(visiveis);
+    document.getElementById('kpi-sla-value').textContent = sla.mediaDias !== null ? `${Math.round(sla.mediaDias)}d` : '-';
+
+    // Mapa de status (pie)
+    renderMapaStatus('chart-status', visiveis);
+
+    // Linha do tempo agregada
+    renderLinhaTempoAgregada('chart-linha-tempo', visiveis);
+}
+
+function calcularMetricasSLA(lista) {
+    // Considerar datas planejadas: Kick Off (inicio) e Go Live (fim) mesmo que não tenham status concluído
+    const withBoth = lista.filter(i => {
+        const k = getDataKickOff(i); // retorna inicio do kick off se existir
+        const g = getDataGoLiveAny(i); // nova função retorna fim do go live se existir (independente do status)
+        return k && g;
+    });
+    if (withBoth.length === 0) return { mediaDias: null, dentroPrazoPct: null };
+    let somaDias = 0;
+    let dentroPrazo = 0;
+    withBoth.forEach(i => {
+        const k = getDataKickOff(i);
+        const g = getDataGoLiveAny(i);
+        if (k && g) {
+            const dias = Math.ceil((g - k) / (1000 * 60 * 60 * 24));
+            somaDias += dias;
+            // considerar concluído quando o Go Live está com status concluído
+            if (temGoLiveConcluido(i)) dentroPrazo += 1;
+        }
+    });
+    const mediaDias = somaDias / withBoth.length;
+    const dentroPrazoPct = Math.round((dentroPrazo / withBoth.length) * 100);
+    return { mediaDias, dentroPrazoPct };
+}
+
+// Retorna a data de término do Go Live mesmo que não esteja marcado como concluído
+function getDataGoLiveAny(implantacao) {
+    if (!implantacao.fases) return null;
+    const goLiveFase = implantacao.fases.find(fase =>
+        fase.nome.toLowerCase().includes('go live') || fase.nome.toLowerCase().includes('golive')
+    );
+    if (goLiveFase && goLiveFase.fim) {
+        return new Date(goLiveFase.fim);
+    }
+    return null;
+}
+
+function renderMapaStatus(containerId, lista) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const counts = { pendente: 0, andamento: 0, atrasado: 0, 'concluido-prazo': 0, 'concluido-fora': 0 };
+    lista.forEach(i => {
+        const s = obterStatusDominante(i) || 'pendente';
+        counts[s] = (counts[s] || 0) + 1;
+    });
+    const entries = Object.entries(counts).filter(([k,v]) => v>0);
+    // montar um SVG de pizza simples
+    const width = 220, height = 220, cx = width/2, cy = height/2, r = Math.min(cx,cy)-6;
+    const total = entries.reduce((s,[,v])=>s+v,0) || 1;
+    let start = -Math.PI/2;
+    const colors = { pendente:'#f39c12', andamento:'#3498db', atrasado:'#e74c3c', 'concluido-prazo':'#27ae60', 'concluido-fora':'#e67e22' };
+    let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img">`;
+    entries.forEach(([k,v])=>{
+        const slice = v/total;
+        const end = start + slice * Math.PI * 2;
+        const large = end - start > Math.PI ? 1 : 0;
+        const x1 = cx + r * Math.cos(start);
+        const y1 = cy + r * Math.sin(start);
+        const x2 = cx + r * Math.cos(end);
+        const y2 = cy + r * Math.sin(end);
+        const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
+        svg += `<path d="${path}" fill="${colors[k]||'#999'}" stroke="#fff" stroke-width="1"></path>`;
+        start = end;
+    });
+    svg += `</svg>`;
+    // legenda
+    let legend = `<div class="chart-legend">`;
+    entries.forEach(([k,v])=>{
+        legend += `<div class="legend-item"><span class="legend-dot" style="background:${colors[k]||'#999'}"></span><span class="legend-label">${getStatusLabel(k)} (${v})</span></div>`;
+    });
+    legend += `</div>`;
+    el.innerHTML = `<div class="chart-title">Mapa de Status</div><div class="chart-body">${svg}${legend}</div>`;
+}
+
+function renderLinhaTempoAgregada(containerId, lista) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const ano = anoSelecionado;
+    const valores = new Array(12).fill(0);
+    console.log('[LinhaTempo] calculando para ano', ano, 'itens:', lista.length);
+    lista.forEach(i => {
+        const statusMeses = obterStatusMesesPorAno(i, ano) || {};
+        console.log('[LinhaTempo] implantacao:', (i.empresa || i.projeto), 'statusMeses keys:', Object.keys(statusMeses || {}));
+        meses.forEach((m, idx)=>{
+            const semanas = statusMeses[m];
+            let ativo = false;
+            if (Array.isArray(semanas)) {
+                activo = semanas.some(s => s && s !== 'sem-dados');
+            } else if (typeof semanas === 'string') {
+                activo = semanas && semanas !== 'sem-dados';
+            } else if (semanas && typeof semanas === 'object') {
+                // object with week keys or counts
+                activo = Object.values(semanas).some(v => v && v !== 'sem-dados');
+            } else if (typeof semanas === 'number') {
+                activo = semanas > 0;
+            }
+            if (activo) valores[idx] += 1;
+        });
+    });
+    // Se todos os valores forem zero, tentar extrair dos períodos das fases (datas planejadas)
+    const somaInicial = valores.reduce((s,v)=>s+v,0);
+    if (somaInicial === 0) {
+        console.log('[LinhaTempo] nenhum mês com status; tentando usar datas das fases como fallback');
+        lista.forEach(i => {
+            // aceitar fases com apenas inicio OU fim, e também fases que cruzem o ano
+            if (!i.fases) return;
+            i.fases.forEach(f => {
+                const temIni = !!f.inicio;
+                const temFim = !!f.fim;
+                if (!temIni && !temFim) return;
+                const ini = temIni ? new Date(f.inicio) : null;
+                const fim = temFim ? new Date(f.fim) : null;
+                console.log('[LinhaTempo] fase:', f.nome, 'inicio:', f.inicio, 'fim:', f.fim);
+                // determinar se a fase toca o ano selecionado
+                const anoIni = ini ? ini.getFullYear() : null;
+                const anoFim = fim ? fim.getFullYear() : null;
+                // se ambos não possuem ano igual ao selecionado, ainda podemos considerar se cruzam
+                const cruza = (anoIni === null || anoIni <= ano) && (anoFim === null || anoFim >= ano);
+                if (!cruza) return;
+                const mesIni = ini && anoIni === ano ? ini.getMonth() : 0;
+                const mesFim = fim && anoFim === ano ? fim.getMonth() : 11;
+                for (let m = mesIni; m <= mesFim; m++) valores[m] += 1;
+            });
+        });
+    }
+
+}
+
+// ---------- /Dashboard ----------
+
+function inicializarToggleVisualizacao() {
+    // Criar botões de alternância de visualização
+    const controls = document.querySelector('.controls');
+    if (!controls) return;
+
+    const toggleContainer = document.createElement('div');
+    toggleContainer.className = 'toggle-visualizacao';
+    toggleContainer.innerHTML = `
+        <button id="btn-view-tabela" class="btn-view active" title="Visualização em tabela">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <rect x="1" y="1" width="4" height="4"/><rect x="6" y="1" width="4" height="4"/><rect x="11" y="1" width="4" height="4"/>
+                <rect x="1" y="6" width="4" height="4"/><rect x="6" y="6" width="4" height="4"/><rect x="11" y="6" width="4" height="4"/>
+                <rect x="1" y="11" width="4" height="4"/><rect x="6" y="11" width="4" height="4"/><rect x="11" y="11" width="4" height="4"/>
+            </svg>
+            Tabela
+        </button>
+        <button id="btn-view-gantt" class="btn-view" title="Visualização Gantt">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <rect x="1" y="2" width="8" height="3" rx="1"/>
+                <rect x="4" y="7" width="10" height="3" rx="1"/>
+                <rect x="2" y="12" width="6" height="3" rx="1"/>
+            </svg>
+            Gantt
+        </button>
+    `;
+    controls.appendChild(toggleContainer);
+
+    // Criar container Gantt (oculto inicialmente)
+    const tabelaContainer = document.querySelector('.tabela-container');
+    const ganttContainer = document.createElement('div');
+    ganttContainer.id = 'gantt-container';
+    ganttContainer.className = 'gantt-container';
+    ganttContainer.style.display = 'none';
+    tabelaContainer.parentNode.insertBefore(ganttContainer, tabelaContainer.nextSibling);
+
+    document.getElementById('btn-view-tabela').addEventListener('click', () => {
+        modoVisualizacao = 'tabela';
+        document.getElementById('btn-view-tabela').classList.add('active');
+        document.getElementById('btn-view-gantt').classList.remove('active');
+        tabelaContainer.style.display = '';
+        ganttContainer.style.display = 'none';
+        carregarPainelProjetos();
+    });
+
+    document.getElementById('btn-view-gantt').addEventListener('click', () => {
+        modoVisualizacao = 'gantt';
+        document.getElementById('btn-view-gantt').classList.add('active');
+        document.getElementById('btn-view-tabela').classList.remove('active');
+        tabelaContainer.style.display = 'none';
+        ganttContainer.style.display = 'block';
+        console.log('[Gantt] Container visível, chamando renderizarGantt...');
+        renderizarGantt();
+    });
+}
+
+function obterStatusDominante(implantacao) {
+    if (!implantacao.fases || implantacao.fases.length === 0) return implantacao.status || 'pendente';
+    if (temGoLiveConcluido(implantacao)) return 'concluido-prazo';
+    const hasAtrasado = implantacao.fases.some(f => f.status === 'atrasado');
+    if (hasAtrasado) return 'atrasado';
+    const hasAndamento = implantacao.fases.some(f => f.status === 'andamento');
+    if (hasAndamento) return 'andamento';
+    const hasConcluido = implantacao.fases.some(f => f.status === 'concluido-prazo' || f.status === 'concluido-fora');
+    if (hasConcluido) return 'andamento';
+    return 'pendente';
+}
+
+function getStatusLabel(status) {
+    const labels = {
+        'pendente': 'Aguardando',
+        'andamento': 'Em andamento',
+        'atrasado': 'Atrasado',
+        'concluido-prazo': 'Concluído dentro do prazo',
+        'concluido-fora': 'Concluído fora do prazo',
+    };
+    return labels[status] || status;
+}
+
+function renderizarGantt() {
+    const ganttContainer = document.getElementById('gantt-container');
+    if (!ganttContainer) {
+        console.error('[Gantt] ERRO: #gantt-container não encontrado no DOM!');
+        return;
+    }
+
+    console.log('[Gantt] Total implantacoes:', implantacoes.length, '| Ano:', anoSelecionado);
+    console.log('[Gantt] Container:', ganttContainer, 'display:', ganttContainer.style.display);
+
+    const filtroBusca = (document.getElementById('filtro-busca') && document.getElementById('filtro-busca').value || '').toLowerCase();
+    function correspondeFiltro(imp) {
+        if (!filtroBusca) return true;
+        const empresa = (imp.empresa || '').toLowerCase();
+        const projeto = (imp.projeto || '').toLowerCase();
+        const sistema = (imp.sistema || '').toLowerCase();
+        return empresa.includes(filtroBusca) || projeto.includes(filtroBusca) || sistema.includes(filtroBusca);
+    }
+
+    const implantacoesFiltradas = implantacoes.filter(imp => projetoDeveAparecerNoAno(imp, anoSelecionado) && correspondeFiltro(imp));
+    console.log('[Gantt] Filtradas para o ano:', implantacoesFiltradas.length);
+    implantacoesFiltradas.forEach(imp => {
+        const fasesComDatas = (imp.fases || []).filter(f => f.inicio && f.fim);
+        console.log('[Gantt] -', imp.empresa, '| fases:', (imp.fases || []).length, '| fases c/ datas:', fasesComDatas.length, '| statusMeses keys:', Object.keys(imp.statusMeses || {}));
+    });
+
+    // Calcular range de datas (meses do ano selecionado)
+    const dataInicio = new Date(anoSelecionado, 0, 1);
+    const dataFim = new Date(anoSelecionado, 11, 31);
+    const totalDias = Math.ceil((dataFim - dataInicio) / (1000 * 60 * 60 * 24)) + 1;
+
+    // Construir HTML do Gantt
+    let html = `
+        <div class="gantt-wrapper">
+            <div class="gantt-header-row">
+                <div class="gantt-label-col">Projeto</div>
+                <div class="gantt-chart-col">
+                    <div class="gantt-months-header">
+                        ${nomesMeses.map((m, i) => {
+                            const diasNoMes = new Date(anoSelecionado, i + 1, 0).getDate();
+                            const pct = (diasNoMes / totalDias * 100).toFixed(3);
+                            return `<div class="gantt-month-label" style="width:${pct}%">${m}</div>`;
+                        }).join('')}
+                    </div>
+                    <div class="gantt-today-marker" id="gantt-today-marker"></div>
+                </div>
+            </div>
+            <div class="gantt-rows">
+    `;
+
+    if (implantacoesFiltradas.length === 0) {
+        html += `<div class="gantt-empty">Nenhuma implantação encontrada para ${anoSelecionado}</div>`;
+    }
+
+    implantacoesFiltradas.forEach(imp => {
+        const statusDom = obterStatusDominante(imp);
+        const progresso = temGoLiveConcluido(imp) ? 100 : (imp.progresso || 0);
+        const rowMinHeight = 52;
+        const barHeight = 26;
+        const topPx = (rowMinHeight - barHeight) / 2;
+
+        html += `
+            <div class="gantt-row" data-id="${imp.id}" style="min-height:${rowMinHeight}px;">
+                <div class="gantt-label-col" style="min-height:${rowMinHeight}px;">
+                    <div class="gantt-label-empresa">${imp.empresa}</div>
+                    <div class="gantt-label-meta">${imp.projeto} · ${imp.sistema}</div>
+                    <div class="gantt-label-progress">
+                        <div class="gantt-progress-mini" style="width:${progresso}%" title="${progresso}%"></div>
+                    </div>
+                </div>
+                <div class="gantt-chart-col gantt-bars-area" style="position:relative;min-height:${rowMinHeight}px;">
+        `;
+
+        // Calcular range do projeto: início da 1ª fase até fim da última fase
+        const fasesComDatas = (imp.fases || []).filter(f => f.inicio && f.fim);
+        let barLeft = null, barRight = null;
+
+        // CAMADA 1: fases com datas explícitas
+        if (fasesComDatas.length > 0) {
+            fasesComDatas.forEach(f => {
+                const ini = new Date(f.inicio);
+                const fim = new Date(f.fim);
+                if (!barLeft || ini < barLeft) barLeft = ini;
+                if (!barRight || fim > barRight) barRight = fim;
+            });
+        }
+
+        // CAMADA 2: statusMeses via obterStatusMesesPorAno
+        if (!barLeft) {
+            const statusMesesAno = obterStatusMesesPorAno(imp, anoSelecionado);
+            let primeiroMes = -1, ultimoMes = -1;
+            meses.forEach((m, i) => {
+                const semanas = statusMesesAno[m] || [];
+                if (semanas.some(s => s && s !== 'sem-dados')) {
+                    if (primeiroMes === -1) primeiroMes = i;
+                    ultimoMes = i;
+                }
+            });
+            if (primeiroMes >= 0) {
+                barLeft = new Date(anoSelecionado, primeiroMes, 1);
+                barRight = new Date(anoSelecionado, ultimoMes + 1, 0);
+            }
+        }
+
+        // CAMADA 3: statusMeses formato antigo (chaves diretas de mês)
+        if (!barLeft && imp.statusMeses) {
+            let primeiroMes = -1, ultimoMes = -1;
+            meses.forEach((m, i) => {
+                const semanas = imp.statusMeses[m] || [];
+                if (Array.isArray(semanas) && semanas.some(s => s && s !== 'sem-dados')) {
+                    if (primeiroMes === -1) primeiroMes = i;
+                    ultimoMes = i;
+                }
+            });
+            if (primeiroMes >= 0) {
+                barLeft = new Date(anoSelecionado, primeiroMes, 1);
+                barRight = new Date(anoSelecionado, ultimoMes + 1, 0);
+            }
+        }
+
+        // CAMADA 4: statusMeses com chave do ano (ex: { 2025: { janeiro: [...] } })
+        if (!barLeft && imp.statusMeses && imp.statusMeses[anoSelecionado]) {
+            const sm = imp.statusMeses[anoSelecionado];
+            let primeiroMes = -1, ultimoMes = -1;
+            meses.forEach((m, i) => {
+                const semanas = sm[m] || [];
+                if (Array.isArray(semanas) && semanas.some(s => s && s !== 'sem-dados')) {
+                    if (primeiroMes === -1) primeiroMes = i;
+                    ultimoMes = i;
+                }
+            });
+            if (primeiroMes >= 0) {
+                barLeft = new Date(anoSelecionado, primeiroMes, 1);
+                barRight = new Date(anoSelecionado, ultimoMes + 1, 0);
+            }
+        }
+
+        // CAMADA 5: fases sem data mas com previsto > 0 — estimar posição pelo progresso
+        if (!barLeft && imp.fases && imp.fases.length > 0) {
+            // Nenhuma data disponível: mostrar barra ocupando o ano inteiro com cor do status
+            barLeft = dataInicio;
+            barRight = dataFim;
+        }
+
+        console.log('[Gantt Bar]', imp.empresa, '| barLeft:', barLeft, '| barRight:', barRight,
+            '| fases c/ data:', fasesComDatas.length,
+            '| statusMeses keys:', imp.statusMeses ? Object.keys(imp.statusMeses).slice(0,3) : 'null');
+
+        if (barLeft && barRight) {
+            // Clampar ao ano selecionado
+            const clampIni = barLeft < dataInicio ? dataInicio : barLeft;
+            const clampFim = barRight > dataFim ? dataFim : barRight;
+
+            if (clampIni <= dataFim && clampFim >= dataInicio) {
+                const offsetDias = Math.floor((clampIni - dataInicio) / (1000 * 60 * 60 * 24));
+                const duracaoDias = Math.ceil((clampFim - clampIni) / (1000 * 60 * 60 * 24)) + 1;
+                const left = (offsetDias / totalDias * 100).toFixed(3);
+                const width = Math.max(duracaoDias / totalDias * 100, 0.8).toFixed(3);
+
+                const fmtDate = d => d.toLocaleDateString('pt-BR');
+                const barTitle = `${imp.empresa} | ${getStatusLabel(statusDom)} | ${fmtDate(barLeft)} → ${fmtDate(barRight)} | ${progresso}%`;
+
+                // Barra com preenchimento de progresso interno
+                const progressWidth = Math.min(progresso, 100);
+                html += `
+                    <div class="gantt-bar gantt-bar-${statusDom} gantt-bar-single"
+                         style="left:${left}%;width:${width}%;top:${topPx}px;height:${barHeight}px;transform:none;"
+                         title="${barTitle}">
+                        <div class="gantt-bar-progress" style="width:${progressWidth}%"></div>
+                        <span class="gantt-bar-label">${imp.empresa}</span>
+                    </div>
+                `;
+            }
+        } else {
+            // Sem dados: barra fantasma
+            html += `
+                <div class="gantt-bar gantt-bar-semDados gantt-bar-single"
+                     style="left:2%;width:96%;top:${topPx}px;height:${barHeight}px;transform:none;"
+                     title="Sem dados de período">
+                    <span class="gantt-bar-label" style="opacity:0.5">${imp.empresa}</span>
+                </div>
+            `;
+        }
+
+        html += `
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div></div>`;
+    ganttContainer.innerHTML = html;
+
+    // Posicionar marcador de hoje
+    const hoje = new Date();
+    if (hoje.getFullYear() === anoSelecionado) {
+        const diasPassados = Math.floor((hoje - dataInicio) / (1000 * 60 * 60 * 24));
+        const pct = (diasPassados / totalDias * 100).toFixed(3);
+        const marker = document.getElementById('gantt-today-marker');
+        if (marker) {
+            marker.style.left = pct + '%';
+            marker.style.display = 'block';
+        }
+    }
+
+    // Event listeners para tooltip e clique
+    // Tooltip global único (fora do scroll container)
+    let globalTooltip = document.getElementById('gantt-global-tooltip');
+    if (!globalTooltip) {
+        globalTooltip = document.createElement('div');
+        globalTooltip.id = 'gantt-global-tooltip';
+        globalTooltip.className = 'gantt-tooltip';
+        document.body.appendChild(globalTooltip);
+    }
+
+    ganttContainer.querySelectorAll('.gantt-row').forEach(row => {
+        const id = parseInt(row.dataset.id);
+        const imp = implantacoes.find(i => i.id == id);
+        if (!imp) return;
+
+        const statusDomRow = obterStatusDominante(imp);
+        const progressoRow = temGoLiveConcluido(imp) ? 100 : (imp.progresso || 0);
+        const tooltipHTML = buildTooltipData(imp, statusDomRow, progressoRow);
+
+        row.addEventListener('mouseenter', () => {
+            globalTooltip.innerHTML = tooltipHTML;
+            globalTooltip.classList.add('visible');
+        });
+        row.addEventListener('mouseleave', () => {
+            globalTooltip.classList.remove('visible');
+        });
+        row.addEventListener('mousemove', (e) => {
+            const ttW = 320;
+            const ttH = globalTooltip.offsetHeight || 280;
+            let x = e.clientX + 18;
+            let y = e.clientY + 12;
+
+            if (x + ttW > window.innerWidth - 10) x = e.clientX - ttW - 18;
+            if (y + ttH > window.innerHeight - 10) y = e.clientY - ttH - 12;
+            if (y < 10) y = 10;
+            if (x < 10) x = 10;
+
+            globalTooltip.style.left = x + 'px';
+            globalTooltip.style.top = y + 'px';
+        });
+    });
+
+    // Esconder tooltip ao sair do container inteiro
+    ganttContainer.addEventListener('mouseleave', () => {
+        globalTooltip.classList.remove('visible');
+    });
+
+    // Clique nas rows
+    ganttContainer.querySelectorAll('.gantt-row').forEach(row => {
+        const id = parseInt(row.dataset.id);
+        const imp = implantacoes.find(i => i.id == id);
+        if (imp) {
+            row.addEventListener('click', () => exibirStatusImplantacao(imp));
+        }
+    });
+}
+
+function buildTooltipData(imp, statusDom, progresso) {
+    const statusLabel = getStatusLabel(statusDom);
+    const statusColor = {
+        'pendente': '#f39c12',
+        'andamento': '#3498db',
+        'atrasado': '#e74c3c',
+        'concluido-prazo': '#27ae60',
+        'concluido-fora': '#e67e22',
+    }[statusDom] || '#999';
+
+    const kickOff = getDataKickOff(imp);
+    const goLive = getDataGoLive(imp);
+    const fmtDate = d => d ? d.toLocaleDateString('pt-BR') : '-';
+
+    const fasesHtml = (imp.fases || []).slice(0, 6).map(f => {
+        const cor = {
+            'pendente': '#f39c12', 'andamento': '#3498db', 'atrasado': '#e74c3c',
+            'concluido-prazo': '#27ae60', 'concluido-fora': '#e67e22'
+        }[f.status] || '#ccc';
+        return `<div class="tt-fase"><span class="tt-fase-dot" style="background:${cor}"></span>${f.nome}</div>`;
+    }).join('');
+
+    return `
+        <div class="tt-header">
+            <strong>${imp.empresa}</strong>
+            <span class="tt-badge" style="background:${statusColor}">${statusLabel}</span>
+        </div>
+        <div class="tt-row"><span>Projeto</span><span>${imp.projeto}</span></div>
+        <div class="tt-row"><span>Sistema</span><span>${imp.sistema}</span></div>
+        <div class="tt-row"><span>Gestor</span><span>${imp.gestor || '-'}</span></div>
+        <div class="tt-row"><span>Especialista</span><span>${imp.especialista || '-'}</span></div>
+        <div class="tt-row"><span>Progresso</span><span>${progresso}%</span></div>
+        <div class="tt-row"><span>Kick Off</span><span>${fmtDate(kickOff)}</span></div>
+        <div class="tt-row"><span>Go Live</span><span>${fmtDate(goLive)}</span></div>
+        ${fasesHtml ? `<div class="tt-fases-title">Fases</div>${fasesHtml}` : ''}
+    `;
 }

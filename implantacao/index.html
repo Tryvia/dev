@@ -10,14 +10,14 @@
 
     <!-- Script de controle de acesso -->
     <script>
-        (function () {
+         (function() {
             // Verificar se o usuário veio da página Portal.html
             const referrerPermitido = '/Portal.html';  
             const paginaLogin = `../login/index.html`;  
-
+            
             // Obter o referrer atual
             const referrerAtual = document.referrer;
-
+            
             // Verificar se o referrer está vazio (acesso direto) ou não é o permitido
             if (!referrerAtual || !referrerAtual.includes(referrerPermitido)) {
                 // Verificar se não estamos já na página de login para evitar loop infinito
@@ -27,6 +27,7 @@
                 }
             }
         })();
+
 
         function configurarEventListeners() {
     // Botão voltar para o portal
@@ -43,16 +44,43 @@
     <!-- Tela Principal: Painel de Projetos -->
     <div id="painel-projetos" class="container">
         <header class="header">
-            <h1>Painel de Projetos - Implantação</h1>
+            <h1>Painel de Implantações</h1>
             <div class="logo">
-                <span class="logo-text">TRYVIA</span>
-                <span class="logo-subtitle">SUA FROTA MAIS INTELIGENTE</span>
             </div>
         </header>
+
+        <!-- Dashboard com KPIs e gráficos -->
+        <div id="dashboard" class="dashboard">
+            <div class="kpis">
+                <div class="kpi-card" id="kpi-total">
+                    <div class="kpi-value" id="kpi-total-value">0</div>
+                    <div class="kpi-label">Total de Implantações</div>
+                </div>
+                <div class="kpi-card" id="kpi-concluidos">
+                    <div class="kpi-value" id="kpi-concluidos-value">0%</div>
+                    <div class="kpi-label">Concluídos</div>
+                </div>
+                <div class="kpi-card" id="kpi-atrasados">
+                    <div class="kpi-value" id="kpi-atrasados-value">0</div>
+                    <div class="kpi-label">Projetos Atrasados</div>
+                </div>
+                <div class="kpi-card" id="kpi-sla">
+                    <div class="kpi-value" id="kpi-sla-value">-</div>
+                    <div class="kpi-label">SLA (média dias)</div>
+                </div>
+            </div>
+
+            <div class="charts">
+                <div class="chart" id="chart-status" aria-label="Mapa de status"></div>
+                <div class="chart" id="chart-linha-tempo" aria-label="Linha do tempo agregada"></div>
+            </div>
+        </div>
 
         <div class="controls">
             <button id="btn-voltar-portal" class="btn-voltar-portal">Voltar para o portal</button>
             <button id="btn-adicionar" class="btn-adicionar">+ Adicionar Nova Implantação</button>
+            <div class="view-toggle">
+            </div>
             <input type="text" id="filtro-busca" placeholder="Buscar por empresa, projeto ou sistema..."
                 class="filtro-busca">
 
@@ -99,6 +127,11 @@
                     <!-- Dados serão inseridos dinamicamente via JavaScript -->
                 </tbody>
             </table>
+        </div>
+
+        <!-- Container para visualização Gantt -->
+        <div id="gantt-container" class="gantt-container hidden">
+            <!-- Gantt será renderizado via JS -->
         </div>
 
         <div class="legenda">
