@@ -3119,8 +3119,8 @@ async function fetchAndRenderHomologacoes() {
         html += '<div class="homologacao-body">';
         html += '<p><strong>Especialista:</strong> ' + h.especialista + '</p>';
         html += '<p><strong>Sistema:</strong> ' + h.sistema + '</p>';
-        html += '<p><strong>Liberação:</strong> ' + h.data_liberacao + '</p>';
-        html += '<p><strong>Homologação:</strong> ' + (h.data_homologacao || '-') + '</p>';
+        html += '<p><strong>Liberação:</strong> ' + (h.data_liberacao ? new Date(h.data_liberacao + 'T00:00:00').toLocaleDateString('pt-BR') : '-') + '</p>';
+        html += '<p><strong>Homologação:</strong> ' + (h.data_homologacao ? new Date(h.data_homologacao + 'T00:00:00').toLocaleDateString('pt-BR') : '-') + '</p>';
         if (h.arquivos && h.arquivos.length) {
             html += '<p><strong>Arquivos:</strong><br>' +
                 h.arquivos.map((file, i) =>
@@ -3378,10 +3378,10 @@ async function filtrarHomologacoes() {
         let matchEspecialista = !especialistaFiltro || h.especialista.toLowerCase().includes(especialistaFiltro);
         let matchData = true;
         if (dataInicio) {
-            matchData = matchData && h.data_liberacao >= dataInicio;
+            matchData = matchData && h.data_homologacao >= dataInicio;
         }
         if (dataFim) {
-            matchData = matchData && h.data_liberacao <= dataFim;
+            matchData = matchData && h.data_homologacao <= dataFim;
         }
         return matchSistema && matchEspecialista && matchData;
     });
@@ -3400,22 +3400,27 @@ async function filtrarHomologacoes() {
             const arquivosData = encodeURIComponent(JSON.stringify(h.arquivos || []));
             let html = '';
             html += '<div class="homologacao-card">';
-            html += '<h4>Versão: ' + h.versao + '</h4>';
+            html += '<div class="homologacao-header"><h4>Versão: ' + h.versao + '</h4></div>';
+            html += '<div class="homologacao-body">';
             html += '<p><strong>Especialista:</strong> ' + h.especialista + '</p>';
             html += '<p><strong>Sistema:</strong> ' + h.sistema + '</p>';
-            html += '<p><strong>Liberação:</strong> ' + h.data_liberacao + '</p>';
-            html += '<p><strong>Homologação:</strong> ' + (h.data_homologacao || '-') + '</p>';
-            html += '<p><strong>Obs:</strong> ' + (h.observacao || '-') + '</p>';
+            html += '<p><strong>Liberação:</strong> ' + (h.data_liberacao ? new Date(h.data_liberacao + 'T00:00:00').toLocaleDateString('pt-BR') : '-') + '</p>';
+            html += '<p><strong>Homologação:</strong> ' + (h.data_homologacao ? new Date(h.data_homologacao + 'T00:00:00').toLocaleDateString('pt-BR') : '-') + '</p>';
             if (h.arquivos && h.arquivos.length) {
                 html += '<p><strong>Arquivos:</strong><br>' +
                     h.arquivos.map((file, i) =>
-                        `<span>📄 ${file.nome}</span>`
+                        `<a href="${file.url}" target="_blank" style="color: #007bff; text-decoration: none;">📄 ${file.nome}</a>`
                     ).join('<br>') +
                     '</p>';
-                html += `<button class="btn-exportar" data-arquivos="${arquivosData}" onclick="baixarArquivosHomologacaoFromButton(this)">📥 Baixar Todos</button>`;
             }
-            html += `<button class="btn-editar-homologacao" style="background-color: var(--accent-color); margin-right: 10px;" onclick="editHomologacaoFromButton(this, ${h.id})">✏️ Editar</button>`;
-            html += `<button class="btn-exportar" style="background-color: var(--error-color); margin-right: 10px;" data-arquivos="${arquivosData}" onclick="deleteHomologacaoFromButton(this, ${h.id})">🗑️ Excluir</button>`;
+            html += '</div>';
+            html += '<div class="homologacao-footer">';
+            if (h.arquivos && h.arquivos.length) {
+                html += `<button class="btn btn-primary" data-arquivos="${arquivosData}" onclick="baixarArquivosHomologacaoFromButton(this)"> Baixar Todos</button>`;
+            }
+            html += `<button class="btn btn-success" onclick="editHomologacaoFromButton(this, ${h.id})"> Editar</button>`;
+            html += `<button class="btn btn-danger" data-arquivos="${arquivosData}" onclick="deleteHomologacaoFromButton(this, ${h.id})"> Excluir</button>`;
+            html += '</div>';
             html += '</div>';
             return html;
         }).join('');
