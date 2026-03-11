@@ -1,6 +1,9 @@
 // ===== CONFIG =====
-const SUPABASE_URL = 'https://lrtjdsyfsvaiulgbbprc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxydGpkc3lmc3ZhaXVsZ2JicHJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjUwNjEsImV4cCI6MjA4NjMwMTA2MX0.bJvSsc_Ho7wtSs-erOi15_MZa8TBfcH5k4TQkJViECA';
+const SUPABASE_URL = 'https://mzjdmhgkrroajmsfwryu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amRtaGdrcnJvYWptc2Z3cnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMzMwMzUsImV4cCI6MjA2MzgwOTAzNX0.tQCwUfFCV7sD-IexQviU0XEPcbn9j5uK9NSUbH-OeBc';
+
+const FRESHDESK_DOMAIN = 'https://suportetryvia.freshdesk.com';
+const FRESHDESK_API_KEY = 'lY550ILhbZ0qXXi3JPCj';
 
 const DAY_WIDTH = 40;
 const ROW_HEIGHT = 40;
@@ -37,18 +40,58 @@ const SISTEMA_COLORS = {
   'eTrip': '#0840a2'
 };
 
+const FRESHDESK_STATUS_MAP = {
+  2: 'Aberto',
+  3: 'Pendente',
+  4: 'Resolvido',
+  5: 'Fechado',
+};
+
 // ===== STATE =====
 let allWorkItems = [];
 let filteredItems = [];
 let currentYear = new Date().getFullYear();
-let currentMonth = new Date().getMonth(); // 0-indexed
+let currentMonth = new Date().getMonth();
 let loading = false;
 let lastSync = null;
+let currentModalWorkItemId = null;
+
+// ===== LOCAL STORAGE HELPERS =====
+function getAssociations() {
+  try {
+    return JSON.parse(localStorage.getItem('wi_associations') || '{}');
+  } catch { return {}; }
+}
+
+function saveAssociations(data) {
+  localStorage.setItem('wi_associations', JSON.stringify(data));
+}
+
+function getWorkItemData(wiId) {
+  const assoc = getAssociations();
+  return assoc[wiId] || { ticketId: null, annotations: [] };
+}
+
+function setWorkItemData(wiId, data) {
+  const assoc = getAssociations();
+  assoc[wiId] = data;
+  saveAssociations(assoc);
+}
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   updateMonthLabel();
   syncWorkItems();
+
+  // Close modal on overlay click
+  document.getElementById('annotationModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeAnnotationModal();
+  });
+
+  // Close modal on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAnnotationModal();
+  });
 });
 
 // ===== SYNC =====
@@ -122,7 +165,7 @@ function populateFilterOptions() {
 
 function fillSelect(id, options, allLabel) {
   const sel = document.getElementById(id);
-  if (!sel) return; // Elemento não existe no HTML
+  if (!sel) return;
   const current = sel.value;
   sel.innerHTML = `<option value="all">${allLabel}</option>`;
   options.forEach(o => {
@@ -197,10 +240,8 @@ function renderStats() {
   let html = `<div class="stat-card"><p class="stat-label">Total de Itens</p><p class="stat-value">${filteredItems.length}</p></div>`;
   Object.entries(states).forEach(([state, count]) => {
     const cls = STATE_CARD_CLASSES[state] || '';
-    //html += `<div class="stat-card ${cls}"><p class="stat-label">${state}</p><p class="stat-value">${count}</p></div>`;
   });
 
-  // Board columns stats
   if (Object.keys(columns).length > 0) {
     html += `<div class="stat-section-label">Por Coluna</div>`;
     Object.entries(columns).sort((a, b) => b[1] - a[1]).forEach(([col, count]) => {
@@ -239,8 +280,12 @@ function renderGantt() {
   html += `<div class="gantt-labels">`;
   html += `<div class="gantt-labels-header">Work Item</div>`;
   filteredItems.forEach(wi => {
+    const wiData = getWorkItemData(wi.id);
     const colBadge = wi.boardColumn ? `<span class="board-column-badge">${escapeHtml(wi.boardColumn)}</span>` : '';
-    html += `<div class="gantt-label-row"><span class="wi-id">#${wi.id}</span><span class="wi-title">${escapeHtml(wi.title)}</span>${colBadge}</div>`;
+    const ticketBadge = wiData.ticketId ? `<span class="ticket-badge">T#${wiData.ticketId}</span>` : '';
+    const annotCount = wiData.annotations ? wiData.annotations.length : 0;
+    const annotBadge = annotCount > 0 ? `<span class="annotation-count-badge">${annotCount} nota${annotCount > 1 ? 's' : ''}</span>` : '';
+    html += `<div class="gantt-label-row" onclick="openAnnotationModal(${wi.id})" style="cursor:pointer;"><span class="wi-id">#${wi.id}</span><span class="wi-title">${escapeHtml(wi.title)}</span>${colBadge}${ticketBadge}${annotBadge}</div>`;
   });
   html += `</div>`;
 
@@ -249,13 +294,9 @@ function renderGantt() {
 
   // Header
   html += `<div class="gantt-header">`;
-  // Weeks
   html += `<div class="gantt-weeks-row">`;
-  weeks.forEach(w => {
-   // html += `<div class="gantt-week-cell" style="width:${w.span * DAY_WIDTH}px">Semana ${w.label}</div>`;
-  });
+  weeks.forEach(w => {});
   html += `</div>`;
-  // Days
   html += `<div class="gantt-days-row">`;
   days.forEach(d => {
     const today = isToday(d) ? ' today' : '';
@@ -277,7 +318,6 @@ function renderGantt() {
     const duration = diffDays(visibleEnd, visibleStart) + 1;
 
     html += `<div class="gantt-row">`;
-    // Grid cells
     html += `<div class="gantt-grid-cells">`;
     days.forEach(d => {
       const today = isToday(d) ? ' today' : '';
@@ -286,15 +326,14 @@ function renderGantt() {
     });
     html += `</div>`;
 
-    // Bar
     const bgColor = SISTEMA_COLORS[wi.sistema] || '#4DA6FF';
     const left = startOffset * DAY_WIDTH + 2;
     const width = Math.max(duration * DAY_WIDTH - 4, 8);
     html += `<div class="gantt-bar" style="left:${left}px;width:${width}px;background-color:${bgColor}" `;
+    html += `onclick="openAnnotationModal(${wi.id})" `;
     html += `onmouseenter="showTooltip(event, ${wi.id})" onmouseleave="hideTooltip()" onmousemove="moveTooltip(event)">`;
     html += `<span>${escapeHtml(wi.title)}</span></div>`;
 
-    // Today line
     days.forEach((d, i) => {
       if (isToday(d)) {
         html += `<div class="today-line" style="left:${i * DAY_WIDTH + DAY_WIDTH / 2}px"></div>`;
@@ -304,10 +343,271 @@ function renderGantt() {
     html += `</div>`;
   });
 
-  html += `</div></div>`; // close timeline inner + timeline
-  html += `</div>`; // close wrapper
+  html += `</div></div>`;
+  html += `</div>`;
 
   container.innerHTML = html;
+}
+
+// ===== VERIFICAÇÃO DE ACESSO =====
+function isUserFromProductTeam() {
+  // Verificar se o setor é "Produto"
+  const setor = sessionStorage.getItem('setor') || localStorage.getItem('setor') || '';
+  
+  // Comparação exata com o valor "Produto"
+  if (setor === 'Produto') {
+    return true;
+  }
+
+  // Se não é do time de produto, usuário não tem acesso ao modal de anotações
+  return false;
+}
+
+function showAccessDeniedAlert() {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+  
+  const content = document.createElement('div');
+  content.style.cssText = 'background:white;padding:30px;border-radius:10px;text-align:center;max-width:400px;box-shadow:0 4px 20px rgba(0,0,0,0.2);';
+  content.innerHTML = `
+    <h2 style="color:#d32f2f;margin-top:0;">Acesso Negado</h2>
+    <p style="color:#666;font-size:1.05em;margin:15px 0;">Voçê não tem permissão para acessar esta funcionalidade.</p>
+    <p style="color:#999;font-size:0.9em;">Para mais informações, contate o administrador.</p>
+    <button onclick="this.closest('div').remove()" style="background:#4fc3f7;color:white;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;font-size:1em;margin-top:15px;">Fechar</button>
+  `;
+  
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
+}
+
+// ===== ANNOTATION MODAL =====
+function openAnnotationModal(wiId) {
+  // Validação: apenas time de produto pode acessar anotações
+  if (!isUserFromProductTeam()) {
+    showAccessDeniedAlert();
+    return;
+  }
+
+  currentModalWorkItemId = wiId;
+  const wi = allWorkItems.find(w => w.id === wiId) || filteredItems.find(w => w.id === wiId);
+  const modal = document.getElementById('annotationModal');
+
+  document.getElementById('modalTitle').textContent = wi ? `#${wi.id} - ${wi.title}` : `Work Item #${wiId}`;
+  document.getElementById('modalSubtitle').textContent = wi ? `${wi.assignedTo || ''} • ${wi.sistema || ''}` : '';
+
+  // Load existing data
+  const wiData = getWorkItemData(wiId);
+
+  // Ticket
+  const ticketInput = document.getElementById('ticketIdInput');
+  ticketInput.value = '';
+  const ticketInfo = document.getElementById('ticketInfo');
+
+  if (wiData.ticketId) {
+    ticketInfo.style.display = 'block';
+    ticketInfo.innerHTML = '<p style="color:hsl(215,15%,50%);font-size:0.8rem;">Carregando ticket...</p>';
+    fetchTicketInfo(wiData.ticketId);
+  } else {
+    ticketInfo.style.display = 'none';
+  }
+
+  // Annotations
+  document.getElementById('annotationText').value = '';
+  renderAnnotations();
+
+  modal.classList.add('visible');
+}
+
+function closeAnnotationModal() {
+  document.getElementById('annotationModal').classList.remove('visible');
+  currentModalWorkItemId = null;
+}
+
+// ===== FRESHDESK =====
+async function fetchTicketInfo(ticketId) {
+  const ticketInfo = document.getElementById('ticketInfo');
+
+  try {
+    const res = await fetch(`${FRESHDESK_DOMAIN}/api/v2/tickets/${ticketId}`, {
+      headers: {
+        'Authorization': 'Basic ' + btoa(FRESHDESK_API_KEY + ':X'),
+      },
+    });
+
+    if (!res.ok) throw new Error(`Ticket não encontrado (HTTP ${res.status})`);
+
+    const ticket = await res.json();
+    const statusText = FRESHDESK_STATUS_MAP[ticket.status] || `Status ${ticket.status}`;
+
+    ticketInfo.innerHTML = `
+      <p class="ticket-subject">${escapeHtml(ticket.subject || 'Sem assunto')}</p>
+      <p class="ticket-detail">Solicitante: ${escapeHtml(ticket.requester?.name || ticket.requester?.email || 'N/A')}</p>
+      <p class="ticket-detail">Prioridade: ${['', 'Baixa', 'Média', 'Alta', 'Urgente'][ticket.priority] || ticket.priority}</p>
+      <p class="ticket-detail">Criado em: ${formatDate(ticket.created_at)}</p>
+      <span class="ticket-status-badge">${statusText}</span>
+      <br/>
+      <button class="btn-remove-ticket" onclick="removeTicketAssociation()">Remover associação</button>
+    `;
+    ticketInfo.style.display = 'block';
+  } catch (err) {
+    ticketInfo.innerHTML = `<p style="color:hsl(0,72%,51%);font-size:0.8rem;">Erro: ${escapeHtml(err.message)}</p>
+      <button class="btn-remove-ticket" onclick="removeTicketAssociation()">Remover associação</button>`;
+    ticketInfo.style.display = 'block';
+  }
+}
+
+function associateTicket() {
+  if (!currentModalWorkItemId) return;
+  const ticketId = document.getElementById('ticketIdInput').value.trim();
+  if (!ticketId) return;
+
+  const wiData = getWorkItemData(currentModalWorkItemId);
+  wiData.ticketId = ticketId;
+  setWorkItemData(currentModalWorkItemId, wiData);
+
+  // Show ticket info
+  const ticketInfo = document.getElementById('ticketInfo');
+  ticketInfo.style.display = 'block';
+  ticketInfo.innerHTML = '<p style="color:hsl(215,15%,50%);font-size:0.8rem;">Carregando ticket...</p>';
+  fetchTicketInfo(ticketId);
+
+  document.getElementById('ticketIdInput').value = '';
+  renderGantt(); // Update badges
+}
+
+function removeTicketAssociation() {
+  if (!currentModalWorkItemId) return;
+  const wiData = getWorkItemData(currentModalWorkItemId);
+  wiData.ticketId = null;
+  setWorkItemData(currentModalWorkItemId, wiData);
+
+  document.getElementById('ticketInfo').style.display = 'none';
+  renderGantt();
+}
+
+// ===== ANNOTATIONS =====
+async function addAnnotation() {
+  if (!currentModalWorkItemId) return;
+  const text = document.getElementById('annotationText').value.trim();
+  if (!text) return;
+
+  const wiData = getWorkItemData(currentModalWorkItemId);
+  if (!wiData.annotations) wiData.annotations = [];
+  
+  const annotation = {
+    id: Date.now(),
+    text: text,
+    date: new Date().toISOString(),
+    sentToAzure: false,
+    sentToFreshdesk: false,
+  };
+
+  // Save locally first
+  wiData.annotations.unshift(annotation);
+  setWorkItemData(currentModalWorkItemId, wiData);
+  document.getElementById('annotationText').value = '';
+  renderAnnotations();
+  renderGantt();
+
+  // Send to Azure DevOps as a comment
+  try {
+    const payload = {
+      action: 'add-comment',
+      workItemId: currentModalWorkItemId,
+      comment: text,
+    };
+   // console.log('📤 Enviando para Azure:', payload);
+    
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/azure-work-items`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    
+    const errorText = await res.text();
+    //console.log(`📥 Resposta Azure [${res.status}]:`, errorText);
+    
+    if (res.ok) {
+      annotation.sentToAzure = true;
+      setWorkItemData(currentModalWorkItemId, wiData);
+      renderAnnotations();
+      //console.log('✅ Comentário enviado para Azure com sucesso');
+    } else {
+    //  console.error(`❌ Erro ao enviar para Azure (${res.status}):`, errorText);
+    }
+  } catch (err) {
+   // console.error('❌ Erro ao enviar comentário para Azure:', err);
+  }
+
+  // Send to Freshdesk ticket as a note (if ticket is associated)
+  if (wiData.ticketId) {
+    try {
+      const res = await fetch(`${FRESHDESK_DOMAIN}/api/v2/tickets/${wiData.ticketId}/notes`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(FRESHDESK_API_KEY + ':X'),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          body: text,
+          private: true,
+        }),
+      });
+      if (res.ok) {
+        annotation.sentToFreshdesk = true;
+        setWorkItemData(currentModalWorkItemId, wiData);
+        renderAnnotations();
+      }
+    } catch (err) {
+      console.error('Erro ao enviar nota para Freshdesk:', err);
+    }
+  }
+}
+
+function deleteAnnotation(annotId) {
+  if (!currentModalWorkItemId) return;
+  const wiData = getWorkItemData(currentModalWorkItemId);
+  wiData.annotations = (wiData.annotations || []).filter(a => a.id !== annotId);
+  setWorkItemData(currentModalWorkItemId, wiData);
+  renderAnnotations();
+  renderGantt();
+}
+
+function renderAnnotations() {
+  const list = document.getElementById('annotationsList');
+  if (!currentModalWorkItemId) { list.innerHTML = ''; return; }
+
+  const wiData = getWorkItemData(currentModalWorkItemId);
+  const annotations = wiData.annotations || [];
+
+  if (annotations.length === 0) {
+    list.innerHTML = '<p class="annotations-empty">Nenhuma anotação ainda.</p>';
+    return;
+  }
+
+  list.innerHTML = annotations.map(a => {
+    const azureBadge = a.sentToAzure ? '<span class="badge-sent azure">Azure ✓</span>' : '<span class="badge-sent pending">Azure ✗</span>';
+    const freshdeskBadge = a.sentToFreshdesk ? '<span class="badge-sent freshdesk">Freshdesk ✓</span>' : '';
+    return `
+    <div class="annotation-item">
+      <p class="annotation-date">${formatDateTime(a.date)} ${azureBadge} ${freshdeskBadge}</p>
+      <p class="annotation-text">${escapeHtml(a.text)}</p>
+      <button class="btn-delete-annotation" onclick="deleteAnnotation(${a.id})">✕</button>
+    </div>
+  `}).join('');
+}
+
+function formatDateTime(dateStr) {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 // ===== TOOLTIP =====
@@ -316,7 +616,6 @@ function showTooltip(event, id) {
   if (!wi) return;
   const tip = document.getElementById('tooltip');
   let html = `<p class="tooltip-title">#${wi.id} - ${escapeHtml(wi.title)}</p>`;
-  //html += `<p>Status: ${wi.state}</p>`;
   if (wi.boardColumn) html += `<p>Coluna: ${wi.boardColumn}</p>`;
   html += `<p>Responsável: ${wi.assignedTo}</p>`;
   html += `<p>Início: ${formatDate(wi.startDate)}</p>`;
@@ -324,6 +623,13 @@ function showTooltip(event, id) {
   if (wi.empresa) html += `<p>Empresa: ${wi.empresa}</p>`;
   if (wi.sistema) html += `<p>Sistema: ${wi.sistema}</p>`;
   if (wi.tags) html += `<p>Tags: ${wi.tags}</p>`;
+
+  // Show association info
+  const wiData = getWorkItemData(wi.id);
+  if (wiData.ticketId) html += `<p>🎫 Ticket: #${wiData.ticketId}</p>`;
+  const annotCount = (wiData.annotations || []).length;
+  if (annotCount > 0) html += `<p>📝 ${annotCount} anotação(ões)</p>`;
+
   tip.innerHTML = html;
   tip.classList.add('visible');
   moveTooltip(event);
@@ -333,38 +639,23 @@ function moveTooltip(event) {
   const tip = document.getElementById('tooltip');
   if (!tip) return;
   const padding = 8;
-  // Inicial posição ao lado do cursor
   let left = event.clientX + 12;
   let top = event.clientY - 10;
 
-  // Forçar exibição para medir tamanho (se ainda estiver escondido)
   const wasVisible = tip.classList.contains('visible');
-  if (!wasVisible) {
-    tip.style.display = 'block';
-  }
+  if (!wasVisible) tip.style.display = 'block';
 
   const tipW = tip.offsetWidth || 220;
   const tipH = tip.offsetHeight || 120;
 
-  // Ajustar horizontalmente se sair da tela
-  if (left + tipW + padding > window.innerWidth) {
-    left = window.innerWidth - tipW - padding;
-  }
-
-  // Ajustar verticalmente: preferir abaixo do cursor, caso não caiba colocar acima
-  if (top + tipH + padding > window.innerHeight) {
-    // colocar acima do cursor
-    top = event.clientY - tipH - 12;
-  }
+  if (left + tipW + padding > window.innerWidth) left = window.innerWidth - tipW - padding;
+  if (top + tipH + padding > window.innerHeight) top = event.clientY - tipH - 12;
   if (top < padding) top = padding;
 
   tip.style.left = left + 'px';
   tip.style.top = top + 'px';
 
-  if (!wasVisible) {
-    // restaurar estado: visible class gerencia display
-    tip.style.display = '';
-  }
+  if (!wasVisible) tip.style.display = '';
 }
 
 function hideTooltip() {
@@ -433,20 +724,21 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-     (function() {
-             // Verificar se o usuário veio da página Portal.html
+        (function() {
+            // Verificar se o usuário veio da página Portal.html
             const referrerPermitido = '/Portal.html';  
-            const paginaLogin = `/login/index.html`;  
+            const paginaLogin = `../login/index.html`;   
             
-             // Obter o referrer atual
-             const referrerAtual = document.referrer;
+            // Obter o referrer atual
+            const referrerAtual = document.referrer;
             
-             // Verificar se o referrer está vazio (acesso direto) ou não é o permitido
-             if (!referrerAtual || !referrerAtual.includes(referrerPermitido)) {
-                 // Verificar se não estamos já na página de login para evitar loop infinito
-                 if (!window.location.pathname.endsWith(paginaLogin)) {
-                   // Redirecionar para a página de login dentro do subdiretório `/dev`
-                  window.location.replace(paginaLogin);
-                 }
-             }
-         })();
+            // Verificar se o referrer está vazio (acesso direto) ou não é o permitido
+            if (!referrerAtual || !referrerAtual.includes(referrerPermitido)) {
+                // Verificar se não estamos já na página de login para evitar loop infinito
+                if (window.location.href !== paginaLogin) {
+                    // Redirecionar para a página de login
+                    window.location.replace(paginaLogin);
+                }
+            }
+        })();
+

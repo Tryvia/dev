@@ -110,6 +110,41 @@
   <!-- Tooltip -->
   <div class="gantt-tooltip" id="tooltip"></div>
 
+  <!-- Annotation Modal -->
+  <div class="modal-overlay" id="annotationModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h2 id="modalTitle">Work Item</h2>
+          <p class="modal-subtitle" id="modalSubtitle"></p>
+        </div>
+        <button class="modal-close" onclick="closeAnnotationModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Ticket Association -->
+        <div class="modal-section">
+          <h3>Ticket Freshdesk</h3>
+          <div class="ticket-input-row">
+            <input type="text" id="ticketIdInput" placeholder="ID do ticket (ex: 12345)" />
+            <button class="btn-sync" onclick="associateTicket()">Associar</button>
+          </div>
+          <div id="ticketInfo" class="ticket-info" style="display:none;"></div>
+        </div>
+
+        <!-- Annotations -->
+        <div class="modal-section">
+          <h3>Anotações</h3>
+          <div class="annotation-input-row">
+            <textarea id="annotationText" placeholder="Escreva uma anotação..." rows="3"></textarea>
+            <button class="btn-sync" onclick="addAnnotation()">Adicionar</button>
+          </div>
+          <div id="annotationsList" class="annotations-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

@@ -298,8 +298,6 @@ body {
   border-radius: 12px;
   border: 1px solid hsl(214, 20%, 90%);
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  /* Permite que barras/overlays e tooltips apareçam fora do contêiner
-     e evita recorte quando houver muitos itens ou overlays grandes. */
   overflow: visible;
 }
 
@@ -487,7 +485,6 @@ body {
 .gantt-tooltip {
   display: none;
   position: fixed;
-  /* Elevar z-index para garantir que o tooltip apareça sobre outros elementos */
   z-index: 100000;
   background: hsl(215, 35%, 15%);
   color: #fff;
@@ -540,4 +537,275 @@ body {
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   color: hsl(215, 15%, 50%);
   font-size: 1.125rem;
+}
+
+/* ===== ANNOTATION MODAL ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 200000;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay.visible {
+  display: flex;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.25s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid hsl(214, 20%, 90%);
+  background: hsl(215, 35%, 15%);
+  border-radius: 16px 16px 0 0;
+  color: #fff;
+}
+
+.modal-header h2 {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.modal-subtitle {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.modal-close:hover { opacity: 1; }
+
+.modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.modal-section h3 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(187, 100%, 42%);
+  margin-bottom: 12px;
+}
+
+.ticket-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ticket-input-row input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid hsl(214, 20%, 90%);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.ticket-input-row input:focus {
+  border-color: hsl(187, 100%, 42%);
+  box-shadow: 0 0 0 2px hsla(187, 100%, 42%, 0.15);
+}
+
+.ticket-info {
+  margin-top: 12px;
+  background: hsl(210, 20%, 97%);
+  border: 1px solid hsl(214, 20%, 90%);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.ticket-info .ticket-subject {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.ticket-info .ticket-detail {
+  font-size: 0.75rem;
+  color: hsl(215, 15%, 50%);
+  margin: 2px 0;
+}
+
+.ticket-info .ticket-status-badge {
+  display: inline-block;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: hsl(187, 100%, 42%);
+  color: #fff;
+  margin-top: 6px;
+}
+
+.ticket-info .btn-remove-ticket {
+  background: none;
+  border: none;
+  color: hsl(0, 72%, 51%);
+  font-size: 0.75rem;
+  cursor: pointer;
+  margin-top: 8px;
+  text-decoration: underline;
+}
+
+.ticket-info .btn-remove-ticket:hover { opacity: 0.7; }
+
+.annotation-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.annotation-input-row textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid hsl(214, 20%, 90%);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.annotation-input-row textarea:focus {
+  border-color: hsl(187, 100%, 42%);
+  box-shadow: 0 0 0 2px hsla(187, 100%, 42%, 0.15);
+}
+
+.annotation-input-row .btn-sync {
+  align-self: flex-end;
+}
+
+.annotations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.annotation-item {
+  background: hsl(210, 20%, 97%);
+  border: 1px solid hsl(214, 20%, 90%);
+  border-radius: 8px;
+  padding: 10px 14px;
+  position: relative;
+}
+
+.annotation-item .annotation-date {
+  font-size: 0.625rem;
+  color: hsl(215, 15%, 50%);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.annotation-item .annotation-text {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.annotation-item .btn-delete-annotation {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: hsl(0, 72%, 51%);
+  cursor: pointer;
+  font-size: 0.75rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.annotation-item:hover .btn-delete-annotation { opacity: 1; }
+
+.annotations-empty {
+  font-size: 0.8125rem;
+  color: hsl(215, 15%, 50%);
+  text-align: center;
+  padding: 16px;
+}
+
+/* Ticket badge on gantt label */
+.ticket-badge {
+  font-size: 0.5625rem;
+  background: hsl(25, 95%, 53%);
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 4px;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.annotation-count-badge {
+  font-size: 0.5625rem;
+  background: hsl(187, 100%, 42%);
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 4px;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.badge-sent {
+  font-size: 0.625rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  margin-left: 4px;
+}
+.badge-sent.azure {
+  background: hsl(210, 80%, 45%);
+  color: #fff;
+}
+.badge-sent.freshdesk {
+  background: hsl(145, 60%, 40%);
+  color: #fff;
+}
+.badge-sent.pending {
+  background: hsl(0, 0%, 75%);
+  color: #fff;
 }
