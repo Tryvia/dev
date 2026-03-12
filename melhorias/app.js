@@ -410,6 +410,7 @@ function openAnnotationModal(wiId) {
     ticketInfo.style.display = 'block';
     ticketInfo.innerHTML = '<p style="color:hsl(215,15%,50%);font-size:0.8rem;">Carregando ticket...</p>';
     fetchTicketInfo(wiData.ticketId);
+    fetchTicketComments(wiData.ticketId);
   } else {
     ticketInfo.style.display = 'none';
   }
@@ -431,13 +432,24 @@ async function fetchTicketInfo(ticketId) {
   const ticketInfo = document.getElementById('ticketInfo');
 
   try {
-    const res = await fetch(`${FRESHDESK_DOMAIN}/api/v2/tickets/${ticketId}`, {
+    // Tentar passar por Supabase primeiro
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/freshdesk-proxy`, {
+      method: 'POST',
       headers: {
-        'Authorization': 'Basic ' + btoa(FRESHDESK_API_KEY + ':X'),
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        action: 'get-ticket',
+        ticketId: ticketId,
+      }),
     });
 
-    if (!res.ok) throw new Error(`Ticket não encontrado (HTTP ${res.status})`);
+    if (!res.ok) {
+      console.warn(`Supabase retornou ${res.status}, tentando fallback...`);
+      throw new Error(`HTTP ${res.status}`);
+    }
 
     const ticket = await res.json();
     const statusText = FRESHDESK_STATUS_MAP[ticket.status] || `Status ${ticket.status}`;
@@ -453,8 +465,13 @@ async function fetchTicketInfo(ticketId) {
     `;
     ticketInfo.style.display = 'block';
   } catch (err) {
-    ticketInfo.innerHTML = `<p style="color:hsl(0,72%,51%);font-size:0.8rem;">Erro: ${escapeHtml(err.message)}</p>
-      <button class="btn-remove-ticket" onclick="removeTicketAssociation()">Remover associação</button>`;
+    // Fallback: mostrar apenas que o ticket está associado, sem erro
+    console.warn('Não conseguiu carregar detalhes do ticket, mostrando fallback');
+    ticketInfo.innerHTML = `
+      <p class="ticket-subject">Ticket #${ticketId}</p>
+      <p class="ticket-detail" style="color: #999; font-size: 0.9em;">Detalhes não disponíveis no momento</p>
+      <button class="btn-remove-ticket" onclick="removeTicketAssociation()">Remover associação</button>
+    `;
     ticketInfo.style.display = 'block';
   }
 }
@@ -472,7 +489,12 @@ function associateTicket() {
   const ticketInfo = document.getElementById('ticketInfo');
   ticketInfo.style.display = 'block';
   ticketInfo.innerHTML = '<p style="color:hsl(215,15%,50%);font-size:0.8rem;">Carregando ticket...</p>';
-  fetchTicketInfo(ticketId);
+  
+  // Carregar sequencialmente com delay para evitar rate limit
+  fetchTicketInfo(ticketId).then(() => {
+    // Aguardar 500ms antes de buscar comentários
+    setTimeout(() => fetchTicketComments(ticketId), 500);
+  });
 
   document.getElementById('ticketIdInput').value = '';
   renderGantt(); // Update badges
@@ -482,10 +504,73 @@ function removeTicketAssociation() {
   if (!currentModalWorkItemId) return;
   const wiData = getWorkItemData(currentModalWorkItemId);
   wiData.ticketId = null;
+  wiData.freshdeskComments = [];
   setWorkItemData(currentModalWorkItemId, wiData);
 
   document.getElementById('ticketInfo').style.display = 'none';
+  renderAnnotations();
   renderGantt();
+}
+
+// Buscar comentários do ticket no Freshdesk
+async function fetchTicketComments(ticketId) {
+  if (!currentModalWorkItemId) return;
+  
+  console.log(`🔍 Buscando comentários do ticket ${ticketId}...`);
+  
+  try {
+    // Fazer a requisição via Supabase para evitar CORS e proteger a API key
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/freshdesk-proxy`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'get-conversations',
+        ticketId: ticketId,
+      }),
+    });
+
+    console.log('Status:', res.status);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('Erro na resposta:', errorText);
+      throw new Error(`Erro ao buscar comentários (HTTP ${res.status})`);
+    }
+
+    const data = await res.json();
+    console.log('Dados recebidos:', data);
+    
+    // A API retorna um Array diretamente, não dentro de 'results'
+    const conversationsArray = Array.isArray(data) ? data : (data.results || data.conversations || []);
+    console.log('Conversas encontradas:', conversationsArray.length);
+
+    const comments = conversationsArray.map((conv, index) => ({
+      id: conv.id || index,
+      body: conv.body_text || conv.body || '',  // Use body_text primeiro (texto limpo)
+      createdAt: conv.created_at || new Date().toISOString(),
+      author: conv.user_name || conv.from_email || 'Agente',
+      isPrivate: conv.private === true,
+      incoming: conv.incoming || false,  // incoming = comentário do cliente
+    }));
+
+    console.log('Comentários processados:', comments);
+
+    // Salvar comentários no localStorage
+    const wiData = getWorkItemData(currentModalWorkItemId);
+    wiData.freshdeskComments = comments;
+    setWorkItemData(currentModalWorkItemId, wiData);
+
+    console.log('✅ Comentários salvos:', comments.length);
+    
+    // Re-renderizar anotações para mostrar os comentários
+    renderAnnotations();
+  } catch (err) {
+    console.error('❌ Erro ao buscar comentários do Freshdesk:', err);
+  }
 }
 
 // ===== ANNOTATIONS =====
@@ -586,22 +671,47 @@ function renderAnnotations() {
 
   const wiData = getWorkItemData(currentModalWorkItemId);
   const annotations = wiData.annotations || [];
+  const freshdeskComments = wiData.freshdeskComments || [];
 
-  if (annotations.length === 0) {
-    list.innerHTML = '<p class="annotations-empty">Nenhuma anotação ainda.</p>';
-    return;
+  let html = '';
+
+  // Mostrar comentários do Freshdesk (apenas leitura)
+  if (freshdeskComments.length > 0) {
+    html += '<div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #ddd;">';
+    html += '<h4 style="margin: 0 0 10px 0; color: #4fc3f7; font-size: 0.95em;">Comentários do Ticket</h4>';
+    html += freshdeskComments.map(c => `
+      <div style="background: #f9f9f9; padding: 10px; border-radius: 5px; margin-bottom: 8px; border-left: 3px solid #4fc3f7;">
+        <p style="margin: 0 0 4px 0; font-size: 0.85em; color: #666;">
+          <strong>${escapeHtml(c.author)}</strong> 
+          <span style="color: #999; margin-left: 8px;">${formatDateTime(c.createdAt)}</span>
+          ${c.isPrivate ? '<span style="background: #fff3cd; color: #856404; padding: 2px 6px; border-radius: 3px; font-size: 0.75em; margin-left: 8px;">Privado</span>' : ''}
+        </p>
+        <p style="margin: 0; color: #333; font-size: 0.9em; line-height: 1.3;">${escapeHtml(c.body).replace(/\n/g, '<br>')}</p>
+      </div>
+    `).join('');
+    html += '</div>';
   }
 
-  list.innerHTML = annotations.map(a => {
-    const azureBadge = a.sentToAzure ? '<span class="badge-sent azure">Azure ✓</span>' : '<span class="badge-sent pending">Azure ✗</span>';
-    const freshdeskBadge = a.sentToFreshdesk ? '<span class="badge-sent freshdesk">Freshdesk ✓</span>' : '';
-    return `
-    <div class="annotation-item">
-      <p class="annotation-date">${formatDateTime(a.date)} ${azureBadge} ${freshdeskBadge}</p>
-      <p class="annotation-text">${escapeHtml(a.text)}</p>
-      <button class="btn-delete-annotation" onclick="deleteAnnotation(${a.id})">✕</button>
-    </div>
-  `}).join('');
+  // Mostrar anotações locais
+  if (annotations.length === 0) {
+    html += '<p class="annotations-empty">Nenhuma anotação local criada ainda.</p>';
+  } else {
+    if (freshdeskComments.length > 0) {
+      html += '<h4 style="margin: 15px 0 10px 0; color: #666; font-size: 0.95em;">✏️ Suas Anotações</h4>';
+    }
+    html += annotations.map(a => {
+      const azureBadge = a.sentToAzure ? '<span class="badge-sent azure">Azure ✓</span>' : '<span class="badge-sent pending">Azure ✗</span>';
+      const freshdeskBadge = a.sentToFreshdesk ? '<span class="badge-sent freshdesk">Freshdesk ✓</span>' : '';
+      return `
+      <div class="annotation-item" style="background: white; padding: 10px; border-radius: 5px; margin-bottom: 8px; border: 1px solid #e0e0e0;">
+        <p class="annotation-date" style="margin: 0 0 4px 0; font-size: 0.85em; color: #666;">${formatDateTime(a.date)} ${azureBadge} ${freshdeskBadge}</p>
+        <p class="annotation-text" style="margin: 0 0 6px 0; color: #333; font-size: 0.9em; line-height: 1.3;">${escapeHtml(a.text)}</p>
+        <button class="btn-delete-annotation" onclick="deleteAnnotation(${a.id})" style="background: #ff6b6b; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.8em;">Deletar</button>
+      </div>
+    `}).join('');
+  }
+
+  list.innerHTML = html;
 }
 
 function formatDateTime(dateStr) {
@@ -626,7 +736,7 @@ function showTooltip(event, id) {
 
   // Show association info
   const wiData = getWorkItemData(wi.id);
-  if (wiData.ticketId) html += `<p>🎫 Ticket: #${wiData.ticketId}</p>`;
+  if (wiData.ticketId) html += `<p>Ticket: #${wiData.ticketId}</p>`;
   const annotCount = (wiData.annotations || []).length;
   if (annotCount > 0) html += `<p>📝 ${annotCount} anotação(ões)</p>`;
 

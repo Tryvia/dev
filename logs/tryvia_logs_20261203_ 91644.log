@@ -1,0 +1,28 @@
+[12/03/2026  9:16:44,52] Servidor iniciado 
+::1 - - [12/Mar/2026 09:16:51] "GET / HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:51] code 404, message File not found
+::1 - - [12/Mar/2026 09:16:51] "GET /favicon.ico HTTP/1.1" 404 -
+::1 - - [12/Mar/2026 09:16:52] "GET /Portal.html HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:52] "GET /css/portal.css HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:52] "GET /logo111.png HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:52] "GET /tryvia.png HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:52] "GET /portal-function/function-ocultarabas.js HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /portal-function/audit.js HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /portal-function/audit-utility.js HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /portal-function/portal.js HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /SING-Service/consultar_integracao_IDCliente.js HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /SING-Service/obter-token.js HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /raio-x/index.html HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /login/index.html HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /raio-x/styles.css HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /raio-x/script.js HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /login/images/logo-compass.png HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /login/styles.css HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /login/images/logo-target.png HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /login/images/logo-globe.png HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /login/images/logo-clock.png HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /login/images/logo-group.png HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:16:53] "GET /login/script.js HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:17:06] "GET /melhorias/index.html HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:17:06] "GET /melhorias/styles.css HTTP/1.1" 200 -
+::1 - - [12/Mar/2026 09:17:06] "GET /melhorias/app.js HTTP/1.1" 200 -
