@@ -16,12 +16,12 @@ class PresentationModeV2 {
 
         // Sistema de loading
         this.isLoading = false;
-        
+
         // Autoplay
         this.autoplayEnabled = false;
         this.autoplayInterval = null;
         this.autoplayDelay = 10000; // 10 segundos por slide
-        
+
         // Templates salvos
         this.savedTemplates = this.loadTemplates();
 
@@ -31,6 +31,12 @@ class PresentationModeV2 {
         this.filteredData = [];
         this.previousPeriodData = []; // Dados do período anterior para comparativo
         this.isPresenting = false;
+
+        // Cache de filtros para performance
+        this._filterCache = {
+            hash: null,
+            data: []
+        };
         this.currentSlide = 0;
         this.chartBars = []; // Para armazenar posições das barras para tooltip
 
@@ -51,55 +57,61 @@ class PresentationModeV2 {
 
         this.availableSlides = [
             // Visão Geral
-            { id: 'overview', title: 'Visão Geral', icon: '📊', type: 'kpi', category: 'geral' },
-            { id: 'chartTop10', title: 'Top 10 - Volume', icon: '🏆', type: 'chart', category: 'geral' },
-            { id: 'chartStatus', title: 'Por Status', icon: '📈', type: 'chart', category: 'geral' },
-            { id: 'chartPriority', title: 'Por Prioridade', icon: '⚡', type: 'chart', category: 'geral' },
-            { id: 'chartTimeline', title: 'Timeline', icon: '📅', type: 'chart', category: 'geral' },
-            { id: 'chartSystems', title: 'Por Sistema/Produto', icon: '💻', type: 'chart', category: 'geral' },
+            { id: 'overview', title: 'Visão Geral (Indicadores)', icon: '📊', type: 'kpi', category: 'geral' },
+            { id: 'chartTop10', title: 'Ranking: Volume por Agente', icon: '🏆', type: 'chart', category: 'geral' },
+            { id: 'chartStatus', title: 'Distribuição por Status', icon: '📈', type: 'chart', category: 'geral' },
+            { id: 'chartPriority', title: 'Volume por Prioridade', icon: '⚡', type: 'chart', category: 'geral' },
+            { id: 'chartTimeline', title: 'Tickets Criados por Dia', icon: '📅', type: 'chart', category: 'geral' },
+            { id: 'chartSystems', title: 'Volume por Sistema/Produto', icon: '💻', type: 'chart', category: 'geral' },
+            { id: 'chartTicketsPorTratativa', title: 'Tickets por Tratativa (em aberto)', icon: '👥', type: 'chart', category: 'geral', mode: 'tratativa' },
 
             // Performance / SLA
-            { id: 'chartResolution', title: 'Taxa de Resolução', icon: '✅', type: 'chart', category: 'performance' },
-            { id: 'chartSLA', title: 'Conformidade SLA', icon: '⏱️', type: 'chart', category: 'performance' },
-            { id: 'chartTempoMedio', title: 'Tempo Médio Resolução', icon: '⏳', type: 'chart', category: 'performance' },
-            { id: 'chartFirstResponse', title: 'First Response Time', icon: '💬', type: 'chart', category: 'performance' },
-            { id: 'chartCSAT', title: 'Satisfação (CSAT)', icon: '⭐', type: 'chart', category: 'performance' },
+            { id: 'chartResolution', title: 'Eficácia de Atendimento (%)', icon: '✅', type: 'chart', category: 'performance' },
+            { id: 'chartSLA', title: 'Qualidade: Cumprimento de SLA', icon: '⏱️', type: 'chart', category: 'performance' },
+            { id: 'chartSLAByEntity', title: 'SLA 1ª Resposta por Pessoa', icon: '👤', type: 'chart', category: 'performance', mode: 'tratativa' },
+            { id: 'chartSLAResolutionByEntity', title: 'SLA Resolução por Pessoa', icon: '🎯', type: 'chart', category: 'performance', mode: 'tratativa' },
+            { id: 'chartSLATrend', title: 'Tendência SLA (últimos 7 dias)', icon: '📉', type: 'chart', category: 'performance' },
+            { id: 'chartTempoMedio', title: 'Agilidade: Tempo de Solução', icon: '⏳', type: 'chart', category: 'performance' },
+            { id: 'chartFirstResponse', title: 'Agilidade: Tempo de 1ª Resposta', icon: '💬', type: 'chart', category: 'performance' },
+            { id: 'chartCSAT', title: 'Nível de Satisfação (CSAT)', icon: '⭐', type: 'chart', category: 'performance' },
 
             // Produtividade
-            { id: 'chartByDayOfWeek', title: 'Por Dia da Semana', icon: '🗓️', type: 'chart', category: 'produtividade' },
-            { id: 'chartByHour', title: 'Por Hora do Dia', icon: '⏰', type: 'chart', category: 'produtividade' },
-            { id: 'chartHeatmap', title: 'Heatmap Semanal', icon: '🔥', type: 'chart', category: 'produtividade' },
-            { id: 'chartBacklog', title: 'Backlog / Aging', icon: '📦', type: 'chart', category: 'produtividade' },
-            { id: 'chartWorkload', title: 'Carga de Trabalho', icon: '📋', type: 'chart', category: 'produtividade' },
+            { id: 'chartByDayOfWeek', title: 'Tickets por Dia da Semana', icon: '🗓️', type: 'chart', category: 'produtividade' },
+            { id: 'chartByHour', title: 'Tickets por Hora do Dia', icon: '⏰', type: 'chart', category: 'produtividade' },
+            { id: 'chartHeatmap', title: 'Mapa de Calor (Horas Críticas)', icon: '🔥', type: 'chart', category: 'produtividade' },
+            { id: 'chartBacklog', title: 'Envelhecimento de Tickets (Aging)', icon: '📦', type: 'chart', category: 'produtividade' },
+            { id: 'chartWorkload', title: 'Distribuição de Carga (Ativos)', icon: '📋', type: 'chart', category: 'produtividade' },
+            { id: 'chartProductivityRanking', title: 'Ranking de Produtividade', icon: '🏆', type: 'chart', category: 'produtividade', mode: 'tratativa' },
+            { id: 'chartTicketsPerDay', title: 'Tickets por Dia (Throughput)', icon: '📈', type: 'chart', category: 'produtividade' },
 
             // Comparativos
-            { id: 'chartComparativoMensal', title: 'Comparativo Mensal', icon: '📊', type: 'chart', category: 'comparativo' },
-            { id: 'chartTendencia', title: 'Tendência Semanal', icon: '📈', type: 'chart', category: 'comparativo' },
+            { id: 'chartComparativoMensal', title: 'Tendência: Comparativo Mensal', icon: '📊', type: 'chart', category: 'comparativo' },
+            { id: 'chartTendenciaSemanal', title: 'Tickets: Últimas 4 Semanas', icon: '📈', type: 'chart', category: 'comparativo' },
 
             // Rankings
-            { id: 'chartRankingSLA', title: 'Ranking por SLA', icon: '🥇', type: 'chart', category: 'ranking' },
-            { id: 'chartRankingResolucao', title: 'Ranking por Resolução', icon: '🏅', type: 'chart', category: 'ranking' },
-            { id: 'chartEficiencia', title: 'Eficiência por Pessoa', icon: '⚡', type: 'chart', category: 'ranking' },
+            { id: 'chartRankingSLA', title: 'Ranking: Qualidade (SLA)', icon: '🥇', type: 'chart', category: 'ranking' },
+            { id: 'chartRankingResolucao', title: 'Ranking: Produtividade', icon: '🏅', type: 'chart', category: 'ranking' },
 
             // Pipeline
-            { id: 'chartFunil', title: 'Funil de Status', icon: '🔄', type: 'chart', category: 'pipeline' },
-            { id: 'chartParados', title: 'Tickets Parados', icon: '⚠️', type: 'chart', category: 'pipeline' },
-            { id: 'chartAguardando', title: 'Aguardando Cliente', icon: '👤', type: 'chart', category: 'pipeline' },
+            { id: 'chartFunil', title: 'Fluxo de Atendimento (Funil)', icon: '🔄', type: 'chart', category: 'pipeline' },
+            { id: 'chartParados', title: 'Gargalos: Tickets Sem Atividade', icon: '⚠️', type: 'chart', category: 'pipeline' },
 
             // Acompanhamento (Tags)
-            { id: 'chartAcompanhamento', title: 'Acompanhamento (Tags)', icon: '🏷️', type: 'chart', category: 'acompanhamento' },
-            { id: 'chartAcompanhamentoResolucao', title: 'Resolução por Acomp.', icon: '✅', type: 'chart', category: 'acompanhamento' },
+            { id: 'chartAcompanhamento', title: 'Análise de Demandas (Tags)', icon: '🏷️', type: 'chart', category: 'acompanhamento', mode: 'tags' },
+            { id: 'chartAcompanhamentoResolucao', title: 'Taxa de Resolução por Pessoa', icon: '✅', type: 'chart', category: 'acompanhamento', mode: 'tags' },
 
             // Tempo Registrado
-            { id: 'chartTempoRegistrado', title: 'Tempo Registrado', icon: '⏰', type: 'chart', category: 'tempo' },
-            { id: 'chartTempoAgente', title: 'Tempo por Agente', icon: '👤', type: 'chart', category: 'tempo' },
+            { id: 'chartTempoRegistrado', title: 'Tempo de Trabalho (Total)', icon: '⏰', type: 'chart', category: 'tempo' },
+            { id: 'chartTempoAgente', title: 'Tempo de Trabalho por Agente', icon: '👤', type: 'chart', category: 'tempo' },
         ];
 
-        this.selectedSlides = new Set(this.availableSlides.map(s => s.id));
+        // Usar array ordenado em vez de Set para manter a ordem dos slides
+        this.slideOrder = this.availableSlides.map(s => s.id);
+        this.selectedSlides = new Set(this.availableSlides.filter(s => !s.mode).map(s => s.id)); // Iniciar apenas com slides universais
 
         // Cores dinâmicas baseadas no tema
         this.colors = this.getThemeColors();
-        
+
         // Observar mudanças de tema
         this.setupThemeObserver();
 
@@ -168,6 +180,11 @@ class PresentationModeV2 {
                 });
             }
         }, 100);
+    }
+
+    // Retorna slides disponíveis para o modo atual (filtra por mode)
+    getSlidesForCurrentMode() {
+        return this.availableSlides.filter(s => !s.mode || s.mode === this.dataMode);
     }
 
     buildHTML() {
@@ -297,7 +314,7 @@ class PresentationModeV2 {
     }
 
     renderSlideCategory(category, title, color) {
-        const slides = this.availableSlides.filter(s => s.category === category);
+        const slides = this.getSlidesForCurrentMode().filter(s => s.category === category);
         if (!slides.length) return '';
         return `
         <div style="margin-bottom:0.75rem">
@@ -391,7 +408,7 @@ class PresentationModeV2 {
     }
 
     renderSlideCategoryPremium(category, title, color) {
-        const slides = this.availableSlides.filter(s => s.category === category);
+        const slides = this.getSlidesForCurrentMode().filter(s => s.category === category);
         if (!slides.length) return '';
         return `
         <div class="pres-slides-section">
@@ -470,7 +487,11 @@ class PresentationModeV2 {
     }
 
     renderSlidesPreviewPremium() {
-        const slides = this.availableSlides.filter(s => this.selectedSlides.has(s.id));
+        // Usar slideOrder para manter a ordem personalizada, filtrado por modo
+        const validIds = new Set(this.getSlidesForCurrentMode().map(s => s.id));
+        const orderedIds = this.slideOrder.filter(id => this.selectedSlides.has(id) && validIds.has(id));
+        const slides = orderedIds.map(id => this.availableSlides.find(s => s.id === id)).filter(Boolean);
+        
         if (!slides.length) {
             return `<div style="grid-column:1/-1;text-align:center;padding:4rem 2rem;background:rgba(102,126,234,0.05);border-radius:16px;border:1px dashed rgba(102,126,234,0.3)">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="1.5" style="margin-bottom:1rem;opacity:0.5">
@@ -479,16 +500,34 @@ class PresentationModeV2 {
                 <p style="color:#94a3b8;font-size:1rem;margin:0">Selecione slides na sidebar para visualizar</p>
             </div>`;
         }
-        return slides.map((s, i) => this.renderSlideCardPremium(s, i)).join('');
+        return slides.map((s, i) => this.renderSlideCardPremium(s, i, slides.length)).join('');
     }
 
-    renderSlideCardPremium(slide, index) {
+    renderSlideCardPremium(slide, index, total) {
+        const isFirst = index === 0;
+        const isLast = index === total - 1;
         return `
-        <div class="pres-slide-card" style="animation-delay:${index * 0.05}s">
+        <div class="pres-slide-card" data-slide-id="${slide.id}" draggable="true" 
+            ondragstart="presentationModeV2.handleDragStart(event, '${slide.id}')" 
+            ondragover="presentationModeV2.handleDragOver(event)" 
+            ondrop="presentationModeV2.handleDrop(event, '${slide.id}')"
+            ondragend="presentationModeV2.handleDragEnd(event)"
+            style="animation-delay:${index * 0.05}s;cursor:grab">
             <div class="pres-slide-header">
                 <div class="pres-slide-number">${index + 1}</div>
                 <span class="pres-slide-icon">${slide.icon}</span>
-                <span class="pres-slide-title">${slide.title}</span>
+                <span class="pres-slide-title" style="flex:1">${slide.title}</span>
+                <div class="pres-slide-reorder" style="display:flex;gap:2px;margin-left:auto">
+                    <button onclick="event.stopPropagation();presentationModeV2.moveSlideUp('${slide.id}')" 
+                        style="background:${isFirst ? 'rgba(255,255,255,0.05)' : 'rgba(102,126,234,0.2)'};border:none;border-radius:4px;width:22px;height:22px;cursor:${isFirst ? 'not-allowed' : 'pointer'};color:${isFirst ? '#4a4a6a' : '#667eea'};font-size:10px;display:flex;align-items:center;justify-content:center"
+                        ${isFirst ? 'disabled' : ''} title="Mover para cima">▲</button>
+                    <button onclick="event.stopPropagation();presentationModeV2.moveSlideDown('${slide.id}')" 
+                        style="background:${isLast ? 'rgba(255,255,255,0.05)' : 'rgba(102,126,234,0.2)'};border:none;border-radius:4px;width:22px;height:22px;cursor:${isLast ? 'not-allowed' : 'pointer'};color:${isLast ? '#4a4a6a' : '#667eea'};font-size:10px;display:flex;align-items:center;justify-content:center"
+                        ${isLast ? 'disabled' : ''} title="Mover para baixo">▼</button>
+                    <button onclick="event.stopPropagation();presentationModeV2.removeSlide('${slide.id}')" 
+                        style="background:rgba(239,68,68,0.2);border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;color:#ef4444;font-size:10px;display:flex;align-items:center;justify-content:center"
+                        title="Remover">✕</button>
+                </div>
             </div>
             <div class="pres-slide-content">
                 ${this.renderSlideContentPremium(slide)}
@@ -535,6 +574,16 @@ class PresentationModeV2 {
         this.availableTeams = [];
         this.teamMembers = {};
 
+        // Usar TEAM_MEMBERS_CONFIG se disponível (configuração hardcoded)
+        if (window.TEAM_MEMBERS_CONFIG && this.dataMode !== 'tags') {
+            // Usar times e membros da configuração hardcoded
+            this.availableTeams = Object.keys(window.TEAM_MEMBERS_CONFIG).sort();
+            for (const team of this.availableTeams) {
+                this.teamMembers[team] = [...window.TEAM_MEMBERS_CONFIG[team]].sort();
+            }
+            return;
+        }
+
         const teamSet = new Set();
         const peopleByTeam = {};
 
@@ -543,7 +592,7 @@ class PresentationModeV2 {
             teamSet.add('Acompanhamento');
             peopleByTeam['Acompanhamento'] = new Set(this.allowedPeople);
         } else {
-            // Modo Tratativa: usa campos customizados
+            // Fallback: extrair dos tickets (caso TEAM_MEMBERS_CONFIG não exista)
             data.forEach(ticket => {
                 const team = this.getField(ticket, 'cf_grupo_tratativa');
                 const person = this.getField(ticket, 'cf_tratativa');
@@ -651,7 +700,7 @@ class PresentationModeV2 {
     }
 
     renderSlidesPreview() {
-        const slides = this.availableSlides.filter(s => this.selectedSlides.has(s.id));
+        const slides = this.getSlidesForCurrentMode().filter(s => this.selectedSlides.has(s.id));
         if (!slides.length) return `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:${this.colors.textMuted}">📭 Nenhum slide selecionado</div>`;
         return slides.map((s, i) => `
             <div style="background:${this.colors.surface};border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.3)">
@@ -778,6 +827,85 @@ class PresentationModeV2 {
     toggleSlide(id) {
         if (this.selectedSlides.has(id)) this.selectedSlides.delete(id);
         else this.selectedSlides.add(id);
+        this.refreshSlidesPreview();
+    }
+
+    removeSlide(id) {
+        this.selectedSlides.delete(id);
+        this.refreshSlidesPreview();
+    }
+
+    moveSlideUp(id) {
+        const validIds = new Set(this.getSlidesForCurrentMode().map(s => s.id));
+        const selectedIds = this.slideOrder.filter(sid => this.selectedSlides.has(sid) && validIds.has(sid));
+        const idx = selectedIds.indexOf(id);
+        if (idx <= 0) return;
+        
+        // Trocar posições no slideOrder
+        const orderIdx = this.slideOrder.indexOf(id);
+        const prevSelectedId = selectedIds[idx - 1];
+        const prevOrderIdx = this.slideOrder.indexOf(prevSelectedId);
+        
+        // Mover o slide atual para antes do anterior
+        this.slideOrder.splice(orderIdx, 1);
+        this.slideOrder.splice(prevOrderIdx, 0, id);
+        
+        this.refreshSlidesPreview();
+    }
+
+    moveSlideDown(id) {
+        const validIds = new Set(this.getSlidesForCurrentMode().map(s => s.id));
+        const selectedIds = this.slideOrder.filter(sid => this.selectedSlides.has(sid) && validIds.has(sid));
+        const idx = selectedIds.indexOf(id);
+        if (idx < 0 || idx >= selectedIds.length - 1) return;
+        
+        // Trocar posições no slideOrder
+        const orderIdx = this.slideOrder.indexOf(id);
+        const nextSelectedId = selectedIds[idx + 1];
+        const nextOrderIdx = this.slideOrder.indexOf(nextSelectedId);
+        
+        // Mover o slide atual para depois do próximo
+        this.slideOrder.splice(orderIdx, 1);
+        this.slideOrder.splice(nextOrderIdx, 0, id);
+        
+        this.refreshSlidesPreview();
+    }
+
+    // Drag and Drop handlers
+    handleDragStart(e, id) {
+        e.dataTransfer.setData('text/plain', id);
+        e.target.style.opacity = '0.5';
+        this._draggedId = id;
+    }
+
+    handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    }
+
+    handleDrop(e, targetId) {
+        e.preventDefault();
+        const draggedId = e.dataTransfer.getData('text/plain');
+        if (draggedId === targetId) return;
+        
+        // Reordenar no slideOrder
+        const draggedIdx = this.slideOrder.indexOf(draggedId);
+        const targetIdx = this.slideOrder.indexOf(targetId);
+        
+        if (draggedIdx < 0 || targetIdx < 0) return;
+        
+        this.slideOrder.splice(draggedIdx, 1);
+        this.slideOrder.splice(targetIdx, 0, draggedId);
+        
+        this.refreshSlidesPreview();
+    }
+
+    handleDragEnd(e) {
+        e.target.style.opacity = '1';
+        this._draggedId = null;
+    }
+
+    refreshSlidesPreview() {
         const preview = document.getElementById('slidesPreview');
         if (preview) {
             preview.innerHTML = this.renderSlidesPreviewPremium();
@@ -791,7 +919,40 @@ class PresentationModeV2 {
     applyFilters() {
         const allData = window.allTicketsCache || [];
 
-        this.filteredData = allData.filter(ticket => {
+        // Calcular hash dos filtros para cache
+        const filterHash = JSON.stringify({
+            start: this.startDate,
+            end: this.endDate,
+            team: this.selectedTeam,
+            people: Array.from(this.selectedPeople).sort(),
+            mode: this.dataMode,
+            dataLength: allData.length
+        });
+
+        // Se os filtros não mudaram, usar cache
+        if (this._filterCache.hash === filterHash) {
+            this.filteredData = this._filterCache.data;
+            console.log('📦 Usando cache de filtros');
+        } else {
+            // Aplicar filtros
+            this.filteredData = this._applyFiltersInternal(allData);
+            this._filterCache = { hash: filterHash, data: this.filteredData };
+        }
+
+        // Atualizar status - versão premium
+        const dataStatusEl = document.querySelector('.pres-status-box');
+        if (dataStatusEl) dataStatusEl.innerHTML = this.renderDataStatusPremium();
+
+        // Atualizar preview dos slides
+        const preview = document.getElementById('slidesPreview');
+        if (preview) preview.innerHTML = this.renderSlidesPreviewPremium();
+
+        setTimeout(() => this.renderAllPreviews(), 100);
+        this.showToast(`✅ ${this.filteredData.length.toLocaleString()} tickets filtrados`);
+    }
+
+    _applyFiltersInternal(allData) {
+        return allData.filter(ticket => {
             // Filtro de período (só aplica se tiver datas definidas)
             if (this.startDate && this.startDate !== '') {
                 const ticketDate = new Date(ticket.created_at);
@@ -838,20 +999,11 @@ class PresentationModeV2 {
 
             return true;
         });
-
-        // Atualizar status - versão premium
-        const dataStatusEl = document.querySelector('.pres-status-box');
-        if (dataStatusEl) dataStatusEl.innerHTML = this.renderDataStatusPremium();
-
-        // Atualizar preview dos slides
-        const preview = document.getElementById('slidesPreview');
-        if (preview) preview.innerHTML = this.renderSlidesPreviewPremium();
-
-        setTimeout(() => this.renderAllPreviews(), 100);
-        this.showToast(`✅ ${this.filteredData.length.toLocaleString()} tickets filtrados`);
     }
 
     renderAllPreviews() {
+        // Atualizar cores antes de renderizar (importante para mudança de tema)
+        this.colors = this.getThemeColors();
         this.availableSlides.forEach(s => {
             if (this.selectedSlides.has(s.id)) this.renderPreview(s.id);
         });
@@ -879,8 +1031,26 @@ class PresentationModeV2 {
     renderPreview(slideId) {
         const canvas = document.getElementById(`preview-${slideId}`);
         if (!canvas) return;
+        
+        // SEMPRE atualizar cores antes de renderizar (garante tema correto)
+        this.colors = this.getThemeColors();
+        
+        // DPI awareness para telas retina
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        
+        // Só redimensionar se necessário
+        if (canvas.width !== rect.width * dpr) {
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+        }
+        
         const ctx = canvas.getContext('2d');
-        const w = canvas.width, h = canvas.height;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // Escalar para DPI
+        
+        const w = rect.width, h = rect.height;
         ctx.fillStyle = this.colors.bg;
         ctx.fillRect(0, 0, w, h);
         const data = this.filteredData;
@@ -900,13 +1070,17 @@ class PresentationModeV2 {
             // Visão Geral
             case 'overview': this.drawOverview(ctx, w, h, data); break;
             case 'chartTop10': this.drawTop10(ctx, w, h, data, isFullscreen); break;
-            case 'chartStatus': this.drawStatus(ctx, w, h, data); break;
+            case 'chartStatus': this.drawStatus(ctx, w, h, data, isFullscreen); break;
             case 'chartPriority': this.drawPriority(ctx, w, h, data, isFullscreen); break;
             case 'chartTimeline': this.drawTimeline(ctx, w, h, data, isFullscreen); break;
             case 'chartSystems': this.drawSystems(ctx, w, h, data, isFullscreen); break;
+            case 'chartTicketsPorTratativa': this.drawTicketsPorTratativa(ctx, w, h, data, isFullscreen); break;
             // Performance
-            case 'chartResolution': this.drawResolution(ctx, w, h, data); break;
-            case 'chartSLA': this.drawSLA(ctx, w, h, data); break;
+            case 'chartResolution': this.drawResolution(ctx, w, h, data, isFullscreen); break;
+            case 'chartSLA': this.drawSLA(ctx, w, h, data, isFullscreen); break;
+            case 'chartSLAByEntity': this.drawSLAByEntity(ctx, w, h, data, isFullscreen); break;
+            case 'chartSLAResolutionByEntity': this.drawSLAResolutionByEntity(ctx, w, h, data, isFullscreen); break;
+            case 'chartSLATrend': this.drawSLATrend(ctx, w, h, data, isFullscreen); break;
             case 'chartTempoMedio': this.drawTempoMedio(ctx, w, h, data, isFullscreen); break;
             case 'chartFirstResponse': this.drawFirstResponse(ctx, w, h, data, isFullscreen); break;
             case 'chartCSAT': this.drawCSAT(ctx, w, h, data, isFullscreen); break;
@@ -916,17 +1090,20 @@ class PresentationModeV2 {
             case 'chartHeatmap': this.drawHeatmap(ctx, w, h, data, isFullscreen); break;
             case 'chartBacklog': this.drawBacklog(ctx, w, h, data, isFullscreen); break;
             case 'chartWorkload': this.drawWorkload(ctx, w, h, data, isFullscreen); break;
+            case 'chartProductivityRanking': this.drawProductivityRanking(ctx, w, h, data, isFullscreen); break;
+            case 'chartTicketsPerDay': this.drawTicketsPerDay(ctx, w, h, data, isFullscreen); break;
             // Comparativos
             case 'chartComparativoMensal': this.drawComparativoMensal(ctx, w, h, data, isFullscreen); break;
-            case 'chartTendencia': this.drawTendencia(ctx, w, h, data, isFullscreen); break;
+            case 'chartTendenciaSemanal': this.drawTendenciaSemanal(ctx, w, h, data, isFullscreen); break;
+
             // Rankings
             case 'chartRankingSLA': this.drawRankingSLA(ctx, w, h, data, isFullscreen); break;
             case 'chartRankingResolucao': this.drawRankingResolucao(ctx, w, h, data, isFullscreen); break;
-            case 'chartEficiencia': this.drawEficiencia(ctx, w, h, data, isFullscreen); break;
+
             // Pipeline
             case 'chartFunil': this.drawFunil(ctx, w, h, data, isFullscreen); break;
             case 'chartParados': this.drawParados(ctx, w, h, data, isFullscreen); break;
-            case 'chartAguardando': this.drawAguardando(ctx, w, h, data, isFullscreen); break;
+
             // Acompanhamento
             case 'chartAcompanhamento': this.drawAcompanhamento(ctx, w, h, data, isFullscreen); break;
             case 'chartAcompanhamentoResolucao': this.drawAcompanhamentoResolucao(ctx, w, h, data, isFullscreen); break;
@@ -1024,8 +1201,9 @@ class PresentationModeV2 {
 
             ctx.save();
 
-            // Fundo (track)
-            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            // Fundo (track) - cor dinâmica baseada no tema
+            const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            ctx.fillStyle = theme === 'tryvia-cyan' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.03)';
             ctx.beginPath();
             ctx.roundRect(pad.left, y, chartWidth, barH, borderRadius);
             ctx.fill();
@@ -1066,21 +1244,56 @@ class PresentationModeV2 {
             }
 
             // Nome
-            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillStyle = this.colors.text;
             ctx.font = isFullscreen ? '500 14px system-ui' : '500 11px system-ui';
             ctx.textAlign = 'right';
             const maxNameLen = isFullscreen ? 25 : 15;
             ctx.fillText(name.length > maxNameLen ? name.slice(0, maxNameLen - 2) + '..' : name, pad.left - 10, y + barH / 2 + 5);
 
             // Valor
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = this.colors.text;
             ctx.font = isFullscreen ? 'bold 16px system-ui' : 'bold 11px system-ui';
             ctx.textAlign = 'left';
             ctx.fillText(count.toString(), pad.left + bw + 10, y + barH / 2 + 5);
         });
     }
 
-    drawStatus(ctx, w, h, data) {
+    drawLegend(ctx, w, h, items, isFullscreen = false) {
+        if (!items || !items.length) return;
+
+        const fontSize = isFullscreen ? 16 : 10;
+        const squareSize = isFullscreen ? 14 : 8;
+        const gap = isFullscreen ? 25 : 12;
+        const margin = isFullscreen ? 40 : 20;
+
+        ctx.font = `${fontSize}px system-ui`;
+        ctx.textAlign = 'left';
+
+        // Calcular largura total para centralizar se necessário ou colocar no canto
+        let totalWidth = 0;
+        items.forEach(item => {
+            totalWidth += squareSize + 8 + ctx.measureText(item.label).width + gap;
+        });
+
+        let x = (w - totalWidth) / 2;
+        const y = h - margin;
+
+        items.forEach(item => {
+            // Quadrado de cor
+            ctx.fillStyle = item.color;
+            ctx.beginPath();
+            ctx.roundRect(x, y - squareSize + 2, squareSize, squareSize, 3);
+            ctx.fill();
+
+            // Texto
+            ctx.fillStyle = this.colors.text;
+            ctx.fillText(item.label, x + squareSize + 8, y);
+
+            x += squareSize + 8 + ctx.measureText(item.label).width + gap;
+        });
+    }
+
+    drawStatus(ctx, w, h, data, isFullscreen = false) {
         // Agrupar por grupos de status
         const groupCounts = { open: 0, pending: 0, resolved: 0, closed: 0 };
         data.forEach(t => {
@@ -1096,7 +1309,7 @@ class PresentationModeV2 {
         const items = Object.entries(groupCounts).filter(([, c]) => c > 0).map(([g, c]) => ({ ...groupMap[g], count: c }));
         if (!items.length) return;
         const total = items.reduce((s, i) => s + i.count, 0);
-        const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - 40;
+        const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - (isFullscreen ? 60 : 40);
         let startAngle = -Math.PI / 2;
         items.forEach(item => {
             const slice = (item.count / total) * Math.PI * 2;
@@ -1107,8 +1320,12 @@ class PresentationModeV2 {
         ctx.beginPath(); ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2);
         ctx.fillStyle = this.colors.bg; ctx.fill();
         ctx.fillStyle = this.colors.text;
-        ctx.font = 'bold 20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText(total.toLocaleString(), cx, cy + 6);
+        ctx.font = `bold ${isFullscreen ? 32 : 20}px system-ui`; ctx.textAlign = 'center';
+        ctx.fillText(total.toLocaleString(), cx, cy + (isFullscreen ? 10 : 6));
+
+        if (isFullscreen) {
+            this.drawLegend(ctx, w, h, items, isFullscreen);
+        }
     }
 
     drawPriority(ctx, w, h, data, isFullscreen = false) {
@@ -1123,7 +1340,7 @@ class PresentationModeV2 {
         data.forEach(t => { const p = t.priority || 2; counts[p] = (counts[p] || 0) + 1; });
         const items = Object.entries(counts).map(([p, c]) => ({ ...pMap[p], count: c, priority: p })).filter(i => i.count > 0);
         if (!items.length) return;
-        const maxCount = Math.max(...items.map(i => i.count));
+        const maxCount = Math.max(...items.map(i => i.count), 1);
         const pad = isFullscreen ? { left: 80, right: 80, top: 60, bottom: 80 } : { left: 30, right: 30, top: 30, bottom: 25 };
         const gap = isFullscreen ? 40 : 15;
         const barW = (w - pad.left - pad.right - gap * (items.length - 1)) / items.length;
@@ -1137,8 +1354,9 @@ class PresentationModeV2 {
 
             ctx.save();
 
-            // Fundo (track)
-            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            // Fundo (track) - cor dinâmica baseada no tema
+            const trackTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            ctx.fillStyle = trackTheme === 'tryvia-cyan' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.03)';
             ctx.beginPath();
             ctx.roundRect(x, pad.top, barW, chartH, borderRadius);
             ctx.fill();
@@ -1179,38 +1397,45 @@ class PresentationModeV2 {
             }
 
             // Valor acima da barra
-            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            ctx.fillStyle = this.colors.text;
             ctx.font = isFullscreen ? 'bold 20px system-ui' : 'bold 12px system-ui';
             ctx.textAlign = 'center';
             ctx.fillText(item.count.toString(), x + barW / 2, y - 10);
 
             // Label abaixo
-            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillStyle = this.colors.text;
             ctx.font = isFullscreen ? '500 16px system-ui' : '500 10px system-ui';
             ctx.fillText(item.label, x + barW / 2, h - (isFullscreen ? 40 : 10));
         });
     }
 
-    drawResolution(ctx, w, h, data) {
+    drawResolution(ctx, w, h, data, isFullscreen = false) {
         const resolved = data.filter(t => {
             const s = this.statusMap[t.status];
             return s && (s.group === 'resolved' || s.group === 'closed');
         }).length;
         const rate = (resolved / (data.length || 1)) * 100;
-        const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - 35;
+        const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - (isFullscreen ? 60 : 35);
         ctx.beginPath(); ctx.arc(cx, cy, r, 0.75 * Math.PI, 2.25 * Math.PI);
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 20; ctx.lineCap = 'round'; ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = isFullscreen ? 30 : 20; ctx.lineCap = 'round'; ctx.stroke();
         const progressAngle = 0.75 * Math.PI + (rate / 100) * 1.5 * Math.PI;
         ctx.beginPath(); ctx.arc(cx, cy, r, 0.75 * Math.PI, progressAngle);
         ctx.strokeStyle = '#10b981'; ctx.stroke();
         ctx.fillStyle = this.colors.text;
-        ctx.font = 'bold 28px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText(`${rate.toFixed(1)}%`, cx, cy + 8);
-        ctx.font = '11px system-ui'; ctx.fillStyle = this.colors.textMuted;
-        ctx.fillText('Resolução', cx, cy + 28);
+        ctx.font = `bold ${isFullscreen ? 48 : 28}px system-ui`; ctx.textAlign = 'center';
+        ctx.fillText(`${rate.toFixed(1)}%`, cx, cy + (isFullscreen ? 10 : 8));
+        ctx.font = isFullscreen ? '16px system-ui' : '11px system-ui'; ctx.fillStyle = this.colors.textMuted;
+        ctx.fillText('Resolução', cx, cy + (isFullscreen ? 45 : 28));
+
+        if (isFullscreen) {
+            this.drawLegend(ctx, w, h, [
+                { label: 'Resolvidos', color: '#10b981' },
+                { label: 'Pendentes', color: 'rgba(255,255,255,0.1)' }
+            ], isFullscreen);
+        }
     }
 
-    drawSLA(ctx, w, h, data) {
+    drawSLA(ctx, w, h, data, isFullscreen = false) {
         const SLA = 4 * 60 * 60 * 1000;
         let within = 0, outside = 0;
         data.forEach(t => {
@@ -1221,18 +1446,25 @@ class PresentationModeV2 {
         const total = within + outside;
         if (!total) { ctx.fillStyle = this.colors.textMuted; ctx.font = '12px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Sem dados SLA', w / 2, h / 2); return; }
         const rate = (within / total) * 100;
-        const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - 35;
+        const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - (isFullscreen ? 60 : 35);
         ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 20; ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = isFullscreen ? 30 : 20; ctx.stroke();
         const angle = (rate / 100) * Math.PI * 2 - Math.PI / 2;
         const color = rate >= 90 ? '#10b981' : rate >= 70 ? '#f59e0b' : '#ef4444';
         ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI / 2, angle);
         ctx.strokeStyle = color; ctx.lineCap = 'round'; ctx.stroke();
         ctx.fillStyle = this.colors.text;
-        ctx.font = 'bold 26px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText(`${rate.toFixed(1)}%`, cx, cy + 8);
-        ctx.font = '11px system-ui'; ctx.fillStyle = this.colors.textMuted;
-        ctx.fillText('SLA', cx, cy + 28);
+        ctx.font = `bold ${isFullscreen ? 48 : 26}px system-ui`; ctx.textAlign = 'center';
+        ctx.fillText(`${rate.toFixed(1)}%`, cx, cy + (isFullscreen ? 12 : 8));
+        ctx.font = isFullscreen ? '16px system-ui' : '11px system-ui'; ctx.fillStyle = this.colors.textMuted;
+        ctx.fillText('SLA', cx, cy + (isFullscreen ? 45 : 28));
+
+        if (isFullscreen) {
+            this.drawLegend(ctx, w, h, [
+                { label: 'Dentro do Prazo', color: color },
+                { label: 'Fora do Prazo', color: 'rgba(255,255,255,0.1)' }
+            ], isFullscreen);
+        }
     }
 
     drawTimeline(ctx, w, h, data, isFullscreen = false) {
@@ -1266,8 +1498,9 @@ class PresentationModeV2 {
 
             ctx.save();
 
-            // Fundo (track)
-            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            // Fundo (track) - cor dinâmica baseada no tema
+            const trackTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            ctx.fillStyle = trackTheme === 'tryvia-cyan' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.03)';
             ctx.beginPath();
             ctx.roundRect(x, pad.top, barW, chartH, borderRadius);
             ctx.fill();
@@ -1309,7 +1542,7 @@ class PresentationModeV2 {
 
                 // Mostrar valor SEMPRE acima da barra
                 if (val > 0) {
-                    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+                    ctx.fillStyle = this.colors.text;
                     ctx.font = 'bold 11px system-ui';
                     ctx.textAlign = 'center';
                     ctx.fillText(val.toString(), x + barW / 2, y - 6);
@@ -1318,7 +1551,7 @@ class PresentationModeV2 {
 
             // Mostrar data no eixo X (fullscreen)
             if (isFullscreen && (i % 2 === 0 || values.length <= 10)) {
-                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.fillStyle = this.colors.textMuted;
                 ctx.font = '500 12px system-ui';
                 ctx.textAlign = 'center';
                 const dateLabel = new Date(days[i]).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -1484,7 +1717,7 @@ class PresentationModeV2 {
 
                 // Mostrar valor SEMPRE acima da barra (não apenas no hover)
                 if (count > 0 && barH > 20) {
-                    ctx.fillStyle = '#fff';
+                    ctx.fillStyle = this.colors.text;
                     ctx.font = 'bold 10px system-ui';
                     ctx.textAlign = 'center';
                     ctx.fillText(count.toString(), x + barW / 2, y - 5);
@@ -1551,7 +1784,7 @@ class PresentationModeV2 {
             ctx.font = isFullscreen ? '13px system-ui' : '10px system-ui';
             ctx.textAlign = 'right';
             ctx.fillText(item.label, pad.left - 8, y + barH / 2 + 4);
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = this.colors.text;
             ctx.font = isFullscreen ? 'bold 14px system-ui' : 'bold 10px system-ui';
             ctx.textAlign = 'left';
             ctx.fillText(item.count.toString(), pad.left + bw + 8, y + barH / 2 + 4);
@@ -1584,28 +1817,21 @@ class PresentationModeV2 {
         const total = sorted.reduce((s, [, v]) => s + v, 0);
         const cx = w / 2;
         const cy = h / 2;
-        const r = Math.min(w, h) / 2 - (isFullscreen ? 60 : 40);
+        const r = Math.min(w, h) / 2 - (isFullscreen ? 65 : 40);
 
         let startAngle = -Math.PI / 2;
+        const legendItems = [];
         sorted.forEach(([name, val], i) => {
             const slice = (val / total) * Math.PI * 2;
+            const color = colors[i % colors.length];
             ctx.beginPath();
             ctx.moveTo(cx, cy);
             ctx.arc(cx, cy, r, startAngle, startAngle + slice);
-            ctx.fillStyle = colors[i % colors.length];
+            ctx.fillStyle = color;
             ctx.fill();
 
-            // Label externo
             if (isFullscreen) {
-                const midAngle = startAngle + slice / 2;
-                const labelR = r + 25;
-                const lx = cx + Math.cos(midAngle) * labelR;
-                const ly = cy + Math.sin(midAngle) * labelR;
-                ctx.fillStyle = this.colors.text;
-                ctx.font = '12px system-ui';
-                ctx.textAlign = midAngle > Math.PI / 2 && midAngle < Math.PI * 1.5 ? 'right' : 'left';
-                const displayName = name.length > 15 ? name.slice(0, 13) + '..' : name;
-                ctx.fillText(`${displayName} (${val})`, lx, ly);
+                legendItems.push({ label: name, color: color });
             }
 
             startAngle += slice;
@@ -1617,9 +1843,13 @@ class PresentationModeV2 {
         ctx.fillStyle = this.colors.bg;
         ctx.fill();
         ctx.fillStyle = this.colors.text;
-        ctx.font = isFullscreen ? 'bold 20px system-ui' : 'bold 14px system-ui';
+        ctx.font = isFullscreen ? 'bold 24px system-ui' : 'bold 14px system-ui';
         ctx.textAlign = 'center';
-        ctx.fillText(total.toLocaleString(), cx, cy + 6);
+        ctx.fillText(total.toLocaleString(), cx, cy + (isFullscreen ? 10 : 6));
+
+        if (isFullscreen) {
+            this.drawLegend(ctx, w, h, legendItems, isFullscreen);
+        }
     }
 
     // ========== NOVOS GRÁFICOS ==========
@@ -1765,23 +1995,20 @@ class PresentationModeV2 {
 
         // Percentual central
         ctx.fillStyle = color;
-        ctx.font = isFullscreen ? 'bold 48px system-ui' : 'bold 28px system-ui';
+        ctx.font = isFullscreen ? 'bold 64px system-ui' : 'bold 28px system-ui';
         ctx.textAlign = 'center';
-        ctx.fillText(`${csatPercent}%`, cx, cy + (isFullscreen ? 5 : 3));
+        ctx.fillText(`${csatPercent}%`, cx, cy + (isFullscreen ? 10 : 3));
 
         // Total de avaliações
-        ctx.font = isFullscreen ? '14px system-ui' : '10px system-ui';
+        ctx.font = isFullscreen ? '16px system-ui' : '10px system-ui';
         ctx.fillStyle = this.colors.textMuted;
-        ctx.fillText(`${total} avaliações`, cx, cy + (isFullscreen ? 35 : 22));
+        ctx.fillText(`${total} avaliações`, cx, cy + (isFullscreen ? 50 : 22));
 
-        // Satisfeitos / Insatisfeitos
         if (isFullscreen) {
-            const infoY = cy + 70;
-            ctx.font = '13px system-ui';
-            ctx.fillStyle = '#10b981';
-            ctx.fillText(`😊 ${satisfied} satisfeitos`, cx - 80, infoY);
-            ctx.fillStyle = '#ef4444';
-            ctx.fillText(`😞 ${unsatisfied} insatisfeitos`, cx + 80, infoY);
+            this.drawLegend(ctx, w, h, [
+                { label: 'Satisfeitos / Ótimos', color: '#10b981' },
+                { label: 'Insatisfeitos / Ruins', color: '#ef4444' }
+            ], isFullscreen);
         }
     }
 
@@ -1861,7 +2088,7 @@ class PresentationModeV2 {
             ctx.font = isFullscreen ? '12px system-ui' : '10px system-ui';
             ctx.textAlign = 'right';
             ctx.fillText(name.length > 20 ? name.slice(0, 18) + '..' : name, pad.left - 8, y + barH / 2 + 4);
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = this.colors.text;
             ctx.font = isFullscreen ? 'bold 13px system-ui' : 'bold 10px system-ui';
             ctx.textAlign = 'left';
             ctx.fillText(count.toString(), pad.left + bw + 8, y + barH / 2 + 4);
@@ -1959,6 +2186,148 @@ class PresentationModeV2 {
             ctx.fillStyle = this.colors.textMuted;
             ctx.fillText(wk.label, x, h - (isFullscreen ? 25 : 15));
         });
+    }
+
+    drawTendenciaSemanal(ctx, w, h, data, isFullscreen = false) {
+        const weeks = [];
+        const now = new Date();
+        
+        // Calcular últimas 4 semanas
+        for (let i = 3; i >= 0; i--) {
+            const end = new Date(now);
+            end.setDate(end.getDate() - (i * 7));
+            end.setHours(23, 59, 59, 999);
+            const start = new Date(end);
+            start.setDate(start.getDate() - 6);
+            start.setHours(0, 0, 0, 0);
+            
+            const weekNum = Math.ceil((end.getDate() - end.getDay() + 1) / 7);
+            weeks.push({ 
+                start, 
+                end, 
+                created: 0, 
+                resolved: 0, 
+                label: `${start.getDate()}/${start.getMonth()+1} - ${end.getDate()}/${end.getMonth()+1}`
+            });
+        }
+        
+        // Contar tickets
+        data.forEach(t => {
+            const created = new Date(t.created_at);
+            weeks.forEach(wk => {
+                if (created >= wk.start && created <= wk.end) wk.created++;
+            });
+            
+            const s = this.statusMap[t.status];
+            if (s && (s.group === 'resolved' || s.group === 'closed')) {
+                const resolved = new Date(t.stats_resolved_at || t.updated_at);
+                weeks.forEach(wk => {
+                    if (resolved >= wk.start && resolved <= wk.end) wk.resolved++;
+                });
+            }
+        });
+        
+        const maxVal = Math.max(...weeks.map(w => Math.max(w.created, w.resolved)), 1);
+        const pad = isFullscreen ? { left: 80, right: 60, top: 60, bottom: 80 } : { left: 50, right: 30, top: 40, bottom: 50 };
+        const chartW = w - pad.left - pad.right;
+        const chartH = h - pad.top - pad.bottom;
+        const stepX = chartW / (weeks.length - 1);
+        
+        // Área de fundo para criados
+        ctx.fillStyle = 'rgba(99, 102, 241, 0.1)';
+        ctx.beginPath();
+        ctx.moveTo(pad.left, pad.top + chartH);
+        weeks.forEach((wk, i) => {
+            const x = pad.left + i * stepX;
+            const y = pad.top + chartH - (wk.created / maxVal) * chartH;
+            ctx.lineTo(x, y);
+        });
+        ctx.lineTo(pad.left + chartW, pad.top + chartH);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Linha de criados
+        ctx.strokeStyle = '#6366f1';
+        ctx.lineWidth = isFullscreen ? 3 : 2;
+        ctx.beginPath();
+        weeks.forEach((wk, i) => {
+            const x = pad.left + i * stepX;
+            const y = pad.top + chartH - (wk.created / maxVal) * chartH;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        
+        // Linha de resolvidos
+        ctx.strokeStyle = '#10b981';
+        ctx.beginPath();
+        weeks.forEach((wk, i) => {
+            const x = pad.left + i * stepX;
+            const y = pad.top + chartH - (wk.resolved / maxVal) * chartH;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        
+        // Pontos e valores
+        weeks.forEach((wk, i) => {
+            const x = pad.left + i * stepX;
+            
+            // Ponto criados
+            const yCreated = pad.top + chartH - (wk.created / maxVal) * chartH;
+            ctx.beginPath();
+            ctx.arc(x, yCreated, isFullscreen ? 6 : 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#6366f1';
+            ctx.fill();
+            
+            // Ponto resolvidos
+            const yResolved = pad.top + chartH - (wk.resolved / maxVal) * chartH;
+            ctx.beginPath();
+            ctx.arc(x, yResolved, isFullscreen ? 6 : 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#10b981';
+            ctx.fill();
+            
+            if (isFullscreen) {
+                this.chartBars.push({ x: x - 15, y: yCreated - 15, w: 30, h: 30, value: wk.created, label: `Criados: ${wk.label}` });
+                
+                // Valores acima dos pontos
+                ctx.fillStyle = '#6366f1';
+                ctx.font = 'bold 12px system-ui';
+                ctx.textAlign = 'center';
+                ctx.fillText(wk.created.toString(), x, yCreated - 12);
+                
+                ctx.fillStyle = '#10b981';
+                ctx.fillText(wk.resolved.toString(), x, yResolved - 12);
+            }
+            
+            // Labels do eixo X
+            ctx.fillStyle = this.colors.textMuted;
+            ctx.font = isFullscreen ? '11px system-ui' : '9px system-ui';
+            ctx.textAlign = 'center';
+            ctx.fillText(wk.label, x, h - (isFullscreen ? 35 : 20));
+        });
+        
+        // Legenda
+        if (isFullscreen) {
+            this.drawLegend(ctx, w, h, [
+                { label: 'Criados', color: '#6366f1' },
+                { label: 'Resolvidos', color: '#10b981' }
+            ], isFullscreen);
+        }
+        
+        // Título com variação
+        const lastWeek = weeks[weeks.length - 1];
+        const prevWeek = weeks[weeks.length - 2];
+        const variation = prevWeek.created > 0 ? ((lastWeek.created - prevWeek.created) / prevWeek.created * 100) : 0;
+        const varColor = variation >= 0 ? '#ef4444' : '#10b981';
+        const varIcon = variation >= 0 ? '↑' : '↓';
+        
+        ctx.fillStyle = this.colors.text;
+        ctx.font = isFullscreen ? 'bold 14px system-ui' : 'bold 11px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Variação semanal: `, w / 2 - 50, isFullscreen ? 30 : 20);
+        ctx.fillStyle = varColor;
+        ctx.fillText(`${varIcon} ${Math.abs(variation).toFixed(1)}%`, w / 2 + 30, isFullscreen ? 30 : 20);
     }
 
     drawRankingSLA(ctx, w, h, data, isFullscreen = false) {
@@ -2070,7 +2439,7 @@ class PresentationModeV2 {
             ctx.font = isFullscreen ? '12px system-ui' : '10px system-ui';
             ctx.textAlign = 'right';
             ctx.fillText(item.name.length > 18 ? item.name.slice(0, 16) + '..' : item.name, pad.left - 8, y + barH / 2 + 4);
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = this.colors.text;
             ctx.font = isFullscreen ? 'bold 13px system-ui' : 'bold 10px system-ui';
             ctx.textAlign = 'left';
             ctx.fillText(`${item[valueKey].toFixed(1)}${suffix}`, pad.left + bw + 8, y + barH / 2 + 4);
@@ -2104,7 +2473,7 @@ class PresentationModeV2 {
             ctx.fillStyle = stage.color;
             ctx.beginPath(); ctx.roundRect(x, y + 2, barW, stepH - 4, 6); ctx.fill();
             if (isFullscreen) this.chartBars.push({ x, y: y + 2, w: barW, h: stepH - 4, value: stage.count, label: stage.label });
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = this.colors.text;
             ctx.font = isFullscreen ? 'bold 16px system-ui' : 'bold 11px system-ui';
             ctx.textAlign = 'center';
             ctx.fillText(`${stage.label}: ${stage.count}`, w / 2, y + stepH / 2 + 5);
@@ -2152,7 +2521,7 @@ class PresentationModeV2 {
             ctx.font = isFullscreen ? '12px system-ui' : '10px system-ui';
             ctx.textAlign = 'right';
             ctx.fillText(item.label, pad.left - 8, y + barH / 2 + 4);
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = this.colors.text;
             ctx.font = isFullscreen ? 'bold 14px system-ui' : 'bold 10px system-ui';
             ctx.textAlign = 'left';
             ctx.fillText(item.count.toString(), pad.left + bw + 8, y + barH / 2 + 4);
@@ -2194,7 +2563,7 @@ class PresentationModeV2 {
             ctx.font = isFullscreen ? '12px system-ui' : '10px system-ui';
             ctx.textAlign = 'right';
             ctx.fillText(item.label, pad.left - 8, y + barH / 2 + 4);
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = this.colors.text;
             ctx.font = isFullscreen ? 'bold 14px system-ui' : 'bold 10px system-ui';
             ctx.textAlign = 'left';
             ctx.fillText(item.count.toString(), pad.left + bw + 8, y + barH / 2 + 4);
@@ -2204,23 +2573,23 @@ class PresentationModeV2 {
     drawNoData(ctx, w, h, msg) {
         const cx = w / 2;
         const cy = h / 2;
-        
+
         // Ícone SVG estilizado (desenhado manualmente)
         ctx.save();
         ctx.translate(cx, cy - 30);
-        
+
         // Círculo de fundo
         ctx.beginPath();
         ctx.arc(0, 0, 35, 0, Math.PI * 2);
         ctx.fillStyle = this.colors.border + '40';
         ctx.fill();
-        
+
         // Ícone de gráfico vazio
         ctx.strokeStyle = this.colors.textMuted;
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        
+
         // Barras do gráfico
         ctx.beginPath();
         ctx.moveTo(-15, 15);
@@ -2232,13 +2601,13 @@ class PresentationModeV2 {
         ctx.moveTo(15, 15);
         ctx.lineTo(15, -10);
         ctx.stroke();
-        
+
         // Linha base
         ctx.beginPath();
         ctx.moveTo(-20, 15);
         ctx.lineTo(20, 15);
         ctx.stroke();
-        
+
         // X de "sem dados"
         ctx.strokeStyle = this.colors.danger + '80';
         ctx.lineWidth = 2.5;
@@ -2248,15 +2617,15 @@ class PresentationModeV2 {
         ctx.moveTo(10, -15);
         ctx.lineTo(-10, 5);
         ctx.stroke();
-        
+
         ctx.restore();
-        
+
         // Mensagem
         ctx.fillStyle = this.colors.textMuted;
         ctx.font = '500 14px system-ui';
         ctx.textAlign = 'center';
         ctx.fillText(msg, cx, cy + 35);
-        
+
         // Dica
         ctx.font = '12px system-ui';
         ctx.fillStyle = this.colors.textMuted + '80';
@@ -2265,9 +2634,9 @@ class PresentationModeV2 {
 
     // ========== ACOMPANHAMENTO (TAGS) ==========
 
-    // Lista de pessoas permitidas para acompanhamento (usa TEAM_MEMBERS_CONFIG)
+    // Lista de pessoas permitidas - APENAS para modo Tags (Acompanhamento)
     getAllowedPeople() {
-        // Usa a configuração global se disponível, senão usa lista fixa
+        // Modo Tags: usar lista de Acompanhamento
         if (window.TEAM_MEMBERS_CONFIG?.Acompanhamento) {
             return window.TEAM_MEMBERS_CONFIG.Acompanhamento;
         }
@@ -2349,7 +2718,7 @@ class PresentationModeV2 {
             ctx.font = isFullscreen ? '13px system-ui' : '10px system-ui';
             ctx.textAlign = 'right';
             ctx.fillText(name, pad.left - 10, y + barH / 2 + 4);
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = this.colors.text;
             ctx.font = isFullscreen ? 'bold 14px system-ui' : 'bold 10px system-ui';
             ctx.textAlign = 'left';
             ctx.fillText(count.toString(), pad.left + bw + 10, y + barH / 2 + 4);
@@ -2362,10 +2731,10 @@ class PresentationModeV2 {
         const personStats = {};
 
         data.forEach(ticket => {
-            const ticketTags = this.extractTagsFromTicket(ticket);
             const s = this.statusMap[ticket.status];
             const isResolved = s && (s.group === 'resolved' || s.group === 'closed');
 
+            const ticketTags = this.extractTagsFromTicket(ticket);
             ticketTags.forEach(tag => {
                 const tagNorm = this.normalizeForMatch(tag);
                 const matchIdx = allowedNorm.findIndex(n => tagNorm.includes(n) || n.includes(tagNorm));
@@ -2533,7 +2902,7 @@ class PresentationModeV2 {
                 ctx.font = isFullscreen ? '12px system-ui' : '10px system-ui';
                 ctx.textAlign = 'right';
                 ctx.fillText(item.name.length > 18 ? item.name.slice(0, 16) + '..' : item.name, pad.left - 8, y + barH / 2 + 4);
-                ctx.fillStyle = '#fff';
+                ctx.fillStyle = this.colors.text;
                 ctx.font = isFullscreen ? 'bold 13px system-ui' : 'bold 10px system-ui';
                 ctx.textAlign = 'left';
                 const timeText = item.rate < 24 ? `${item.rate.toFixed(1)}h` : `${(item.rate / 24).toFixed(1)}d`;
@@ -2576,16 +2945,293 @@ class PresentationModeV2 {
             ctx.font = isFullscreen ? '12px system-ui' : '10px system-ui';
             ctx.textAlign = 'right';
             ctx.fillText(name.length > 18 ? name.slice(0, 16) + '..' : name, pad.left - 8, y + barH / 2 + 4);
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = this.colors.text;
             ctx.font = isFullscreen ? 'bold 13px system-ui' : 'bold 10px system-ui';
             ctx.textAlign = 'left';
             ctx.fillText(`${hours.toFixed(1)}h`, pad.left + bw + 8, y + barH / 2 + 4);
         });
     }
 
+    // ========== NOVOS GRÁFICOS ==========
+    drawTicketsPorTratativa(ctx, w, h, data, isFullscreen = false) {
+        // Filtrar apenas tickets em aberto
+        const openTickets = data.filter(t => {
+            const s = this.statusMap[t.status];
+            return s && (s.group === 'open' || s.group === 'pending');
+        });
+
+        const map = new Map();
+        openTickets.forEach(t => {
+            const person = this.getField(t, 'cf_tratativa') || 'Sem tratativa';
+            map.set(person, (map.get(person) || 0) + 1);
+        });
+
+        const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, isFullscreen ? 10 : 6);
+        if (!sorted.length) { this.drawNoData(ctx, w, h, 'Sem tickets em aberto'); return; }
+
+        const maxVal = sorted[0][1];
+        const pad = isFullscreen ? { left: 160, right: 60, top: 30 } : { left: 90, right: 40, top: 20 };
+        const barH = isFullscreen ? 28 : 18;
+        const gap = isFullscreen ? 8 : 5;
+
+        sorted.forEach(([name, count], i) => {
+            const y = pad.top + i * (barH + gap);
+            const bw = Math.max(10, (count / maxVal) * (w - pad.left - pad.right));
+            const grad = ctx.createLinearGradient(pad.left, 0, pad.left + bw, 0);
+            grad.addColorStop(0, '#f59e0b'); grad.addColorStop(1, '#d97706');
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.roundRect(pad.left, y, bw, barH, 4); ctx.fill();
+
+            ctx.fillStyle = this.colors.text;
+            ctx.font = isFullscreen ? '12px system-ui' : '9px system-ui';
+            ctx.textAlign = 'right';
+            ctx.fillText(name.length > 15 ? name.slice(0, 13) + '..' : name, pad.left - 6, y + barH / 2 + 4);
+            ctx.font = isFullscreen ? 'bold 12px system-ui' : 'bold 9px system-ui';
+            ctx.textAlign = 'left';
+            ctx.fillText(count, pad.left + bw + 6, y + barH / 2 + 4);
+        });
+    }
+
+    drawSLAByEntity(ctx, w, h, data, isFullscreen = false) {
+        const SLA = 4 * 60 * 60 * 1000; // 4 horas
+        const entitySLA = {};
+
+        data.forEach(t => {
+            const person = this.getField(t, 'cf_tratativa') || 'Sem tratativa';
+            if (!entitySLA[person]) entitySLA[person] = { within: 0, total: 0 };
+            entitySLA[person].total++;
+            const created = new Date(t.created_at);
+            const firstResponse = t.first_responded_at ? new Date(t.first_responded_at) : null;
+            if (firstResponse && (firstResponse - created) <= SLA) {
+                entitySLA[person].within++;
+            }
+        });
+
+        const sorted = Object.entries(entitySLA)
+            .map(([name, d]) => ({ name, rate: d.total > 0 ? (d.within / d.total) * 100 : 0, total: d.total }))
+            .filter(d => d.total >= 3)
+            .sort((a, b) => b.rate - a.rate)
+            .slice(0, isFullscreen ? 8 : 5);
+
+        if (!sorted.length) { this.drawNoData(ctx, w, h, 'Dados insuficientes'); return; }
+
+        const pad = isFullscreen ? { left: 160, right: 80, top: 30 } : { left: 90, right: 50, top: 20 };
+        const barH = isFullscreen ? 28 : 18;
+        const gap = isFullscreen ? 8 : 5;
+
+        sorted.forEach((item, i) => {
+            const y = pad.top + i * (barH + gap);
+            const bw = (item.rate / 100) * (w - pad.left - pad.right);
+            const color = item.rate >= 80 ? '#10b981' : item.rate >= 60 ? '#f59e0b' : '#ef4444';
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.roundRect(pad.left, y, bw, barH, 4); ctx.fill();
+
+            ctx.fillStyle = this.colors.text;
+            ctx.font = isFullscreen ? '12px system-ui' : '9px system-ui';
+            ctx.textAlign = 'right';
+            ctx.fillText(item.name.length > 15 ? item.name.slice(0, 13) + '..' : item.name, pad.left - 6, y + barH / 2 + 4);
+            ctx.font = isFullscreen ? 'bold 12px system-ui' : 'bold 9px system-ui';
+            ctx.textAlign = 'left';
+            ctx.fillText(`${item.rate.toFixed(0)}%`, pad.left + bw + 6, y + barH / 2 + 4);
+        });
+    }
+
+    drawSLAResolutionByEntity(ctx, w, h, data, isFullscreen = false) {
+        const SLA_RESOLUTION = 24 * 60 * 60 * 1000; // 24 horas
+        const entitySLA = {};
+
+        data.forEach(t => {
+            const person = this.getField(t, 'cf_tratativa') || 'Sem tratativa';
+            const s = this.statusMap[t.status];
+            if (!s || (s.group !== 'resolved' && s.group !== 'closed')) return;
+            
+            if (!entitySLA[person]) entitySLA[person] = { within: 0, total: 0 };
+            entitySLA[person].total++;
+            
+            const created = new Date(t.created_at);
+            const resolved = t.resolved_at ? new Date(t.resolved_at) : (t.updated_at ? new Date(t.updated_at) : null);
+            if (resolved && (resolved - created) <= SLA_RESOLUTION) {
+                entitySLA[person].within++;
+            }
+        });
+
+        const sorted = Object.entries(entitySLA)
+            .map(([name, d]) => ({ name, rate: d.total > 0 ? (d.within / d.total) * 100 : 0, total: d.total }))
+            .filter(d => d.total >= 3)
+            .sort((a, b) => b.rate - a.rate)
+            .slice(0, isFullscreen ? 8 : 5);
+
+        if (!sorted.length) { this.drawNoData(ctx, w, h, 'Dados insuficientes'); return; }
+
+        const pad = isFullscreen ? { left: 160, right: 80, top: 30 } : { left: 90, right: 50, top: 20 };
+        const barH = isFullscreen ? 28 : 18;
+        const gap = isFullscreen ? 8 : 5;
+
+        sorted.forEach((item, i) => {
+            const y = pad.top + i * (barH + gap);
+            const bw = (item.rate / 100) * (w - pad.left - pad.right);
+            const color = item.rate >= 80 ? '#10b981' : item.rate >= 60 ? '#f59e0b' : '#ef4444';
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.roundRect(pad.left, y, bw, barH, 4); ctx.fill();
+
+            ctx.fillStyle = this.colors.text;
+            ctx.font = isFullscreen ? '12px system-ui' : '9px system-ui';
+            ctx.textAlign = 'right';
+            ctx.fillText(item.name.length > 15 ? item.name.slice(0, 13) + '..' : item.name, pad.left - 6, y + barH / 2 + 4);
+            ctx.font = isFullscreen ? 'bold 12px system-ui' : 'bold 9px system-ui';
+            ctx.textAlign = 'left';
+            ctx.fillText(`${item.rate.toFixed(0)}%`, pad.left + bw + 6, y + barH / 2 + 4);
+        });
+    }
+
+    drawSLATrend(ctx, w, h, data, isFullscreen = false) {
+        const SLA = 4 * 60 * 60 * 1000;
+        const days = [];
+        const now = new Date();
+        
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(now);
+            d.setDate(d.getDate() - i);
+            days.push(d.toISOString().split('T')[0]);
+        }
+
+        const dayData = {};
+        days.forEach(d => dayData[d] = { within: 0, total: 0 });
+
+        data.forEach(t => {
+            const dateKey = t.created_at.split('T')[0];
+            if (!dayData[dateKey]) return;
+            dayData[dateKey].total++;
+            const created = new Date(t.created_at);
+            const firstResponse = t.first_responded_at ? new Date(t.first_responded_at) : null;
+            if (firstResponse && (firstResponse - created) <= SLA) {
+                dayData[dateKey].within++;
+            }
+        });
+
+        const rates = days.map(d => dayData[d].total > 0 ? (dayData[d].within / dayData[d].total) * 100 : 0);
+        const pad = isFullscreen ? { left: 50, right: 30, top: 30, bottom: 40 } : { left: 35, right: 20, top: 20, bottom: 30 };
+        const chartW = w - pad.left - pad.right;
+        const chartH = h - pad.top - pad.bottom;
+
+        // Linha de tendência
+        ctx.strokeStyle = '#667eea';
+        ctx.lineWidth = isFullscreen ? 3 : 2;
+        ctx.beginPath();
+        rates.forEach((rate, i) => {
+            const x = pad.left + (i / (rates.length - 1)) * chartW;
+            const y = pad.top + chartH - (rate / 100) * chartH;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        // Pontos
+        rates.forEach((rate, i) => {
+            const x = pad.left + (i / (rates.length - 1)) * chartW;
+            const y = pad.top + chartH - (rate / 100) * chartH;
+            ctx.fillStyle = rate >= 80 ? '#10b981' : rate >= 60 ? '#f59e0b' : '#ef4444';
+            ctx.beginPath();
+            ctx.arc(x, y, isFullscreen ? 6 : 4, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Labels
+        ctx.fillStyle = this.colors.textMuted;
+        ctx.font = isFullscreen ? '11px system-ui' : '8px system-ui';
+        ctx.textAlign = 'center';
+        days.forEach((d, i) => {
+            const x = pad.left + (i / (days.length - 1)) * chartW;
+            ctx.fillText(d.slice(5), x, h - pad.bottom + 15);
+        });
+    }
+
+    drawProductivityRanking(ctx, w, h, data, isFullscreen = false) {
+        const entityStats = {};
+
+        data.forEach(t => {
+            const person = this.getField(t, 'cf_tratativa') || 'Sem tratativa';
+            const s = this.statusMap[t.status];
+            if (!entityStats[person]) entityStats[person] = { resolved: 0, total: 0 };
+            entityStats[person].total++;
+            if (s && (s.group === 'resolved' || s.group === 'closed')) {
+                entityStats[person].resolved++;
+            }
+        });
+
+        const sorted = Object.entries(entityStats)
+            .map(([name, d]) => ({ name, resolved: d.resolved, total: d.total, rate: d.total > 0 ? (d.resolved / d.total) * 100 : 0 }))
+            .filter(d => d.total >= 5)
+            .sort((a, b) => b.resolved - a.resolved)
+            .slice(0, isFullscreen ? 10 : 6);
+
+        if (!sorted.length) { this.drawNoData(ctx, w, h, 'Dados insuficientes'); return; }
+
+        const maxVal = sorted[0].resolved;
+        const pad = isFullscreen ? { left: 160, right: 80, top: 30 } : { left: 90, right: 50, top: 20 };
+        const barH = isFullscreen ? 28 : 18;
+        const gap = isFullscreen ? 8 : 5;
+
+        sorted.forEach((item, i) => {
+            const y = pad.top + i * (barH + gap);
+            const bw = Math.max(10, (item.resolved / maxVal) * (w - pad.left - pad.right));
+            const grad = ctx.createLinearGradient(pad.left, 0, pad.left + bw, 0);
+            grad.addColorStop(0, '#8b5cf6'); grad.addColorStop(1, '#7c3aed');
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.roundRect(pad.left, y, bw, barH, 4); ctx.fill();
+
+            ctx.fillStyle = this.colors.text;
+            ctx.font = isFullscreen ? '12px system-ui' : '9px system-ui';
+            ctx.textAlign = 'right';
+            ctx.fillText(item.name.length > 15 ? item.name.slice(0, 13) + '..' : item.name, pad.left - 6, y + barH / 2 + 4);
+            ctx.font = isFullscreen ? 'bold 12px system-ui' : 'bold 9px system-ui';
+            ctx.textAlign = 'left';
+            ctx.fillText(`${item.resolved} res.`, pad.left + bw + 6, y + barH / 2 + 4);
+        });
+    }
+
+    drawTicketsPerDay(ctx, w, h, data, isFullscreen = false) {
+        const byDay = {};
+        data.forEach(t => {
+            const dateKey = t.created_at.split('T')[0];
+            byDay[dateKey] = (byDay[dateKey] || 0) + 1;
+        });
+
+        const sorted = Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0])).slice(-14);
+        if (!sorted.length) { this.drawNoData(ctx, w, h, 'Sem dados'); return; }
+
+        const maxVal = Math.max(...sorted.map(d => d[1]));
+        const pad = isFullscreen ? { left: 50, right: 30, top: 30, bottom: 50 } : { left: 35, right: 20, top: 20, bottom: 35 };
+        const chartW = w - pad.left - pad.right;
+        const chartH = h - pad.top - pad.bottom;
+        const barW = Math.min(chartW / sorted.length - 4, isFullscreen ? 40 : 20);
+
+        sorted.forEach(([date, count], i) => {
+            const x = pad.left + (i + 0.5) * (chartW / sorted.length) - barW / 2;
+            const barH = (count / maxVal) * chartH;
+            const y = pad.top + chartH - barH;
+
+            const grad = ctx.createLinearGradient(x, y, x, y + barH);
+            grad.addColorStop(0, '#3b82f6'); grad.addColorStop(1, '#1d4ed8');
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.roundRect(x, y, barW, barH, 3); ctx.fill();
+
+            // Valor
+            ctx.fillStyle = this.colors.text;
+            ctx.font = isFullscreen ? 'bold 11px system-ui' : 'bold 8px system-ui';
+            ctx.textAlign = 'center';
+            ctx.fillText(count, x + barW / 2, y - 5);
+
+            // Label
+            ctx.fillStyle = this.colors.textMuted;
+            ctx.font = isFullscreen ? '10px system-ui' : '7px system-ui';
+            ctx.fillText(date.slice(5), x + barW / 2, h - pad.bottom + 12);
+        });
+    }
+
     // ========== FULLSCREEN ==========
     async startPresentation() {
-        const slides = this.availableSlides.filter(s => this.selectedSlides.has(s.id));
+        const slides = this.getSlidesForCurrentMode().filter(s => this.selectedSlides.has(s.id));
         if (!slides.length) { alert('Selecione pelo menos um slide.'); return; }
         if (!this.filteredData.length) { alert('Nenhum dado. Ajuste os filtros.'); return; }
 
@@ -2635,7 +3281,7 @@ class PresentationModeV2 {
     }
 
     handleKey(e) {
-        const slides = this.availableSlides.filter(s => this.selectedSlides.has(s.id));
+        const slides = this.getSlidesForCurrentMode().filter(s => this.selectedSlides.has(s.id));
         if (e.key === 'ArrowRight' || e.key === ' ') {
             if (this.currentSlide < slides.length - 1) {
                 this.currentSlide++;
@@ -2648,21 +3294,31 @@ class PresentationModeV2 {
                 this.renderSlideAnimated();
             }
         }
-        else if (e.key === 'Escape') this.stopPresentation();
+        else if (e.key === 'Escape') {
+            if (this.isDrawingMode) {
+                this.toggleDrawMode(); // Sair do modo desenho primeiro
+            } else {
+                this.stopPresentation();
+            }
+        }
         else if (e.key.toLowerCase() === 'd') this.toggleDrawMode();
         else if (e.key.toLowerCase() === 'p') this.openPresenterView();
         else if (e.key.toLowerCase() === 'c') this.clearAnnotations();
         else if (e.key.toLowerCase() === 'a') this.toggleAutoplay();
         else if (e.key.toLowerCase() === 'e') this.exportToPDF();
+        else if (e.key.toLowerCase() === 'z' && e.ctrlKey) {
+            e.preventDefault();
+            this.undoAnnotation();
+        }
     }
 
     renderFullscreen() {
-        const slides = this.availableSlides.filter(s => this.selectedSlides.has(s.id));
+        const slides = this.getSlidesForCurrentMode().filter(s => this.selectedSlides.has(s.id));
         const overlay = document.createElement('div');
         overlay.id = 'presentationFS';
         overlay.innerHTML = `
         <div class="pres-fullscreen">
-            <div class="pres-fullscreen-header">
+            <div class="pres-fullscreen-header" style="position:relative;z-index:100">
                 <div class="pres-fullscreen-title">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                     <h2>Modo Apresentação</h2>
@@ -2670,13 +3326,17 @@ class PresentationModeV2 {
                 <div class="pres-fullscreen-controls">
                     <button id="btnDrawMode" onclick="presentationModeV2.toggleDrawMode()" class="pres-fullscreen-btn" title="Desenhar (D)">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
-                        Desenhar
+                        <span id="btnDrawModeText">Desenhar</span>
                     </button>
-                    <button onclick="presentationModeV2.clearAnnotations()" class="pres-fullscreen-btn" title="Limpar (C)">
+                    <button id="btnUndo" onclick="presentationModeV2.undoAnnotation()" class="pres-fullscreen-btn" title="Desfazer (Ctrl+Z)" style="display:none">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                        Desfazer
+                    </button>
+                    <button id="btnClearAnnot" onclick="presentationModeV2.clearAnnotations()" class="pres-fullscreen-btn" title="Limpar (C)" style="display:none">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                         Limpar
                     </button>
-                    <input type="color" id="drawColor" value="#ef4444" onchange="presentationModeV2.drawingColor=this.value" style="width:36px;height:36px;border:none;border-radius:8px;cursor:pointer" title="Cor do desenho">
+                    <input type="color" id="drawColor" value="#ef4444" onchange="presentationModeV2.drawingColor=this.value" style="width:36px;height:36px;border:none;border-radius:8px;cursor:pointer;display:none" title="Cor do desenho">
                     <button onclick="presentationModeV2.openPresenterView()" class="pres-fullscreen-btn" title="Modo Apresentador (P)">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                         Apresentador
@@ -2709,7 +3369,7 @@ class PresentationModeV2 {
                 </div>
             </div>
             
-            <div class="pres-fullscreen-footer">
+            <div class="pres-fullscreen-footer" style="position:relative;z-index:100">
                 <button onclick="presentationModeV2.prevSlide()" class="pres-nav-btn" ${this.currentSlide === 0 ? 'disabled' : ''}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                     Anterior
@@ -2743,10 +3403,26 @@ class PresentationModeV2 {
     toggleDrawMode() {
         this.isDrawingMode = !this.isDrawingMode;
         const btn = document.getElementById('btnDrawMode');
+        const btnText = document.getElementById('btnDrawModeText');
+        const btnUndo = document.getElementById('btnUndo');
+        const btnClear = document.getElementById('btnClearAnnot');
+        const colorPicker = document.getElementById('drawColor');
         const annotCanvas = document.getElementById('annotationCanvas');
+        
         if (btn) btn.style.background = this.isDrawingMode ? this.colors.primary : 'rgba(255,255,255,0.1)';
+        if (btnText) btnText.textContent = this.isDrawingMode ? 'Sair Desenho' : 'Desenhar';
+        if (btnUndo) btnUndo.style.display = this.isDrawingMode ? 'flex' : 'none';
+        if (btnClear) btnClear.style.display = this.isDrawingMode ? 'flex' : 'none';
+        if (colorPicker) colorPicker.style.display = this.isDrawingMode ? 'block' : 'none';
         if (annotCanvas) annotCanvas.style.pointerEvents = this.isDrawingMode ? 'auto' : 'none';
         if (annotCanvas) annotCanvas.style.cursor = this.isDrawingMode ? 'crosshair' : 'default';
+    }
+
+    undoAnnotation() {
+        if (this.annotations.length > 0) {
+            this.annotations.pop();
+            this.drawAnnotations();
+        }
     }
 
     setupAnnotationCanvas() {
@@ -2754,7 +3430,7 @@ class PresentationModeV2 {
         if (!annotCanvas) return;
 
         const content = document.getElementById('fsContent');
-        
+
         // Usar o tamanho real do container
         const rect = content.getBoundingClientRect();
         annotCanvas.width = rect.width;
@@ -2843,7 +3519,7 @@ class PresentationModeV2 {
 
     // ========== MODO APRESENTADOR ==========
     openPresenterView() {
-        const slides = this.availableSlides.filter(s => this.selectedSlides.has(s.id));
+        const slides = this.getSlidesForCurrentMode().filter(s => this.selectedSlides.has(s.id));
         const currentSlide = slides[this.currentSlide];
         const nextSlide = slides[this.currentSlide + 1];
 
@@ -2865,7 +3541,7 @@ class PresentationModeV2 {
     updatePresenterView() {
         if (!this.presenterWindow || this.presenterWindow.closed) return;
 
-        const slides = this.availableSlides.filter(s => this.selectedSlides.has(s.id));
+        const slides = this.getSlidesForCurrentMode().filter(s => this.selectedSlides.has(s.id));
         const currentSlide = slides[this.currentSlide];
         const nextSlide = slides[this.currentSlide + 1];
         const prevSlide = slides[this.currentSlide - 1];
@@ -3039,7 +3715,7 @@ class PresentationModeV2 {
     }
 
     nextSlide() {
-        const slides = this.availableSlides.filter(s => this.selectedSlides.has(s.id));
+        const slides = this.getSlidesForCurrentMode().filter(s => this.selectedSlides.has(s.id));
         if (this.currentSlide < slides.length - 1) {
             this.currentSlide++;
             this.renderSlideAnimated();
@@ -3062,7 +3738,7 @@ class PresentationModeV2 {
     }
 
     renderSlide() {
-        const slides = this.availableSlides.filter(s => this.selectedSlides.has(s.id));
+        const slides = this.getSlidesForCurrentMode().filter(s => this.selectedSlides.has(s.id));
         const slide = slides[this.currentSlide];
         if (!slide) return;
         const content = document.getElementById('fsContent');
@@ -3255,24 +3931,30 @@ class PresentationModeV2 {
     // ========== CORES DINÂMICAS DO TEMA ==========
     // CENTRALIZADO em js/theme-colors-config.js
     getThemeColors() {
-        // Usar função global centralizada
-        const config = window.getCurrentThemeColors?.() || {};
+        // Detectar tema atual
         const theme = document.documentElement.getAttribute('data-theme') || 'dark';
         const isCyan = theme === 'tryvia-cyan';
         
+        // Tentar usar função global centralizada
+        const config = window.getCurrentThemeColors?.() || {};
+
+        // IMPORTANTE: Para tema claro, SEMPRE usar cores escuras para texto
+        const textColor = isCyan ? '#1e293b' : (config.text || '#e2e8f0');
+        const textMutedColor = isCyan ? '#64748b' : (config.textMuted || '#94a3b8');
+
         return {
-            bg: config.background || (isCyan ? '#f8fafc' : '#0a0a1a'),
-            surface: config.surface || (isCyan ? '#ffffff' : '#1a1a2e'),
+            bg: isCyan ? '#f8fafc' : (config.background || '#0a0a1a'),
+            surface: isCyan ? '#ffffff' : (config.surface || '#1a1a2e'),
             surfaceHover: isCyan ? '#f1f5f9' : '#252542',
-            primary: config.primary || (isCyan ? '#0099cc' : '#667eea'),
+            primary: isCyan ? '#0099cc' : (config.primary || '#667eea'),
             success: config.secondary || '#10b981',
             warning: config.accent || '#f59e0b',
             danger: config.danger || '#ef4444',
-            text: config.text || (isCyan ? '#1e293b' : '#e2e8f0'),
-            textMuted: config.textMuted || (isCyan ? '#64748b' : '#94a3b8'),
-            border: config.border || (isCyan ? '#e2e8f0' : '#334155'),
-            chartText: config.chartText || config.text || (isCyan ? '#1e293b' : '#e2e8f0'),
-            chartLabel: config.chartLabel || config.textMuted || (isCyan ? '#475569' : '#94a3b8')
+            text: textColor,
+            textMuted: textMutedColor,
+            border: isCyan ? '#e2e8f0' : (config.border || '#334155'),
+            chartText: textColor,
+            chartLabel: textMutedColor
         };
     }
 
@@ -3323,6 +4005,7 @@ class PresentationModeV2 {
                 id: Date.now(),
                 name: name,
                 slides: Array.from(this.selectedSlides),
+                slideOrder: this.slideOrder.filter(id => this.selectedSlides.has(id)), // Salvar ordem
                 team: this.selectedTeam,
                 dataMode: this.dataMode,
                 createdAt: new Date().toISOString()
@@ -3346,6 +4029,12 @@ class PresentationModeV2 {
                 return;
             }
             this.selectedSlides = new Set(template.slides);
+            // Restaurar ordem dos slides se existir
+            if (template.slideOrder && template.slideOrder.length > 0) {
+                // Manter slides não selecionados no final da ordem
+                const otherSlides = this.slideOrder.filter(id => !template.slideOrder.includes(id));
+                this.slideOrder = [...template.slideOrder, ...otherSlides];
+            }
             this.selectedTeam = template.team;
             this.dataMode = template.dataMode;
             this.render();
@@ -3370,7 +4059,7 @@ class PresentationModeV2 {
         this.isLoading = true;
         const existing = document.getElementById('presLoading');
         if (existing) existing.remove();
-        
+
         const loader = document.createElement('div');
         loader.id = 'presLoading';
         loader.innerHTML = `
@@ -3407,7 +4096,7 @@ class PresentationModeV2 {
     toggleAutoplay() {
         this.autoplayEnabled = !this.autoplayEnabled;
         const btn = document.getElementById('btnAutoplay');
-        
+
         if (this.autoplayEnabled) {
             this.startAutoplay();
             if (btn) btn.style.background = this.colors.success;
@@ -3422,7 +4111,7 @@ class PresentationModeV2 {
     startAutoplay() {
         this.stopAutoplay(); // Limpar intervalo anterior
         this.autoplayInterval = setInterval(() => {
-            const slides = this.availableSlides.filter(s => this.selectedSlides.has(s.id));
+            const slides = this.getSlidesForCurrentMode().filter(s => this.selectedSlides.has(s.id));
             if (this.currentSlide < slides.length - 1) {
                 this.nextSlide();
             } else {
@@ -3453,7 +4142,7 @@ class PresentationModeV2 {
     async exportToPDF() {
         try {
             this.showLoading('Gerando PDF...');
-            
+
             // Verificar se html2canvas e jsPDF estão disponíveis
             if (!window.html2canvas || !window.jspdf) {
                 // Carregar bibliotecas dinamicamente
@@ -3462,52 +4151,52 @@ class PresentationModeV2 {
 
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('landscape', 'mm', 'a4');
-            const slides = this.availableSlides.filter(s => this.selectedSlides.has(s.id));
-            
+            const slides = this.getSlidesForCurrentMode().filter(s => this.selectedSlides.has(s.id));
+
             for (let i = 0; i < slides.length; i++) {
                 const slide = slides[i];
                 this.currentSlide = i;
-                
+
                 // Criar canvas temporário
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = 1200;
                 tempCanvas.height = 675;
                 const ctx = tempCanvas.getContext('2d');
-                
+
                 // Desenhar fundo
                 ctx.fillStyle = this.colors.surface;
                 ctx.fillRect(0, 0, 1200, 675);
-                
+
                 // Desenhar título
                 ctx.fillStyle = this.colors.text;
                 ctx.font = 'bold 32px system-ui';
                 ctx.textAlign = 'center';
                 ctx.fillText(`${slide.icon} ${slide.title}`, 600, 50);
-                
+
                 // Desenhar gráfico
                 ctx.save();
                 ctx.translate(100, 100);
                 this.drawChart(ctx, 1000, 500, slide.id, this.filteredData, true);
                 ctx.restore();
-                
+
                 // Adicionar ao PDF
                 const imgData = tempCanvas.toDataURL('image/png');
                 if (i > 0) pdf.addPage();
                 pdf.addImage(imgData, 'PNG', 10, 10, 277, 190);
-                
+
                 // Adicionar rodapé
                 pdf.setFontSize(10);
                 pdf.setTextColor(128);
                 pdf.text(`Slide ${i + 1} de ${slides.length} | ${this.formatDate(new Date())}`, 148.5, 200, { align: 'center' });
             }
-            
+
             // Salvar PDF
             const filename = `apresentacao_${this.selectedTeam || 'geral'}_${new Date().toISOString().split('T')[0]}.pdf`;
             pdf.save(filename);
-            
+
             this.hideLoading();
             this.showToast(`📄 PDF exportado: ${filename}`);
-            
+
         } catch (error) {
             console.error('❌ Erro ao exportar PDF:', error);
             this.hideLoading();

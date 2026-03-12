@@ -44,7 +44,10 @@ class AnnotationsModule {
 
     async initSupabase() {
         try {
-            if (typeof window.initSupabase === 'function') {
+            // Tentar usar cliente existente primeiro
+            if (window.supabaseClient) {
+                this.supabase = window.supabaseClient;
+            } else if (typeof window.initSupabase === 'function') {
                 this.supabase = await window.initSupabase();
             } else if (window.EnvConfig?.supabase?.url && window.supabase?.createClient) {
                 this.supabase = window.supabase.createClient(
@@ -58,7 +61,8 @@ class AnnotationsModule {
             }
             return this.supabase;
         } catch (e) {
-            console.error('Erro Supabase:', e);
+            // Silenciar erro - o sistema vai tentar novamente mais tarde
+            console.warn('⚠️ Supabase ainda não disponível para Anotações');
             return null;
         }
     }

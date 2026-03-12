@@ -92,6 +92,13 @@
       tip: 'Maioria deve estar nas primeiras faixas.',
       unifies: null
     },
+    'chartAvgResolutionTime': {
+      title: 'Tempo Médio de Resolução',
+      description: 'Tempo médio para resolver tickets por pessoa/time. EXCLUI tickets de Melhoria e Projeto para refletir apenas atendimento real.',
+      formula: 'Média = Σ(Data Resolução - Data Criação) ÷ Qtd Tickets Resolvidos. Ignora outliers >30 dias.',
+      tip: '🟢 ≤24h = Excelente | 🟡 24-48h = Aceitável | 🔴 >48h = Atenção necessária',
+      unifies: null
+    },
 
     // ========== PRODUTIVIDADE ==========
     'chartByDayOfWeek': {
@@ -569,7 +576,10 @@
       'chartSystems': 'Sistema',
       'chartSLA': 'SLA',
       'chartSLAByEntity': 'SLA por',
+      'chartSLAResolutionByEntity': 'SLA Resolução',
+      'chartSLACountByEntity': 'Qtd. SLA',
       'chartFirstResponse': 'First Response',
+      'chartAvgResolutionTime': 'Tempo Médio',
       'chartByDayOfWeek': 'Dia da Semana',
       'chartByHour': 'Por Hora',
       'chartHeatmap': 'Mapa de Calor',

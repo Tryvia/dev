@@ -5,7 +5,7 @@
   "main": "freshdesk-proxy.js",
   "scripts": {
     "start": "node freshdesk-proxy.js",
-    "sync": "node sync-freshdesk/sync-tickets-v2.js",
+    "sync": "node sync-freshdesk/sync-smart.js quick",
     "install-deps": "npm install"
   },
   "dependencies": {

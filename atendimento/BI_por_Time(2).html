@@ -5,7 +5,8 @@
 <title>BI por Time — Grupo Tratativa</title>
 
 <!-- Favicon inline para evitar erro 404 -->
-  <link rel="icon" type="image/png" href="tryvia.png" />
+<link rel="icon"
+  href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -757,153 +758,216 @@
         </div>
       </div>
 
-      <!-- Tickets Stats - Row 1: Principal -->
+      <!-- Tickets Stats - Row 1: Principal (Estilo BI Analytics - Simplificado) -->
       <div class="tickets-stats-row1"
         style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem;">
-        <div class="stat-card"
-          style="background: linear-gradient(135deg, #1e1e2e 0%, #252536 100%); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.3);">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-            <span style="color: #a1a1aa; font-size: 0.8rem;">Total de Tickets</span>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <line x1="9" y1="9" x2="15" y2="9" />
-              <line x1="9" y1="13" x2="15" y2="13" />
-              <line x1="9" y1="17" x2="12" y2="17" />
-            </svg>
+
+        <!-- Total de Tickets -->
+        <div class="stat-card bi-card"
+          style="background: #1a1a2e; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.2s ease; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div
+              style="color: #71717a; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
+              Total de Tickets</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="color: #3b82f6; opacity: 0.6;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <line x1="9" y1="9" x2="15" y2="9" />
+                  <line x1="9" y1="13" x2="15" y2="13" />
+                </svg>
+              </div>
+            </div>
           </div>
-          <div id="totalTicketsCount"
-            style="font-size: 2.25rem; font-weight: bold; color: #f4f4f5; letter-spacing: -1px;">0</div>
+          <div id="totalTicketsCount" style="font-size: 2rem; font-weight: 700; color: #3b82f6; line-height: 1;">0</div>
         </div>
 
-        <div class="stat-card"
-          style="background: linear-gradient(135deg, #1e1e2e 0%, #252536 100%); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.3);">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-            <span style="color: #a1a1aa; font-size: 0.8rem;">Tickets Abertos</span>
-            <div style="width: 12px; height: 12px; border-radius: 50%; background: #3b82f6;"></div>
+        <!-- Tickets Pendentes (UNIFICADO: Abertos + Pendentes + Em Progresso) -->
+        <div class="stat-card bi-card"
+          style="background: #1a1a2e; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(f59e0b,0.3); transition: all 0.2s ease; position: relative; cursor: pointer;"
+          onclick="if(typeof showPendingTicketsModal === 'function') showPendingTicketsModal()"
+          title="Clique para ver detalhes">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div
+              style="color: #71717a; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
+              Tickets Pendentes</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button
+                onclick="event.stopPropagation(); alert('Tickets Pendentes: Total de tickets que ainda não foram resolvidos (status Aberto, Pendente, Em Progresso, Aguardando).\n\nFórmula: Todos os tickets com status \u2260 Resolvido e \u2260 Fechado')"
+                style="background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 18px; height: 18px; color: #94a3b8; cursor: pointer; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center;"
+                title="Clique para ver detalhes">?</button>
+              <div style="color: #f59e0b; opacity: 0.6;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M9 12h6M9 8h6M9 16h3" />
+                  <circle cx="17" cy="17" r="4" fill="#f59e0b" stroke="#f59e0b" /><text x="17" y="20"
+                    text-anchor="middle" fill="#1a1a2e" font-size="8" font-weight="bold">!</text>
+                </svg>
+              </div>
+            </div>
           </div>
-          <div id="openTicketsCount"
-            style="font-size: 2.25rem; font-weight: bold; color: #f4f4f5; letter-spacing: -1px;">0</div>
+          <div id="pendingTicketsCount" style="font-size: 2rem; font-weight: 700; color: #f59e0b; line-height: 1;">0
+          </div>
+          <div style="font-size: 0.65rem; color: #52525b; margin-top: 0.35rem;">Clique para detalhes</div>
         </div>
 
-        <div class="stat-card"
-          style="background: linear-gradient(135deg, #1e1e2e 0%, #252536 100%); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3);">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-            <span style="color: #a1a1aa; font-size: 0.8rem;">Tickets Pendentes</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
-              <path
-                d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-            </svg>
+        <!-- Tickets Resolvidos -->
+        <div class="stat-card bi-card"
+          style="background: #1a1a2e; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.2s ease; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div
+              style="color: #71717a; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
+              Tickets Resolvidos</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="color: #10b981; opacity: 0.6;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+            </div>
           </div>
-          <div id="pendingTicketsCount"
-            style="font-size: 2.25rem; font-weight: bold; color: #f4f4f5; letter-spacing: -1px;">0</div>
+          <div id="resolvedTicketsCount" style="font-size: 2rem; font-weight: 700; color: #10b981; line-height: 1;">0
+          </div>
         </div>
 
-        <div class="stat-card"
-          style="background: linear-gradient(135deg, #1e1e2e 0%, #252536 100%); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3);">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-            <span style="color: #a1a1aa; font-size: 0.8rem;">Tickets Resolvidos</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+        <!-- Taxa de Resolução -->
+        <div class="stat-card bi-card"
+          style="background: #1a1a2e; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.2s ease; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div
+              style="color: #71717a; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
+              Taxa Resolução</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="color: #8b5cf6; opacity: 0.6;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                  <polyline points="17 6 23 6 23 12" />
+                </svg>
+              </div>
+            </div>
           </div>
-          <div id="resolvedTicketsCount"
-            style="font-size: 2.25rem; font-weight: bold; color: #10b981; letter-spacing: -1px;">0</div>
+          <div id="resolutionRateDisplay" style="font-size: 2rem; font-weight: 700; color: #8b5cf6; line-height: 1;">0%
+          </div>
         </div>
       </div>
 
-      <!-- Tickets Stats - Row 2: SLA (2 cards maiores) -->
+      <!-- Tickets Stats - Row 2: SLA (Estilo BI Analytics) -->
       <div class="tickets-stats-row2"
         style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">
-        <div class="stat-card sla-card"
-          style="background: linear-gradient(135deg, #1e1e2e 0%, #1a1a2e 100%); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(96, 165, 250, 0.2); display: flex; align-items: center; gap: 2rem;">
-          <div style="flex: 1;">
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              <span style="color: #a1a1aa; font-size: 0.85rem;">SLA 1a Resposta</span>
-              <span style="color: #52525b; font-size: 0.75rem;">(Dentro)</span>
+
+        <!-- SLA 1a Resposta -->
+        <div class="stat-card bi-card"
+          style="background: #1a1a2e; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.2s ease; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div
+              style="color: #71717a; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
+              SLA 1ª Resposta</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="color: #52525b; font-size: 0.65rem;">(Dentro)</span>
+              <div style="color: #60a5fa; opacity: 0.6;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </div>
             </div>
           </div>
-          <div id="kpiSlaFirstPct"
-            style="font-size: 2.5rem; font-weight: bold; color: #f4f4f5; min-width: 100px; text-align: right;">0%</div>
+          <div id="kpiSlaFirstPct" style="font-size: 2rem; font-weight: 700; color: #60a5fa; line-height: 1;">0%</div>
         </div>
 
-        <div class="stat-card sla-card"
-          style="background: linear-gradient(135deg, #1e1e2e 0%, #1a1a2e 100%); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(34, 197, 94, 0.2); display: flex; align-items: center; gap: 2rem;">
-          <div style="flex: 1;">
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <path d="M9 12l2 2 4-4" />
-              </svg>
-              <span style="color: #a1a1aa; font-size: 0.85rem;">SLA 1a Resolucao</span>
-              <span style="color: #52525b; font-size: 0.75rem;">(Dentro)</span>
+        <!-- SLA 1a Resolucao -->
+        <div class="stat-card bi-card"
+          style="background: #1a1a2e; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.2s ease; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div
+              style="color: #71717a; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
+              SLA 1ª Resolução</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="color: #52525b; font-size: 0.65rem;">(Dentro)</span>
+              <div style="color: #22c55e; opacity: 0.6;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M9 12l2 2 4-4" />
+                </svg>
+              </div>
             </div>
           </div>
-          <div id="kpiSlaResPct"
-            style="font-size: 2.5rem; font-weight: bold; color: #f4f4f5; min-width: 100px; text-align: right;">0%</div>
+          <div id="kpiSlaResPct" style="font-size: 2rem; font-weight: 700; color: #22c55e; line-height: 1;">0%</div>
         </div>
       </div>
 
-      <!-- Tickets Stats - Row 3: Alertas (3 cards com gradiente) -->
+      <!-- Tickets Stats - Row 3: Alertas (Estilo BI Analytics) -->
       <div class="tickets-stats-row3"
         style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem;">
-        <div class="stat-card alert-card"
-          style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(185, 28, 28, 0.25) 100%); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3); position: relative; overflow: hidden;">
-          <div
-            style="position: absolute; top: 0; right: 0; width: 80px; height: 80px; background: radial-gradient(circle at top right, rgba(239, 68, 68, 0.3), transparent 70%);">
+
+        <!-- Escalados -->
+        <div class="stat-card bi-card"
+          style="background: linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(180,83,9,0.1) 100%); padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(239,68,68,0.3); transition: all 0.2s ease; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div
+              style="color: #fca5a5; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
+              Escalados</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="color: #ef4444; opacity: 0.6;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+            </div>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-            <span style="color: #fca5a5; font-size: 0.85rem; font-weight: 500;">Escalados</span>
-          </div>
-          <div style="display: flex; align-items: baseline; gap: 0.75rem;">
-            <div id="kpiEscalatedCount" style="font-size: 2.25rem; font-weight: bold; color: #f4f4f5;">0</div>
-            <span id="kpiEscalatedPct" style="color: #ef4444; font-size: 0.9rem; font-weight: 500;">0%</span>
+          <div style="display: flex; align-items: baseline; gap: 0.5rem;">
+            <div id="kpiEscalatedCount" style="font-size: 2rem; font-weight: 700; color: #fbbf24; line-height: 1;">0
+            </div>
+            <span id="kpiEscalatedPct" style="color: #ef4444; font-size: 0.8rem; font-weight: 500;">0%</span>
           </div>
         </div>
 
-        <div class="stat-card alert-card"
-          style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(180, 83, 9, 0.25) 100%); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3); position: relative; overflow: hidden;">
-          <div
-            style="position: absolute; top: 0; right: 0; width: 80px; height: 80px; background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.3), transparent 70%);">
+        <!-- Reabertos -->
+        <div class="stat-card bi-card"
+          style="background: linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(180,83,9,0.1) 100%); padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(245,158,11,0.3); transition: all 0.2s ease; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div
+              style="color: #fcd34d; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
+              Reabertos</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="color: #f59e0b; opacity: 0.6;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 4v6h-6" />
+                  <path d="M1 20v-6h6" />
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                </svg>
+              </div>
+            </div>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
-              <path d="M23 4v6h-6" />
-              <path d="M1 20v-6h6" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-            <span style="color: #fcd34d; font-size: 0.85rem; font-weight: 500;">Reabertos</span>
-          </div>
-          <div style="display: flex; align-items: baseline; gap: 0.75rem;">
-            <div id="kpiReopenedCount" style="font-size: 2.25rem; font-weight: bold; color: #f4f4f5;">0</div>
-            <span id="kpiReopenedPct" style="color: #f59e0b; font-size: 0.9rem; font-weight: 500;">0%</span>
+          <div style="display: flex; align-items: baseline; gap: 0.5rem;">
+            <div id="kpiReopenedCount" style="font-size: 2rem; font-weight: 700; color: #fbbf24; line-height: 1;">0
+            </div>
+            <span id="kpiReopenedPct" style="color: #f59e0b; font-size: 0.8rem; font-weight: 500;">0%</span>
           </div>
         </div>
 
-        <div class="stat-card alert-card"
-          style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(127, 29, 29, 0.25) 100%); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3); position: relative; overflow: hidden;">
-          <div
-            style="position: absolute; top: 0; right: 0; width: 80px; height: 80px; background: radial-gradient(circle at top right, rgba(239, 68, 68, 0.3), transparent 70%);">
+        <!-- Vencidos -->
+        <div class="stat-card bi-card"
+          style="background: linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(127,29,29,0.1) 100%); padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(239,68,68,0.3); transition: all 0.2s ease; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div
+              style="color: #fca5a5; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
+              Vencidos</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="color: #ef4444; opacity: 0.6;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                  <line x1="4" y1="4" x2="20" y2="20" stroke-width="2.5" />
+                </svg>
+              </div>
+            </div>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-              <line x1="4" y1="4" x2="20" y2="20" stroke-width="2.5" />
-            </svg>
-            <span style="color: #fca5a5; font-size: 0.85rem; font-weight: 500;">Vencidos</span>
-          </div>
-          <div style="display: flex; align-items: baseline; gap: 0.75rem;">
-            <div id="kpiOverdueCount" style="font-size: 2.25rem; font-weight: bold; color: #f4f4f5;">0</div>
-            <span id="kpiOverduePct" style="color: #ef4444; font-size: 0.9rem; font-weight: 500;">0%</span>
+          <div style="display: flex; align-items: baseline; gap: 0.5rem;">
+            <div id="kpiOverdueCount" style="font-size: 2rem; font-weight: 700; color: #fbbf24; line-height: 1;">0</div>
+            <span id="kpiOverduePct" style="color: #ef4444; font-size: 0.8rem; font-weight: 500;">0%</span>
           </div>
         </div>
       </div>
@@ -1169,9 +1233,11 @@
           <div class="theme-option" id="theme-dark" onclick="applyTheme('dark')"
             style="padding: 1rem; background: var(--bg-secondary); border: 2px solid var(--accent-purple); border-radius: 8px; cursor: pointer;">
             <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">🌙 Dark</h4>
-            <p style="color: var(--text-secondary); font-size: 0.875rem;">Tema escuro elegante com tons de roxo e azul</p>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Tema escuro elegante com tons de roxo e azul
+            </p>
             <div style="display: flex; gap: 6px; margin-top: 8px;">
-              <span style="width: 20px; height: 20px; border-radius: 4px; background: #0f0f0f; border: 1px solid #333;"></span>
+              <span
+                style="width: 20px; height: 20px; border-radius: 4px; background: #0f0f0f; border: 1px solid #333;"></span>
               <span style="width: 20px; height: 20px; border-radius: 4px; background: #8b5cf6;"></span>
               <span style="width: 20px; height: 20px; border-radius: 4px; background: #3b82f6;"></span>
             </div>
@@ -1181,9 +1247,11 @@
             <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">💎 Tryvia Cyan</h4>
             <p style="color: var(--text-secondary); font-size: 0.875rem;">Tema azul profundo com destaque ciano</p>
             <div style="display: flex; gap: 6px; margin-top: 8px;">
-              <span style="width: 20px; height: 20px; border-radius: 4px; background: hsl(215, 35%, 18%); border: 1px solid #333;"></span>
+              <span
+                style="width: 20px; height: 20px; border-radius: 4px; background: hsl(215, 35%, 18%); border: 1px solid #333;"></span>
               <span style="width: 20px; height: 20px; border-radius: 4px; background: #00e4ff;"></span>
-              <span style="width: 20px; height: 20px; border-radius: 4px; background: #ffffff; border: 1px solid #333;"></span>
+              <span
+                style="width: 20px; height: 20px; border-radius: 4px; background: #ffffff; border: 1px solid #333;"></span>
             </div>
           </div>
           <div class="theme-option" onclick="applyTheme('light')"
@@ -1414,23 +1482,23 @@
 
       function applyTheme(themeName) {
         const validThemes = ['dark', 'tryvia-cyan'];
-        
+
         if (themeName === 'light') {
           showToast('Tema Light em desenvolvimento...', 'warning');
           return;
         }
-        
+
         if (!validThemes.includes(themeName)) {
           showToast('Tema inválido', 'error');
           return;
         }
-        
+
         // Aplicar tema no documento
         document.documentElement.setAttribute('data-theme', themeName);
-        
+
         // Salvar preferência
         localStorage.setItem('selectedTheme', themeName);
-        
+
         // Atualizar visual dos botões de tema
         document.querySelectorAll('.theme-option').forEach(el => {
           el.style.border = '1px solid var(--border)';
@@ -1439,7 +1507,7 @@
         if (activeTheme) {
           activeTheme.style.border = '2px solid var(--primary)';
         }
-        
+
         // Atualizar cores do BI Analytics se existir
         if (window.biAnalytics) {
           if (typeof window.biAnalytics.refreshThemeColors === 'function') {
@@ -1455,12 +1523,12 @@
             }, 100);
           }
         }
-        
+
         showToast('Tema ' + (themeName === 'dark' ? 'Dark' : 'Tryvia Cyan') + ' aplicado!', 'success');
       }
-      
+
       // Carregar tema salvo ao iniciar
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function () {
         const savedTheme = localStorage.getItem('selectedTheme') || 'dark';
         if (savedTheme && savedTheme !== 'dark') {
           document.documentElement.setAttribute('data-theme', savedTheme);
@@ -4426,25 +4494,32 @@
         // Hide all sections
         document.querySelectorAll('section').forEach(s => s.style.display = 'none');
 
-        // Show reports container V2
-        const reportsContainer = document.getElementById('reports-container');
-        if (reportsContainer) {
-          reportsContainer.style.display = 'block';
-
-          // Renderizar o módulo de relatórios V2
-          if (window.reportsModuleV2 && typeof window.reportsModuleV2.render === 'function') {
-            window.reportsModuleV2.render();
+        // Show reports container V3
+        let reportsContainer = document.getElementById('reports-container');
+        if (!reportsContainer) {
+          reportsContainer = document.createElement('section');
+          reportsContainer.id = 'reports-container';
+          reportsContainer.style.cssText = 'position: relative; background: var(--bg-primary, #0a0a1a); overflow: auto; width: 100%; min-height: 100vh;';
+          const mainContainer = document.querySelector('.main-wrapper') || document.querySelector('.main-content') || document.body;
+          if (mainContainer) {
+            mainContainer.appendChild(reportsContainer);
+          } else {
+            document.body.appendChild(reportsContainer);
           }
+        }
+        reportsContainer.style.display = 'block';
+
+        // Renderizar o m�dulo de relat�rios V3 (novo)
+        if (window.reportsModuleV3 && typeof window.reportsModuleV3.render === 'function') {
+          window.reportsModuleV3.render();
         } else {
-          // Fallback para sistema legacy
-          console.warn('Container reports-container não encontrado, usando legacy');
-          document.getElementById('reportsSetup').style.display = 'block';
-          populateReportFilters();
+          console.error('Reports Module V3 n�o encontrado.');
+          reportsContainer.innerHTML = '<div style="padding: 2rem; color: #ef4444;">Erro: Reports Module V3 n�o carregado.</div>';
         }
 
         // Update sidebar active state
         document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
-        const reportsBtn = document.querySelector('[onclick="showReportsSetup()"]');
+        const reportsBtn = document.querySelector('[onclick="showReports()"]') || document.querySelector('[onclick="showReportsSetup()"]');
         if (reportsBtn) reportsBtn.classList.add('active');
       }
 
@@ -6937,6 +7012,24 @@
           let hasMore = true;
           let totalFetched = 0;
 
+          // Campos essenciais para o BI (evita carregar description_text que é muito grande)
+          // Lista validada com sql/criar-colunas-faltantes.sql e sql/criar-tabelas-novo-banco.sql
+          const ESSENTIAL_FIELDS = [
+            'id', 'subject', 'status', 'priority', 'type', 'source',
+            'created_at', 'updated_at', 'due_by', 'fr_due_by',
+            'responder_id', 'responder_name', 'group_id', 'group_name',
+            'company_id', 'company_name', 'requester_id', 'requester_name',
+            // Custom fields
+            'cf_tratativa', 'cf_grupo_tratativa', 'cf_sistema', 'cf_produto',
+            'cf_tipo_primario', 'cf_prioridade_dev', 'cf_situacao',
+            'cf_acompanhamento_atendimento', 'cf_acompanhamento_implantacao', 'cf_acompanhamento_produto',
+            'custom_fields', 'tags',
+            // Stats
+            'stats_resolved_at', 'stats_closed_at', 'stats_first_responded_at',
+            'stats_reopened_at', 'stats_pending_since', 'stats_status_updated_at',
+            'stats_agent_responded_at', 'stats_requester_responded_at'
+          ].join(',');
+
           // Função auxiliar para fetch com retry
           async function fetchWithRetry(client, table, offset, chunkSize, maxRetries = 3) {
             let lastError = null;
@@ -6945,7 +7038,7 @@
               try {
                 const { data, error } = await client
                   .from(table)
-                  .select('*')
+                  .select(ESSENTIAL_FIELDS)
                   .order('updated_at', { ascending: false })
                   .range(offset, offset + chunkSize - 1);
 
@@ -7217,15 +7310,21 @@
       // Update ticket statistics
       function updateTicketStats(tickets) {
         const total = tickets.length;
-        const open = tickets.filter(t => t.status === 2).length;
-        const pending = tickets.filter(t => t.status === 3).length;
         const resolved = tickets.filter(t => t.status === 4 || t.status === 5).length; // 4=Resolvido, 5=Fechado
+        // Pendentes = TODOS que não são resolvidos (status 2=Aberto, 3=Pendente, 6=Em Progresso, 7=Aguardando, etc)
+        const pending = tickets.filter(t => t.status !== 4 && t.status !== 5).length;
+
+        // Taxa de resolução
+        const resolutionRate = total > 0 ? ((resolved / total) * 100).toFixed(1) : 0;
 
         // KPIs básicos (formatados com separador de milhar)
         document.getElementById('totalTicketsCount').textContent = total.toLocaleString('pt-BR');
-        document.getElementById('openTicketsCount').textContent = open.toLocaleString('pt-BR');
         document.getElementById('pendingTicketsCount').textContent = pending.toLocaleString('pt-BR');
         document.getElementById('resolvedTicketsCount').textContent = resolved.toLocaleString('pt-BR');
+
+        // Taxa de Resolução
+        const rateEl = document.getElementById('resolutionRateDisplay');
+        if (rateEl) rateEl.textContent = resolutionRate + '%';
 
         // KPIs de SLA e outros
         let firstEligible = 0, firstOk = 0;
@@ -8416,22 +8515,28 @@
     <script src="js/core-data.js?v=20260108T1700"></script>
 
     <!-- Configuração centralizada de Status do Freshdesk -->
-    <script src="js/status-config.js?v=20251204T1420"></script>
+    <script src="js/status-config.js?v=20260303T1710"></script>
 
     <!-- Configuração de Cores dos Temas (EDITE AQUI para mudar cores) -->
     <script src="js/theme-colors-config.js?v=20260224T1130"></script>
-    
+
     <!-- Configuração de Membros do Time (Whitelist) -->
-    <script src="js/config/team-members.js?v=20260224T1130"></script>
-    
+    <script src="js/config/team-members.js?v=20260303T1710"></script>
+
     <!-- BI Analytics (Unified) -->
-    <script src="js/bi-analytics.js?v=20260224T1130"></script>
-    <script src="js/bi-analytics-methods.js?v=20260223T1555"></script>
+    <script src="js/bi-analytics.js?v=20260303T1710"></script>
+    <script src="js/bi-analytics-methods.js?v=20260309T1230"></script>
     <script src="js/bi-analytics-charts.js?v=20260223T1545"></script>
     <script src="js/bi-analytics-metrics.js?v=20251203T0935"></script>
 
+    <!-- Reports Insights Engine -->
+    <script src="js/reports-insights-engine.js?v=20260312"></script>
+
+    <!-- Reports Module V3 -->
+    <script src="js/reports-module-v3.js?v=20260303T1600"></script>
+
     <!-- Navigation Functions Fix -->
-    <script src="js/navigation-functions.js?v=20251215T1400"></script>
+    <script src="js/navigation-functions.js?v=20260309T1200"></script>
 
     <!-- CSAT Module - Satisfação do Cliente -->
     <script src="js/csat-module.js?v=20251209T1740"></script>
@@ -8440,7 +8545,7 @@
     <script src="js/bi-csat-time-module.js?v=20251210T1515"></script>
 
     <!-- BI Acompanhamento Module (Tags) -->
-    <script src="js/bi-acompanhamento-module.js?v=20251211T0900"></script>
+    <script src="js/bi-acompanhamento-module.js?v=20260309T1230"></script>
 
     <!-- Logger - Sistema de Logging Estruturado -->
     <script src="js/logger.js?v=20260224T1500"></script>
@@ -8456,10 +8561,10 @@
     <script src="js/gamification-badges.js?v=20251218T0100"></script>
 
     <script src="js/gamification.js?v=20251218T0100"></script>
-    
+
     <!-- IA Tryviano - Módulo compartilhado (deve carregar primeiro) -->
     <script src="js/chatbot-utils.js?v=20260224T1450"></script>
-    <script src="js/chatbot.js?v=20260224T1450"></script>
+    <script src="js/chatbot.js?v=20260303T1710"></script>
 
     <!-- Premium Icons (SVG) -->
     <script src="js/premium-icons.js?v=20251223"></script>
@@ -8518,13 +8623,11 @@
 
     <!-- Scripts adicionais (BI Analytics já carregado acima) -->
     <script src="js/presentation-mode-v2.js?v=20251203T0935"></script>
-    <script src="js/reports-module-v2.js?v=20260112T1200"></script>
     <script src="js/date-range-picker.js?v=20251204T1156"></script>
     <script src="js/ai-transformers.js?v=20251201T1115"></script>
     <script src="js/insights-module.js?v=20251201T1115"></script>
     <script src="js/glossary-data.js?v=20251201T1200"></script>
     <script src="js/glossary-module.js?v=20251201T1200"></script>
-    <script src="js/reports-module.js?v=20251215T1500"></script>
     <script src="js/bi-extra-data-module.js?v=20251215T1555"></script>
     <script src="js/annotations-module.js?v=20250126T0100"></script>
 
@@ -8540,6 +8643,8 @@
     <script>
       // Aguardar carregamento completo
       document.addEventListener('DOMContentLoaded', function () {
+        if (window.__biMainStartupDone) return;
+        window.__biMainStartupDone = true;
         console.log('✅ BI Analytics carregado e pronto para uso');
 
         // Verificar se biAnalytics foi criado
@@ -8563,6 +8668,9 @@
 
           // 🔄 POLLING AUTOMÁTICO - Atualiza dados a cada 5 minutos
           const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutos em ms
+          if (window.autoRefreshInterval) {
+            clearInterval(window.autoRefreshInterval);
+          }
           window.autoRefreshInterval = setInterval(async () => {
             console.log('🔄 Auto-refresh: Atualizando dados do Supabase...');
             try {
@@ -8631,7 +8739,7 @@
         const containersToHide = [
           'biAnalyticsContainer', 'ticketsContainer', 'mainContent',
           'comparativeContainer', 'reportsSetup', 'biContainer', 'insightsContainer', 'glossaryContainer',
-          'presentation-container', 'presentationContainer', 'reportsContainer'
+          'presentation-container', 'presentationContainer', 'reportsContainer', 'reports-container'
         ];
         containersToHide.forEach(id => {
           const elem = document.getElementById(id);
@@ -8731,25 +8839,6 @@
           }, 4000);
         }
       })();
-
-                (function () {
-            // Verificar se o usuário veio da página Portal.html
-            const referrerPermitido = '/Portal.html';  
-            const paginaLogin = `../login/index.html`;  
-
-            // Obter o referrer atual
-            const referrerAtual = document.referrer;
-
-            // Verificar se o referrer está vazio (acesso direto) ou não é o permitido
-            if (!referrerAtual || !referrerAtual.includes(referrerPermitido)) {
-                // Verificar se não estamos já na página de login para evitar loop infinito
-                if (window.location.href !== paginaLogin) {
-                    // Redirecionar para a página de login
-                    window.location.replace(paginaLogin);
-                }
-            }
-        })();
-
     </script>
     <!-- Chatbot & IA Modules já carregados acima -->
 

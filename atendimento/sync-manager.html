@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔄 Gerenciador de Sincronização - Freshdesk/Supabase</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #e4e4e7;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 2rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        header h1 {
+            font-size: 2rem;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        header p { color: #a1a1aa; font-size: 0.95rem; }
+        
+        .scripts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .script-card {
+            background: rgba(26, 26, 46, 0.9);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+        .script-card:hover {
+            border-color: rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+        .script-card.running {
+            border-color: #f59e0b;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+        }
+        .script-card.success {
+            border-color: #10b981;
+        }
+        .script-card.error {
+            border-color: #ef4444;
+        }
+        
+        .script-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .script-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .script-icon.sync { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .script-icon.update { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .script-icon.verify { background: linear-gradient(135deg, #10b981, #059669); }
+        .script-icon.full { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+        
+        .script-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e4e4e7;
+        }
+        .script-subtitle {
+            font-size: 0.8rem;
+            color: #71717a;
+        }
+        
+        .script-description {
+            color: #a1a1aa;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        
+        .script-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .detail-badge {
+            padding: 0.25rem 0.75rem;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #a5b4fc;
+        }
+        
+        .script-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+        .btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .btn-primary:hover { transform: scale(1.02); filter: brightness(1.1); }
+        .btn-primary:disabled {
+            background: #374151;
+            cursor: not-allowed;
+            transform: none;
+            filter: none;
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #a1a1aa;
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+        
+        .progress-container {
+            margin-top: 1rem;
+            display: none;
+        }
+        .progress-container.active { display: block; }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+        .progress-text {
+            font-size: 0.8rem;
+            color: #a1a1aa;
+            text-align: center;
+        }
+        
+        .output-container {
+            margin-top: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            background: #0d0d14;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Consolas', monospace;
+            font-size: 0.8rem;
+            color: #10b981;
+            display: none;
+        }
+        .output-container.active { display: block; }
+        .output-container .error { color: #ef4444; }
+        .output-container .warning { color: #f59e0b; }
+        .output-container .info { color: #3b82f6; }
+        
+        .config-section {
+            background: rgba(26, 26, 46, 0.9);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .config-section h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        .config-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .config-item label {
+            font-size: 0.85rem;
+            color: #a1a1aa;
+        }
+        .config-item input {
+            padding: 0.75rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #e4e4e7;
+            font-size: 0.9rem;
+        }
+        .config-item input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        .status-indicator.connected {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+        .status-indicator.disconnected {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .running .script-icon { animation: pulse 1.5s infinite; }
+        
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔄 Gerenciador de Sincronização</h1>
+            <p>Freshdesk ↔ Supabase | Execute scripts de sincronização com facilidade</p>
+            <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 1rem;">
+                <span class="status-indicator" id="freshdeskStatus">
+                    <span style="width:8px;height:8px;border-radius:50%;background:currentColor;"></span>
+                    Freshdesk: Verificando...
+                </span>
+                <span class="status-indicator" id="supabaseStatus">
+                    <span style="width:8px;height:8px;border-radius:50%;background:currentColor;"></span>
+                    Supabase: Verificando...
+                </span>
+            </div>
+        </header>
+        
+        <div class="config-section">
+            <h2>⚙️ Configuração das APIs</h2>
+            <div class="config-grid">
+                <div class="config-item">
+                    <label>Freshdesk Domain</label>
+                    <input type="text" id="freshdeskDomain" value="suportetryvia" placeholder="ex: suportetryvia">
+                </div>
+                <div class="config-item">
+                    <label>Freshdesk API Key</label>
+                    <input type="password" id="freshdeskKey" value="s9GQtphoZqeRNz7Enl" placeholder="Sua API Key">
+                </div>
+                <div class="config-item">
+                    <label>Supabase URL</label>
+                    <input type="text" id="supabaseUrl" value="https://ifzypptlhpzuydjeympr.supabase.co" placeholder="https://xxx.supabase.co">
+                </div>
+                <div class="config-item">
+                    <label>Supabase Service Key</label>
+                    <input type="password" id="supabaseKey" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmenlwcHRsaHB6dXlkamV5bXByIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTA3NDcyNiwiZXhwIjoyMDg0NjUwNzI2fQ.O-nuoTl6RLo6shIETWifLpsuj852IUmupGk4kBq_BKY" placeholder="Sua Service Key">
+                </div>
+            </div>
+            <div style="margin-top: 1rem; text-align: right;">
+                <button class="btn btn-secondary" onclick="testConnections()">🔌 Testar Conexões</button>
+            </div>
+        </div>
+        
+        <div class="scripts-grid">
+            <!-- Sync Smart Quick -->
+            <div class="script-card" id="card-sync-quick">
+                <div class="script-header">
+                    <div class="script-icon sync">🚀</div>
+                    <div>
+                        <div class="script-title">Sync Quick</div>
+                        <div class="script-subtitle">sync-smart.js quick</div>
+                    </div>
+                </div>
+                <div class="script-description">
+                    <strong>O que faz:</strong> Sincroniza tickets atualizados nas últimas 24 horas.<br><br>
+                    <strong>Quando usar:</strong> Diariamente ou quando precisar atualizar dados recentes rapidamente.<br><br>
+                    <strong>Tempo estimado:</strong> ~30 segundos
+                </div>
+                <div class="script-details">
+                    <span class="detail-badge">⚡ Rápido</span>
+                    <span class="detail-badge">📅 Últimas 24h</span>
+                    <span class="detail-badge">🔄 Incremental</span>
+                </div>
+                <div class="script-actions">
+                    <button class="btn btn-primary" onclick="runScript('sync-quick')">
+                        ▶️ Executar
+                    </button>
+                </div>
+                <div class="progress-container" id="progress-sync-quick">
+                    <div class="progress-bar"><div class="progress-fill"></div></div>
+                    <div class="progress-text">Iniciando...</div>
+                </div>
+                <div class="output-container" id="output-sync-quick"></div>
+            </div>
+            
+            <!-- Sync Smart Full -->
+            <div class="script-card" id="card-sync-full">
+                <div class="script-header">
+                    <div class="script-icon full">📦</div>
+                    <div>
+                        <div class="script-title">Sync Full</div>
+                        <div class="script-subtitle">sync-smart.js full</div>
+                    </div>
+                </div>
+                <div class="script-description">
+                    <strong>O que faz:</strong> Sincronização completa de todos os tickets do Freshdesk.<br><br>
+                    <strong>Quando usar:</strong> Primeira sincronização ou quando houver muitas inconsistências.<br><br>
+                    <strong>Tempo estimado:</strong> ~2-5 minutos
+                </div>
+                <div class="script-details">
+                    <span class="detail-badge">📦 Completo</span>
+                    <span class="detail-badge">🔄 Todos os tickets</span>
+                    <span class="detail-badge">⏱️ Mais demorado</span>
+                </div>
+                <div class="script-actions">
+                    <button class="btn btn-primary" onclick="runScript('sync-full')">
+                        ▶️ Executar
+                    </button>
+                </div>
+                <div class="progress-container" id="progress-sync-full">
+                    <div class="progress-bar"><div class="progress-fill"></div></div>
+                    <div class="progress-text">Iniciando...</div>
+                </div>
+                <div class="output-container" id="output-sync-full"></div>
+            </div>
+            
+            <!-- Update cf_tratativa -->
+            <div class="script-card" id="card-update-tratativa">
+                <div class="script-header">
+                    <div class="script-icon update">👤</div>
+                    <div>
+                        <div class="script-title">Atualizar cf_tratativa</div>
+                        <div class="script-subtitle">update-cf-tratativa.js</div>
+                    </div>
+                </div>
+                <div class="script-description">
+                    <strong>O que faz:</strong> Atualiza o campo cf_tratativa de TODOS os tickets históricos buscando valor direto do Freshdesk.<br><br>
+                    <strong>Quando usar:</strong> Quando o BI "Quant. de ticket p/tratativa" estiver com números errados.<br><br>
+                    <strong>Tempo estimado:</strong> ~2-3 horas (rate limit do Freshdesk)
+                </div>
+                <div class="script-details">
+                    <span class="detail-badge">⚠️ Demorado</span>
+                    <span class="detail-badge">📊 Corrige BI</span>
+                    <span class="detail-badge">🔄 Todos os tickets</span>
+                </div>
+                <div class="script-actions">
+                    <button class="btn btn-primary" onclick="runScript('update-tratativa')">
+                        ▶️ Executar
+                    </button>
+                </div>
+                <div class="progress-container" id="progress-update-tratativa">
+                    <div class="progress-bar"><div class="progress-fill"></div></div>
+                    <div class="progress-text">Iniciando...</div>
+                </div>
+                <div class="output-container" id="output-update-tratativa"></div>
+            </div>
+            
+            <!-- Update cf_analista -->
+            <div class="script-card" id="card-update-analista">
+                <div class="script-header">
+                    <div class="script-icon update">📋</div>
+                    <div>
+                        <div class="script-title">Atualizar cf_acompanhamento</div>
+                        <div class="script-subtitle">update-cf-analista.js</div>
+                    </div>
+                </div>
+                <div class="script-description">
+                    <strong>O que faz:</strong> Atualiza o campo cf_acompanhamento_atendimento de TODOS os tickets (busca cf_analista do Freshdesk).<br><br>
+                    <strong>Quando usar:</strong> Quando o BI de "Tickets Ativos por Analista" estiver errado.<br><br>
+                    <strong>Tempo estimado:</strong> ~2-3 horas (rate limit do Freshdesk)
+                </div>
+                <div class="script-details">
+                    <span class="detail-badge">⚠️ Demorado</span>
+                    <span class="detail-badge">📊 Corrige BI</span>
+                    <span class="detail-badge">🔄 Todos os tickets</span>
+                </div>
+                <div class="script-actions">
+                    <button class="btn btn-primary" onclick="runScript('update-analista')">
+                        ▶️ Executar
+                    </button>
+                </div>
+                <div class="progress-container" id="progress-update-analista">
+                    <div class="progress-bar"><div class="progress-fill"></div></div>
+                    <div class="progress-text">Iniciando...</div>
+                </div>
+                <div class="output-container" id="output-update-analista"></div>
+            </div>
+            
+            <!-- Update All Custom Fields -->
+            <div class="script-card" id="card-update-all">
+                <div class="script-header">
+                    <div class="script-icon full">🔧</div>
+                    <div>
+                        <div class="script-title">Atualizar TODOS os Campos</div>
+                        <div class="script-subtitle">update-all-custom-fields.js</div>
+                    </div>
+                </div>
+                <div class="script-description">
+                    <strong>O que faz:</strong> Atualiza TODOS os custom fields de TODOS os tickets: cf_tratativa, cf_acompanhamento, cf_grupo_tratativa, cf_sistema, etc.<br><br>
+                    <strong>Quando usar:</strong> Quando houver muitas inconsistências em vários campos.<br><br>
+                    <strong>Tempo estimado:</strong> ~3-4 horas (rate limit do Freshdesk)
+                </div>
+                <div class="script-details">
+                    <span class="detail-badge">⚠️ Muito demorado</span>
+                    <span class="detail-badge">🔧 Completo</span>
+                    <span class="detail-badge">📦 Todos os campos</span>
+                </div>
+                <div class="script-actions">
+                    <button class="btn btn-primary" onclick="runScript('update-all')">
+                        ▶️ Executar
+                    </button>
+                </div>
+                <div class="progress-container" id="progress-update-all">
+                    <div class="progress-bar"><div class="progress-fill"></div></div>
+                    <div class="progress-text">Iniciando...</div>
+                </div>
+                <div class="output-container" id="output-update-all"></div>
+            </div>
+            
+            <!-- Verificar Acompanhamento -->
+            <div class="script-card" id="card-verify">
+                <div class="script-header">
+                    <div class="script-icon verify">✅</div>
+                    <div>
+                        <div class="script-title">Verificar Dados</div>
+                        <div class="script-subtitle">verificar-acompanhamento.js</div>
+                    </div>
+                </div>
+                <div class="script-description">
+                    <strong>O que faz:</strong> Compara os dados do Supabase com os dados esperados do Freshdesk e mostra diferenças.<br><br>
+                    <strong>Quando usar:</strong> Para verificar se os números do BI estão corretos.<br><br>
+                    <strong>Tempo estimado:</strong> ~1-2 minutos
+                </div>
+                <div class="script-details">
+                    <span class="detail-badge">✅ Verificação</span>
+                    <span class="detail-badge">📊 Relatório</span>
+                    <span class="detail-badge">⚡ Rápido</span>
+                </div>
+                <div class="script-actions">
+                    <button class="btn btn-primary" onclick="runScript('verify')">
+                        ▶️ Executar
+                    </button>
+                </div>
+                <div class="progress-container" id="progress-verify">
+                    <div class="progress-bar"><div class="progress-fill"></div></div>
+                    <div class="progress-text">Iniciando...</div>
+                </div>
+                <div class="output-container" id="output-verify"></div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; color: #71717a; font-size: 0.85rem; padding: 2rem;">
+            <p>⚠️ <strong>Importante:</strong> Scripts de atualização em massa respeitam o rate limit do Freshdesk (50 req/min).</p>
+            <p>Para scripts demorados, deixe a aba aberta ou execute via terminal.</p>
+            <p style="margin-top: 1rem;">
+                <strong>Comando Terminal:</strong><br>
+                <code style="background: rgba(0,0,0,0.3); padding: 0.5rem 1rem; border-radius: 4px; display: inline-block; margin-top: 0.5rem;">
+                    node sync-freshdesk/[script].js
+                </code>
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Mapeamento de scripts para arquivos
+        const scriptMap = {
+            'sync-quick': 'sync-smart.js quick',
+            'sync-full': 'sync-smart.js full',
+            'update-tratativa': 'update-cf-tratativa.js',
+            'update-analista': 'update-cf-analista.js',
+            'update-all': 'update-all-custom-fields.js',
+            'verify': 'verificar-acompanhamento.js'
+        };
+        
+        // Estado dos scripts rodando
+        const runningScripts = {};
+        
+        async function testConnections() {
+            const freshdeskStatus = document.getElementById('freshdeskStatus');
+            const supabaseStatus = document.getElementById('supabaseStatus');
+            
+            const freshdeskDomain = document.getElementById('freshdeskDomain').value;
+            const freshdeskKey = document.getElementById('freshdeskKey').value;
+            const supabaseUrl = document.getElementById('supabaseUrl').value;
+            const supabaseKey = document.getElementById('supabaseKey').value;
+            
+            // Testar Freshdesk
+            try {
+                const fdResponse = await fetch(`https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?per_page=1`, {
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(freshdeskKey + ':X')
+                    }
+                });
+                if (fdResponse.ok) {
+                    freshdeskStatus.className = 'status-indicator connected';
+                    freshdeskStatus.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:currentColor;"></span> Freshdesk: Conectado ✓';
+                } else {
+                    throw new Error('Auth failed');
+                }
+            } catch(e) {
+                freshdeskStatus.className = 'status-indicator disconnected';
+                freshdeskStatus.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:currentColor;"></span> Freshdesk: Erro ✗';
+            }
+            
+            // Testar Supabase
+            try {
+                const sbResponse = await fetch(`${supabaseUrl}/rest/v1/tickets?limit=1`, {
+                    headers: {
+                        'apikey': supabaseKey,
+                        'Authorization': 'Bearer ' + supabaseKey
+                    }
+                });
+                if (sbResponse.ok) {
+                    supabaseStatus.className = 'status-indicator connected';
+                    supabaseStatus.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:currentColor;"></span> Supabase: Conectado ✓';
+                } else {
+                    throw new Error('Auth failed');
+                }
+            } catch(e) {
+                supabaseStatus.className = 'status-indicator disconnected';
+                supabaseStatus.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:currentColor;"></span> Supabase: Erro ✗';
+            }
+        }
+        
+        function runScript(scriptId) {
+            const card = document.getElementById(`card-${scriptId}`);
+            const progress = document.getElementById(`progress-${scriptId}`);
+            const output = document.getElementById(`output-${scriptId}`);
+            const btn = card.querySelector('.btn-primary');
+            
+            // Preparar UI
+            card.classList.add('running');
+            card.classList.remove('success', 'error');
+            progress.classList.add('active');
+            output.classList.add('active');
+            output.innerHTML = '';
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Executando...';
+            
+            // Log inicial
+            addOutput(scriptId, `🚀 Iniciando ${scriptMap[scriptId]}...`, 'info');
+            addOutput(scriptId, `📅 ${new Date().toLocaleString('pt-BR')}`);
+            addOutput(scriptId, '');
+            
+            // Gerar comando
+            const script = scriptMap[scriptId];
+            const envVars = getEnvVars();
+            const command = `${envVars} node sync-freshdesk/${script}`;
+            
+            addOutput(scriptId, '📋 Comando:', 'info');
+            addOutput(scriptId, command);
+            addOutput(scriptId, '');
+            addOutput(scriptId, '⚠️ IMPORTANTE: Execute este comando no terminal PowerShell.', 'warning');
+            addOutput(scriptId, '');
+            addOutput(scriptId, '1. Copie o comando acima');
+            addOutput(scriptId, '2. Abra o terminal no VS Code ou PowerShell');
+            addOutput(scriptId, '3. Navegue até a pasta do projeto');
+            addOutput(scriptId, '4. Cole e execute o comando');
+            addOutput(scriptId, '');
+            
+            // Simular progresso (já que não podemos executar Node do browser)
+            updateProgress(scriptId, 100, 'Comando gerado - copie e execute no terminal');
+            
+            // Resetar estado após 3 segundos
+            setTimeout(() => {
+                card.classList.remove('running');
+                card.classList.add('success');
+                btn.disabled = false;
+                btn.innerHTML = '▶️ Executar';
+            }, 3000);
+        }
+        
+        function getEnvVars() {
+            const fd = document.getElementById('freshdeskDomain').value;
+            const fk = document.getElementById('freshdeskKey').value;
+            const su = document.getElementById('supabaseUrl').value;
+            const sk = document.getElementById('supabaseKey').value;
+            
+            return `$env:FRESHDESK_DOMAIN="${fd}"; $env:FRESHDESK_API_KEY="${fk}"; $env:SUPABASE_URL="${su}"; $env:SUPABASE_SERVICE_KEY="${sk}";`;
+        }
+        
+        function addOutput(scriptId, text, type = '') {
+            const output = document.getElementById(`output-${scriptId}`);
+            const line = document.createElement('div');
+            line.className = type;
+            line.textContent = text;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function updateProgress(scriptId, percent, text) {
+            const progress = document.getElementById(`progress-${scriptId}`);
+            const fill = progress.querySelector('.progress-fill');
+            const textEl = progress.querySelector('.progress-text');
+            fill.style.width = percent + '%';
+            textEl.textContent = text;
+        }
+        
+        // Testar conexões ao carregar
+        setTimeout(testConnections, 1000);
+    </script>
+</body>
+</html>

@@ -227,7 +227,7 @@ window.BIExtraDataModule = {
         };
         
         // Definir horário comercial padrão (pode ser customizado com BusinessHours do Supabase)
-        const businessStart = 8;
+        const businessStart = 9;
         const businessEnd = 18;
         
         tickets.forEach(t => {

@@ -114,9 +114,25 @@ class SupabaseChunkedLoader {
      * Busca um chunk de dados
      */
     async fetchChunk(client, tableName, offset, limit, orderBy, ascending) {
+        // Campos essenciais - evita description_text que consome muito egress
+        // Lista validada com sql/criar-colunas-faltantes.sql
+        const ESSENTIAL_FIELDS = [
+            'id','subject','status','priority','type','source',
+            'created_at','updated_at','due_by','fr_due_by',
+            'responder_id','responder_name','group_id','group_name',
+            'company_id','company_name','requester_id','requester_name',
+            'cf_tratativa','cf_grupo_tratativa','cf_sistema','cf_produto',
+            'cf_tipo_primario','cf_prioridade_dev','cf_situacao',
+            'cf_acompanhamento_atendimento','cf_acompanhamento_implantacao','cf_acompanhamento_produto',
+            'custom_fields','tags',
+            'stats_resolved_at','stats_closed_at','stats_first_responded_at',
+            'stats_reopened_at','stats_pending_since','stats_status_updated_at',
+            'stats_agent_responded_at','stats_requester_responded_at'
+        ].join(',');
+        
         const query = client
             .from(tableName)
-            .select('*')
+            .select(ESSENTIAL_FIELDS)
             .order(orderBy, { ascending })
             .range(offset, offset + limit - 1);
 
@@ -188,6 +204,10 @@ class SupabaseChunkedLoader {
         }
 
         console.log(`✅ Carregamento otimizado completo: ${allData.length} tickets`);
+        
+        // Salvar total no banco para KPI
+        window.TOTAL_TICKETS_NO_BANCO = allData.length;
+        
         return allData;
     }
 
@@ -203,6 +223,10 @@ class SupabaseChunkedLoader {
             if (error) throw error;
 
             console.log(`📊 Total de tickets no Supabase: ${count}`);
+            
+            // Salvar para KPI
+            window.TOTAL_TICKETS_NO_BANCO = count;
+            
             return count;
         } catch (error) {
             console.error('Erro ao contar tickets:', error);

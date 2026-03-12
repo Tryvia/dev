@@ -17,19 +17,19 @@ window._biExpandState = {
     chartId: null
 };
 
-window.expandChart = function(chartId, title) {
+window.expandChart = function (chartId, title) {
     // Buscar o canvas original
     const originalCanvas = document.getElementById(chartId);
     if (!originalCanvas) {
         console.warn(`Canvas ${chartId} não encontrado`);
         return;
     }
-    
+
     // Usar estado do biAnalytics se disponível, senão usar estado global
     const state = window.biAnalytics?._expandState || window._biExpandState;
     state.chartId = chartId;
     state.page = 0;
-    
+
     // Criar modal
     const modal = document.createElement('div');
     modal.id = 'chartExpandModal';
@@ -47,7 +47,7 @@ window.expandChart = function(chartId, title) {
         padding: 2rem;
         animation: fadeIn 0.2s ease;
     `;
-    
+
     // Adicionar style de animação se não existir
     if (!document.getElementById('expandChartStyles')) {
         const styleEl = document.createElement('style');
@@ -66,10 +66,10 @@ window.expandChart = function(chartId, title) {
         `;
         document.head.appendChild(styleEl);
     }
-    
+
     // Verificar se o gráfico tem paginação
-    const hasPagination = ['chartTop10', 'chartResolution', 'chartSLAByEntity'].includes(chartId);
-    
+    const hasPagination = ['chartTop10', 'chartResolution', 'chartSLAByEntity', 'chartAvgResolutionTime'].includes(chartId);
+
     modal.innerHTML = `
         <div style="
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
@@ -164,7 +164,7 @@ window.expandChart = function(chartId, title) {
             </div>
         </div>
     `;
-    
+
     // Esconder chatbot IA durante modo expandido (imersão)
     const chatbotElements = document.querySelectorAll('#chatbotContainer, #chatbotToggle, .chatbot-toggle, .ai-assistant-btn, [id*="chatbot"], [class*="chatbot"]');
     chatbotElements.forEach(el => {
@@ -173,55 +173,56 @@ window.expandChart = function(chartId, title) {
             el.style.display = 'none';
         }
     });
-    
+
     // Função para restaurar chatbot
     const restoreChatbot = () => {
         chatbotElements.forEach(el => {
             if (el) el.style.display = el._previousDisplay || '';
         });
     };
-    
+
     // Fechar ao clicar fora
-    modal.onclick = (e) => { 
-        if (e.target === modal) { 
-            modal.remove(); 
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.remove();
             restoreChatbot();
-        } 
+        }
     };
-    
+
     // Navegação com teclado
     const handleKey = (e) => {
-        if (e.key === 'Escape') { 
-            modal.remove(); 
-            document.removeEventListener('keydown', handleKey); 
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', handleKey);
             restoreChatbot();
         }
         if (e.key === 'ArrowLeft') window.expandChartNavigate(-1);
         if (e.key === 'ArrowRight') window.expandChartNavigate(1);
     };
     document.addEventListener('keydown', handleKey);
-    
+
     // Também restaurar ao clicar no botão X
     modal._restoreChatbot = restoreChatbot;
-    
+
     document.body.appendChild(modal);
-    
+
     // Renderizar gráfico expandido
     setTimeout(() => window.renderExpandedChart(), 50);
 };
 
 // Navegação de páginas no gráfico expandido
-window.expandChartNavigate = function(direction) {
+window.expandChartNavigate = function (direction) {
     const state = window.biAnalytics?._expandState || window._biExpandState;
     const chartId = state.chartId;
     if (!chartId || !window.biAnalytics) return;
-    
+
     const metrics = window.biAnalytics._lastMetrics;
-    if (!metrics) return;
-    
+    // Não bloquear para gráficos que não dependem de _lastMetrics
+    if (!metrics && chartId !== 'chartAvgResolutionTime') return;
+
     // Obter dados e total de páginas baseado no tipo de gráfico
     let dataLength = 0;
-    
+
     if (chartId === 'chartTop10' || chartId === 'chartResolution') {
         if (metrics.entityMap) {
             dataLength = metrics.entityMap.size || 0;
@@ -230,59 +231,65 @@ window.expandChartNavigate = function(direction) {
         if (metrics.entityMap) {
             dataLength = metrics.entityMap.size || 0;
         }
+    } else if (chartId === 'chartAvgResolutionTime') {
+        dataLength = state._avgResolutionTimeTotal || 0;
     }
-    
-    const totalPages = Math.max(1, Math.ceil(dataLength / 10));
-    
+
+    const perPage = chartId === 'chartAvgResolutionTime' ? 12 : 10;
+    const totalPages = Math.max(1, Math.ceil(dataLength / perPage));
+
     // Navegar usando estado encapsulado
     state.page = Math.max(0, Math.min(totalPages - 1, state.page + direction));
-    
+
     // Atualizar info
     const pageInfo = document.getElementById('expandedPageInfo');
     if (pageInfo) pageInfo.textContent = `${state.page + 1} / ${totalPages}`;
-    
+
     // Re-renderizar
     window.renderExpandedChart();
 };
 
 // Renderizar gráfico em alta resolução no modal
-window.renderExpandedChart = function() {
+window.renderExpandedChart = function () {
     const canvas = document.getElementById('expandedChart');
     const state = window.biAnalytics?._expandState || window._biExpandState;
     const chartId = state.chartId;
     if (!canvas || !chartId || !window.biAnalytics) return;
-    
+
     const bi = window.biAnalytics;
     const metrics = bi._lastMetrics;
-    
+
     // Gráficos de produtividade usam métricas diferentes
     const prodCharts = ['chartByDayOfWeek', 'chartByHour', 'chartProductivityRanking', 'chartTicketsPerDay'];
     const hasProdMetrics = bi._lastDayOfWeekMetrics || bi._lastByHourMetrics || bi._productivityTableMetrics;
-    
-    // Permitir gráficos de produtividade mesmo sem _lastMetrics
-    if (!metrics && !hasProdMetrics && !prodCharts.includes(chartId)) return;
-    
+
+    // Gráficos que usam filteredData diretamente (não dependem de _lastMetrics)
+    const selfContainedCharts = ['chartAvgResolutionTime'];
+
+    // Permitir gráficos de produtividade e self-contained mesmo sem _lastMetrics
+    if (!metrics && !hasProdMetrics && !prodCharts.includes(chartId) && !selfContainedCharts.includes(chartId)) return;
+
     // Tamanho grande para alta resolução
     const dpr = window.devicePixelRatio || 1;
     const width = Math.min(1200, window.innerWidth - 150);
     const height = Math.min(550, window.innerHeight - 250);
-    
+
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';
-    
+
     const ctx = canvas.getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, width, height);
-    
+
     const colors = bi.colors;
     const gradients = bi.gradients;
     const page = state.page;
-    
+
     // Renderizar baseado no tipo
-    switch(chartId) {
+    switch (chartId) {
         case 'chartTop10':
             renderExpandedRanking(ctx, width, height, metrics, colors, gradients, page, 'total');
             break;
@@ -376,6 +383,9 @@ window.renderExpandedChart = function() {
         case 'chartPendentes':
             renderExpandedPendentes(ctx, width, height, bi);
             break;
+        case 'chartAvgResolutionTime':
+            renderExpandedAvgResolutionTime(ctx, width, height, bi);
+            break;
         default:
             // Fallback: copiar original com melhor qualidade
             const orig = document.getElementById(chartId);
@@ -385,14 +395,14 @@ window.renderExpandedChart = function() {
                 ctx.drawImage(orig, 0, 0, width, height);
             }
     }
-    
+
     // Atualizar info de página (para gráficos com paginação)
     let dataLength = 0;
     if (metrics && metrics.entityMap) {
         dataLength = metrics.entityMap.size || 0;
     }
     const totalPages = Math.max(1, Math.ceil(dataLength / 10));
-    
+
     const pageInfo = document.getElementById('expandedPageInfo');
     if (pageInfo) pageInfo.textContent = `${page + 1} / ${totalPages}`;
 };
@@ -401,49 +411,77 @@ window.renderExpandedChart = function() {
 
 /**
  * Configura tooltip interativo para gráficos expandidos
+ * @param {HTMLCanvasElement} canvas - Canvas do gráfico
+ * @param {Array} regions - Regiões clicáveis [{contains: (mx,my)=>bool, data: any}]
+ * @param {Function} formatFn - Função para formatar tooltip (data) => html
+ * @param {Function} onClickFn - Callback de clique (data) => void (opcional)
  */
-window.setupExpandedTooltip = function(canvas, regions, formatFn) {
+window.setupExpandedTooltip = function (canvas, regions, formatFn, onClickFn) {
     const tooltip = document.getElementById('expandedChartTooltip');
     if (!tooltip || !canvas) return;
-    
-    canvas.onmousemove = (e) => {
+
+    // Função para obter coordenadas corretas (sem escala DPR para regiões)
+    const getCoords = (e) => {
         const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        const mx = (e.clientX - rect.left) * scaleX;
-        const my = (e.clientY - rect.top) * scaleY;
-        
-        let found = null;
+        // As regiões são definidas em coordenadas lógicas (width/height do CSS)
+        // então NÃO devemos aplicar a escala do DPR
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        return { mx, my };
+    };
+
+    const findRegion = (mx, my) => {
         for (const region of regions) {
             if (region.contains(mx, my)) {
-                found = region;
-                break;
+                return region;
             }
         }
-        
+        return null;
+    };
+
+    canvas.onmousemove = (e) => {
+        const { mx, my } = getCoords(e);
+        const found = findRegion(mx, my);
+
         if (found) {
-            tooltip.innerHTML = formatFn(found.data);
-            tooltip.style.display = 'block';
-            // Posicionar tooltip relativo ao container
-            const containerRect = canvas.parentElement.getBoundingClientRect();
-            let left = e.clientX - containerRect.left + 15;
-            let top = e.clientY - containerRect.top - 10;
-            // Ajustar se sair da tela
-            if (left + 280 > containerRect.width) left = e.clientX - containerRect.left - 290;
-            if (top + 100 > containerRect.height) top = e.clientY - containerRect.top - 80;
-            tooltip.style.left = left + 'px';
-            tooltip.style.top = top + 'px';
+            const html = formatFn(found.data);
+            if (html) {
+                tooltip.innerHTML = html;
+                tooltip.style.display = 'block';
+                // Posicionar tooltip relativo ao container
+                const containerRect = canvas.parentElement.getBoundingClientRect();
+                let left = e.clientX - containerRect.left + 15;
+                let top = e.clientY - containerRect.top - 10;
+                // Ajustar se sair da tela
+                if (left + 280 > containerRect.width) left = e.clientX - containerRect.left - 290;
+                if (top + 100 > containerRect.height) top = e.clientY - containerRect.top - 80;
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            } else {
+                tooltip.style.display = 'none';
+            }
             canvas.style.cursor = 'pointer';
         } else {
             tooltip.style.display = 'none';
             canvas.style.cursor = 'default';
         }
     };
-    
+
     canvas.onmouseleave = () => {
         tooltip.style.display = 'none';
         canvas.style.cursor = 'default';
     };
+
+    // Adicionar handler de clique se fornecido
+    if (onClickFn) {
+        canvas.onclick = (e) => {
+            const { mx, my } = getCoords(e);
+            const found = findRegion(mx, my);
+            if (found) {
+                onClickFn(found.data);
+            }
+        };
+    }
 };
 
 /**
@@ -453,7 +491,7 @@ function renderNoDataMessage(ctx, width, height, message, colors) {
     ctx.fillStyle = colors?.textMuted || '#94a3b8';
     ctx.font = '18px system-ui';
     ctx.textAlign = 'center';
-    ctx.fillText(message || 'Sem dados disponíveis', width/2, height/2);
+    ctx.fillText(message || 'Sem dados disponíveis', width / 2, height / 2);
 }
 
 /**
@@ -476,18 +514,18 @@ function renderGrid(ctx, padding, width, height, divisions, colors) {
  * Renderiza barras horizontais com visual PREMIUM
  */
 function renderHorizontalBars(ctx, items, options) {
-    const { 
+    const {
         padding = { top: 40, right: 100, bottom: 40, left: 180 },
         width, height, colors, gradients,
         barHeight = 38, gap = 10, showRank = true
     } = options;
-    
+
     if (!items.length) return;
-    
+
     const maxVal = Math.max(...items.map(i => i.value), 1);
     const chartWidth = width - padding.left - padding.right;
     const borderRadius = 8;
-    
+
     // Paleta premium
     const premiumColors = [
         { main: '#6366f1', glow: '#818cf8', dark: '#4f46e5' },
@@ -499,38 +537,38 @@ function renderHorizontalBars(ctx, items, options) {
         { main: '#ec4899', glow: '#f472b6', dark: '#db2777' },
         { main: '#f97316', glow: '#fb923c', dark: '#ea580c' },
     ];
-    
+
     items.forEach((item, i) => {
         const y = padding.top + i * (barHeight + gap);
         const w = Math.max(12, (item.value / maxVal) * chartWidth);
         const colorSet = premiumColors[i % premiumColors.length];
-        
+
         ctx.save();
-        
+
         // Fundo (track)
         ctx.fillStyle = 'rgba(255,255,255,0.03)';
         ctx.beginPath();
         ctx.roundRect(padding.left, y, chartWidth, barHeight, borderRadius);
         ctx.fill();
-        
+
         // Sombra premium
         ctx.shadowColor = colorSet.glow;
         ctx.shadowBlur = 14;
         ctx.shadowOffsetY = 2;
-        
+
         // Gradiente premium
         const gradient = ctx.createLinearGradient(padding.left, y, padding.left + w, y);
         gradient.addColorStop(0, colorSet.dark);
         gradient.addColorStop(0.3, colorSet.main);
         gradient.addColorStop(0.7, colorSet.main);
         gradient.addColorStop(1, colorSet.glow);
-        
+
         // Barra principal
         ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.roundRect(padding.left, y, w, barHeight, borderRadius);
         ctx.fill();
-        
+
         // Glass effect
         const glassGradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
         glassGradient.addColorStop(0, 'rgba(255,255,255,0.25)');
@@ -540,22 +578,22 @@ function renderHorizontalBars(ctx, items, options) {
         ctx.beginPath();
         ctx.roundRect(padding.left, y, w, barHeight, borderRadius);
         ctx.fill();
-        
+
         ctx.restore();
-        
+
         // Label
         ctx.fillStyle = 'rgba(255,255,255,0.9)';
         ctx.font = '500 14px system-ui';
         ctx.textAlign = 'right';
         const label = item.label.length > 20 ? item.label.slice(0, 18) + '..' : item.label;
-        ctx.fillText(showRank ? `${i + 1}. ${label}` : label, padding.left - 12, y + barHeight/2 + 5);
-        
+        ctx.fillText(showRank ? `${i + 1}. ${label}` : label, padding.left - 12, y + barHeight / 2 + 5);
+
         // Valor
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 14px system-ui';
         ctx.textAlign = 'left';
         const valueText = item.suffix ? `${item.value}${item.suffix}` : item.value.toLocaleString();
-        ctx.fillText(valueText, padding.left + w + 12, y + barHeight/2 + 5);
+        ctx.fillText(valueText, padding.left + w + 12, y + barHeight / 2 + 5);
     });
 }
 
@@ -568,59 +606,79 @@ function renderExpandedRanking(ctx, width, height, metrics, colors, gradients, p
         renderNoDataMessage(ctx, width, height, 'Sem dados disponíveis', colors);
         return;
     }
-    
+
+    // Verificar se deve usar taxa real (mesma lógica do standard view em bi-analytics-methods.js)
+    const bi = window.biAnalytics;
+    const useRealRate = mode === 'resolution' && bi && bi.periodFilter !== 'all';
+
     // Converter Map para array ordenado
     const allSorted = Array.from(metrics.entityMap.entries())
-        .filter(([, d]) => d.total >= 1)
+        .filter(([, d]) => d.total >= 1 || (useRealRate && d.totalDemanda > 0))
         .sort((a, b) => {
             if (mode === 'resolution') {
-                return parseFloat(b[1].resolutionRate || 0) - parseFloat(a[1].resolutionRate || 0);
+                const rateA = useRealRate ? parseFloat(a[1].realResolutionRate || 0) : parseFloat(a[1].resolutionRate || 0);
+                const rateB = useRealRate ? parseFloat(b[1].realResolutionRate || 0) : parseFloat(b[1].resolutionRate || 0);
+                return rateB - rateA;
             }
             return b[1].total - a[1].total;
         });
-    
+
     const itemsPerPage = 10;
     const start = page * itemsPerPage;
     const pageData = allSorted.slice(start, start + itemsPerPage);
-    
+
     if (!pageData.length) {
         ctx.fillStyle = colors.textMuted;
         ctx.font = '18px system-ui';
         ctx.textAlign = 'center';
-        ctx.fillText('Sem dados disponíveis', width/2, height/2);
+        ctx.fillText('Sem dados disponíveis', width / 2, height / 2);
         return;
     }
-    
-    const maxVal = mode === 'resolution' ? 100 : Math.max(...allSorted.map(([, d]) => d.total || 0), 1);
-    
-    // Paleta premium para volume
+
+    // Para modo resolução, usar escala dinâmica se houver valores >100%
+    // Isso permite mostrar pessoas que estão "limpando backlog" (>100%)
+    let maxVal;
+    if (mode === 'resolution') {
+        const maxRate = Math.max(...allSorted.map(([, d]) => {
+            return useRealRate ? parseFloat(d.realResolutionRate || 0) : parseFloat(d.resolutionRate || 0);
+        }), 100);
+        maxVal = maxRate > 100 ? Math.ceil(maxRate / 50) * 50 : 100; // Arredonda para múltiplo de 50
+    } else {
+        maxVal = Math.max(...allSorted.map(([, d]) => d.total || 0), 1);
+    }
+
+    // Paletas
     const premiumColors = [
-        { main: '#6366f1', glow: '#818cf8', dark: '#4f46e5' },  // Indigo
-        { main: '#8b5cf6', glow: '#a78bfa', dark: '#7c3aed' },  // Violet
-        { main: '#3b82f6', glow: '#60a5fa', dark: '#2563eb' },  // Blue
-        { main: '#06b6d4', glow: '#22d3ee', dark: '#0891b2' },  // Cyan
-        { main: '#10b981', glow: '#34d399', dark: '#059669' },  // Emerald
+        { main: '#6366f1', glow: '#818cf8', dark: '#4f46e5' },
+        { main: '#8b5cf6', glow: '#a78bfa', dark: '#7c3aed' },
+        { main: '#3b82f6', glow: '#60a5fa', dark: '#2563eb' },
+        { main: '#06b6d4', glow: '#22d3ee', dark: '#0891b2' },
+        { main: '#10b981', glow: '#34d399', dark: '#059669' },
     ];
-    
-    // Paleta para taxa de resolução (semântica)
+
     const rateColors = {
         excellent: { main: '#10b981', glow: '#34d399', dark: '#059669' },
         good: { main: '#f59e0b', glow: '#fbbf24', dark: '#d97706' },
         low: { main: '#ef4444', glow: '#f87171', dark: '#dc2626' }
     };
-    
+
     const padding = { left: 220, right: 100, top: 30, bottom: 30 };
     const chartWidth = width - padding.left - padding.right;
     const barHeight = Math.min(45, (height - padding.top - padding.bottom) / pageData.length - 10);
     const borderRadius = 8;
-    
+
     const regions = [];
     pageData.forEach(([entity, data], i) => {
         const globalIndex = start + i;
         const y = padding.top + i * (barHeight + 10);
-        const value = mode === 'resolution' ? parseFloat(data.resolutionRate || 0) : (data.total || 0);
-        const barWidth = Math.max(12, (value / maxVal) * chartWidth);
-        
+
+        // Valor baseado no modo e se usa taxa real
+        const value = mode === 'resolution'
+            ? (useRealRate ? parseFloat(data.realResolutionRate || 0) : parseFloat(data.resolutionRate || 0))
+            : (data.total || 0);
+
+        const barWidth = Math.max(12, (Math.min(value, maxVal) / maxVal) * chartWidth);
+
         // Selecionar cor
         let colorSet;
         if (mode === 'resolution') {
@@ -628,34 +686,28 @@ function renderExpandedRanking(ctx, width, height, metrics, colors, gradients, p
         } else {
             colorSet = premiumColors[globalIndex % premiumColors.length];
         }
-        
+
         ctx.save();
-        
-        // Fundo da barra (track) - visual premium
         ctx.fillStyle = 'rgba(255,255,255,0.03)';
         ctx.beginPath();
         ctx.roundRect(padding.left, y, chartWidth, barHeight, borderRadius);
         ctx.fill();
-        
-        // Sombra premium
+
         ctx.shadowColor = colorSet.glow;
         ctx.shadowBlur = 16;
         ctx.shadowOffsetY = 2;
-        
-        // Gradiente premium horizontal
+
         const gradient = ctx.createLinearGradient(padding.left, y, padding.left + barWidth, y);
         gradient.addColorStop(0, colorSet.dark);
         gradient.addColorStop(0.3, colorSet.main);
         gradient.addColorStop(0.7, colorSet.main);
         gradient.addColorStop(1, colorSet.glow);
-        
-        // Barra principal
+
         ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.roundRect(padding.left, y, barWidth, barHeight, borderRadius);
         ctx.fill();
-        
-        // Brilho interno (glass effect)
+
         const glassGradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
         glassGradient.addColorStop(0, 'rgba(255,255,255,0.25)');
         glassGradient.addColorStop(0.5, 'rgba(255,255,255,0.05)');
@@ -664,38 +716,41 @@ function renderExpandedRanking(ctx, width, height, metrics, colors, gradients, p
         ctx.beginPath();
         ctx.roundRect(padding.left, y, barWidth, barHeight, borderRadius);
         ctx.fill();
-        
         ctx.restore();
-        
-        // Posição e nome - estilo premium
+
         ctx.fillStyle = 'rgba(255,255,255,0.9)';
         ctx.font = '600 15px system-ui';
         ctx.textAlign = 'right';
         const displayName = entity.length > 22 ? entity.substring(0, 20) + '..' : entity;
-        ctx.fillText(`${globalIndex + 1}. ${displayName}`, padding.left - 15, y + barHeight/2 + 5);
-        
-        // Valor - destacado
+        ctx.fillText(`${globalIndex + 1}. ${displayName}`, padding.left - 15, y + barHeight / 2 + 5);
+
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 15px system-ui';
         ctx.textAlign = 'left';
         const displayVal = mode === 'resolution' ? `${value.toFixed(1)}%` : value.toLocaleString();
-        ctx.fillText(displayVal, padding.left + barWidth + 15, y + barHeight/2 + 5);
-        
-        // Região para tooltip
+        ctx.fillText(displayVal, padding.left + barWidth + 15, y + barHeight / 2 + 5);
+
         regions.push({
             contains: (mx, my) => mx >= padding.left && mx <= padding.left + barWidth && my >= y && my <= y + barHeight,
-            data: { entity, value, data, mode, color: colorSet.main, rank: globalIndex + 1 }
+            data: { entity, value, data, mode, color: colorSet.main, rank: globalIndex + 1, useRealRate }
         });
     });
-    
-    // Configurar tooltip
+
     const canvas = document.getElementById('expandedChart');
     window.setupExpandedTooltip(canvas, regions, (d) => {
         if (d.mode === 'resolution') {
+            const labelA = d.useRealRate ? 'Resolvidos Totais' : 'Resolvidos';
+            const labelB = d.useRealRate ? 'Demanda (Herdados+Novos)' : 'Atribuídos';
+            const valA = d.useRealRate ? (d.data.totalResolvidos || 0) : (d.data.resolved || 0);
+            const valB = d.useRealRate ? (d.data.totalDemanda || 0) : (d.data.total || 0);
+
             return `
                 <strong>#${d.rank} ${d.entity}</strong><br>
                 <span style="color:${d.color}; font-size:1.3rem; font-weight:bold;">${d.value.toFixed(1)}%</span> de resolução<br>
-                <span style="color:#94a3b8;">Resolvidos: ${d.data.resolved || 0} de ${d.data.total}</span>
+                <div style="margin-top:5px; padding-top:5px; border-top:1px solid rgba(255,255,255,0.1); font-size:0.8rem; color:#94a3b8;">
+                    ${labelA}: ${valA}<br>
+                    ${labelB}: ${valB}
+                </div>
             `;
         }
         return `
@@ -714,70 +769,70 @@ function renderExpandedSLAByEntity(ctx, width, height, metrics, colors, page) {
         ctx.fillStyle = colors.textMuted;
         ctx.font = '18px system-ui';
         ctx.textAlign = 'center';
-        ctx.fillText('Sem dados de SLA disponíveis', width/2, height/2);
+        ctx.fillText('Sem dados de SLA disponíveis', width / 2, height / 2);
         return;
     }
-    
+
     // Converter Map para array ordenado por SLA
     const allSorted = Array.from(metrics.entityMap.entries())
         .filter(([, d]) => d.slaPercent !== undefined)
         .sort((a, b) => (b[1].slaPercent || 0) - (a[1].slaPercent || 0));
-    
+
     const itemsPerPage = 10;
     const start = page * itemsPerPage;
     const pageData = allSorted.slice(start, start + itemsPerPage);
-    
+
     if (!pageData.length) {
         ctx.fillStyle = colors.textMuted;
         ctx.font = '18px system-ui';
         ctx.textAlign = 'center';
-        ctx.fillText('Sem dados de SLA disponíveis', width/2, height/2);
+        ctx.fillText('Sem dados de SLA disponíveis', width / 2, height / 2);
         return;
     }
-    
+
     const padding = { left: 220, right: 100, top: 30, bottom: 30 };
     const barHeight = Math.min(45, (height - padding.top - padding.bottom) / pageData.length - 8);
-    
+
     pageData.forEach(([entity, data], i) => {
         const globalIndex = start + i;
         const y = padding.top + i * (barHeight + 8);
         const sla = data.slaPercent || 0;
         const barWidth = Math.max(5, (sla / 100) * (width - padding.left - padding.right));
-        
+
         // Cor baseada no SLA
         const barColor = sla >= 90 ? '#10b981' : sla >= 70 ? '#f59e0b' : '#ef4444';
-        
+
         // Sombra
         ctx.shadowColor = barColor;
         ctx.shadowBlur = 10;
-        
+
         // Barra
         ctx.fillStyle = barColor;
         ctx.beginPath();
         ctx.roundRect(padding.left, y, barWidth, barHeight, 8);
         ctx.fill();
-        
+
         ctx.shadowBlur = 0;
-        
+
         // Nome
         ctx.fillStyle = colors.text;
         ctx.font = 'bold 16px system-ui';
         ctx.textAlign = 'right';
         const displayName = entity.length > 24 ? entity.substring(0, 22) + '..' : entity;
-        ctx.fillText(`${globalIndex + 1}. ${displayName}`, padding.left - 15, y + barHeight/2 + 6);
-        
+        ctx.fillText(`${globalIndex + 1}. ${displayName}`, padding.left - 15, y + barHeight / 2 + 6);
+
         // Percentual
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 16px system-ui';
         ctx.textAlign = 'left';
-        ctx.fillText(`${sla.toFixed(0)}%`, padding.left + barWidth + 15, y + barHeight/2 + 6);
+        ctx.fillText(`${sla.toFixed(0)}%`, padding.left + barWidth + 15, y + barHeight / 2 + 6);
     });
 }
 
 // Status expandido em alta resolução (DONUT - mantém formato original)
 function renderExpandedStatus(ctx, width, height, metrics, colors, bi) {
     const statusData = { 'Resolvido': 0, 'Aberto': 0, 'Pendente': 0, 'Aguardando': 0, 'Em Progresso': 0 };
-    
+
     bi.filteredData.forEach(ticket => {
         if (window.FRESHDESK_STATUS) {
             const cat = window.FRESHDESK_STATUS.getSimplifiedCategory(ticket.status);
@@ -791,7 +846,7 @@ function renderExpandedStatus(ctx, width, height, metrics, colors, bi) {
             else statusData['Em Progresso']++;
         }
     });
-    
+
     const total = Object.values(statusData).reduce((a, b) => a + b, 0);
     if (total === 0) {
         ctx.fillStyle = colors.textMuted;
@@ -800,7 +855,7 @@ function renderExpandedStatus(ctx, width, height, metrics, colors, bi) {
         ctx.fillText('Sem dados', width / 2, height / 2);
         return;
     }
-    
+
     const statusColors = {
         'Resolvido': '#10b981',
         'Aberto': '#ef4444',
@@ -808,30 +863,30 @@ function renderExpandedStatus(ctx, width, height, metrics, colors, bi) {
         'Aguardando': '#a855f7',
         'Em Progresso': '#3b82f6'
     };
-    
+
     const sortedStatus = Object.entries(statusData)
         .filter(([, count]) => count > 0)
         .sort((a, b) => b[1] - a[1]);
-    
+
     // DONUT em alta resolução
     const centerX = width / 2 - 120;
     const centerY = height / 2;
     const outerRadius = Math.min(width, height) / 2 - 80;
     const innerRadius = outerRadius * 0.55;
     const regions = [];
-    
+
     let startAngle = -Math.PI / 2;
-    
+
     sortedStatus.forEach(([status, count], index) => {
         const percent = count / total;
         const endAngle = startAngle + percent * Math.PI * 2;
         const color = statusColors[status];
-        
+
         // Desenhar fatia com sombra
         ctx.save();
         ctx.shadowColor = color;
         ctx.shadowBlur = 20;
-        
+
         ctx.beginPath();
         ctx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
         ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
@@ -839,7 +894,7 @@ function renderExpandedStatus(ctx, width, height, metrics, colors, bi) {
         ctx.fillStyle = color;
         ctx.fill();
         ctx.restore();
-        
+
         // Região para tooltip
         const midAngle = startAngle + (endAngle - startAngle) / 2;
         regions.push({
@@ -854,10 +909,10 @@ function renderExpandedStatus(ctx, width, height, metrics, colors, bi) {
             },
             data: { status, count, percent: Math.round(percent * 100), color, total }
         });
-        
+
         startAngle = endAngle;
     });
-    
+
     // Total no centro (maior)
     ctx.fillStyle = colors.text;
     ctx.font = 'bold 42px system-ui';
@@ -866,16 +921,16 @@ function renderExpandedStatus(ctx, width, height, metrics, colors, bi) {
     ctx.font = '16px system-ui';
     ctx.fillStyle = colors.textMuted;
     ctx.fillText('tickets', centerX, centerY + 35);
-    
+
     // Legenda à direita (maior)
     const legendX = width - 200;
     let legendY = 80;
     sortedStatus.forEach(([status, count]) => {
         const percent = Math.round((count / total) * 100);
-        
+
         ctx.fillStyle = statusColors[status];
         ctx.fillRect(legendX, legendY - 12, 16, 16);
-        
+
         ctx.fillStyle = colors.text;
         ctx.font = 'bold 16px system-ui';
         ctx.textAlign = 'left';
@@ -883,10 +938,10 @@ function renderExpandedStatus(ctx, width, height, metrics, colors, bi) {
         ctx.fillStyle = colors.textMuted;
         ctx.font = '14px system-ui';
         ctx.fillText(`${count.toLocaleString()} (${percent}%)`, legendX + 25, legendY + 20);
-        
+
         legendY += 55;
     });
-    
+
     // Configurar tooltip
     const canvas = document.getElementById('expandedChart');
     window.setupExpandedTooltip(canvas, regions, (d) => `
@@ -904,7 +959,7 @@ function renderExpandedStatus(ctx, width, height, metrics, colors, bi) {
 // Priority expandido em alta resolução (DONUT - mantém formato original)
 function renderExpandedPriority(ctx, width, height, metrics, colors, bi) {
     const priorityData = { 'Urgente': 0, 'Alta': 0, 'Média': 0, 'Baixa': 0 };
-    
+
     bi.filteredData.forEach(ticket => {
         const p = ticket.priority;
         if (p === 4) priorityData['Urgente']++;
@@ -912,7 +967,7 @@ function renderExpandedPriority(ctx, width, height, metrics, colors, bi) {
         else if (p === 2) priorityData['Média']++;
         else priorityData['Baixa']++;
     });
-    
+
     const entries = Object.entries(priorityData).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
     if (!entries.length) {
         ctx.fillStyle = colors.textMuted;
@@ -921,29 +976,29 @@ function renderExpandedPriority(ctx, width, height, metrics, colors, bi) {
         ctx.fillText('Sem dados', width / 2, height / 2);
         return;
     }
-    
+
     const priorityColors = { 'Urgente': '#ef4444', 'Alta': '#f59e0b', 'Média': '#3b82f6', 'Baixa': '#10b981' };
     const total = entries.reduce((a, [, v]) => a + v, 0);
-    
+
     // DONUT em alta resolução
     const centerX = width / 2 - 120;
     const centerY = height / 2;
     const outerRadius = Math.min(width, height) / 2 - 80;
     const innerRadius = outerRadius * 0.55;
     const regions = [];
-    
+
     let startAngle = -Math.PI / 2;
-    
+
     entries.forEach(([priority, count], index) => {
         const percent = count / total;
         const endAngle = startAngle + percent * Math.PI * 2;
         const color = priorityColors[priority];
-        
+
         // Desenhar fatia com sombra
         ctx.save();
         ctx.shadowColor = color;
         ctx.shadowBlur = 20;
-        
+
         ctx.beginPath();
         ctx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
         ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
@@ -951,7 +1006,7 @@ function renderExpandedPriority(ctx, width, height, metrics, colors, bi) {
         ctx.fillStyle = color;
         ctx.fill();
         ctx.restore();
-        
+
         // Região para tooltip
         regions.push({
             contains: (mx, my) => {
@@ -965,10 +1020,10 @@ function renderExpandedPriority(ctx, width, height, metrics, colors, bi) {
             },
             data: { priority, count, percent: Math.round(percent * 100), color, total }
         });
-        
+
         startAngle = endAngle;
     });
-    
+
     // Total no centro (maior)
     ctx.fillStyle = colors.text;
     ctx.font = 'bold 42px system-ui';
@@ -977,16 +1032,16 @@ function renderExpandedPriority(ctx, width, height, metrics, colors, bi) {
     ctx.font = '16px system-ui';
     ctx.fillStyle = colors.textMuted;
     ctx.fillText('tickets', centerX, centerY + 35);
-    
+
     // Legenda à direita (maior)
     const legendX = width - 180;
     let legendY = 100;
     entries.forEach(([priority, count]) => {
         const percent = Math.round((count / total) * 100);
-        
+
         ctx.fillStyle = priorityColors[priority];
         ctx.fillRect(legendX, legendY - 12, 16, 16);
-        
+
         ctx.fillStyle = colors.text;
         ctx.font = 'bold 16px system-ui';
         ctx.textAlign = 'left';
@@ -994,10 +1049,10 @@ function renderExpandedPriority(ctx, width, height, metrics, colors, bi) {
         ctx.fillStyle = colors.textMuted;
         ctx.font = '14px system-ui';
         ctx.fillText(`${count.toLocaleString()} (${percent}%)`, legendX + 25, legendY + 20);
-        
+
         legendY += 55;
     });
-    
+
     // Configurar tooltip
     const canvas = document.getElementById('expandedChart');
     window.setupExpandedTooltip(canvas, regions, (d) => `
@@ -1019,7 +1074,7 @@ function renderExpandedTimeline(ctx, width, height, metrics, colors, bi) {
     const resolvedByDate = {};
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    
+
     bi.filteredData.forEach(ticket => {
         if (ticket.created_at) {
             const d = new Date(ticket.created_at);
@@ -1037,10 +1092,10 @@ function renderExpandedTimeline(ctx, width, height, metrics, colors, bi) {
             }
         }
     });
-    
+
     const dateSet = new Set([...Object.keys(createdByDate), ...Object.keys(resolvedByDate)]);
     const sortedDates = Array.from(dateSet).sort();
-    
+
     if (sortedDates.length < 2) {
         ctx.fillStyle = colors.textMuted;
         ctx.font = '20px system-ui';
@@ -1048,14 +1103,14 @@ function renderExpandedTimeline(ctx, width, height, metrics, colors, bi) {
         ctx.fillText('Sem dados dos últimos 30 dias', width / 2, height / 2);
         return;
     }
-    
+
     const padding = { left: 70, right: 50, top: 50, bottom: 80 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
-    
+
     const maxVal = Math.max(...sortedDates.map(d => Math.max(createdByDate[d] || 0, resolvedByDate[d] || 0)), 1);
     const stepX = chartWidth / (sortedDates.length - 1 || 1);
-    
+
     // Grid horizontal
     ctx.strokeStyle = 'rgba(255,255,255,0.1)';
     ctx.lineWidth = 1;
@@ -1065,7 +1120,7 @@ function renderExpandedTimeline(ctx, width, height, metrics, colors, bi) {
         ctx.moveTo(padding.left, y);
         ctx.lineTo(width - padding.right, y);
         ctx.stroke();
-        
+
         // Label Y
         ctx.fillStyle = colors.textMuted;
         ctx.font = '14px system-ui';
@@ -1073,7 +1128,7 @@ function renderExpandedTimeline(ctx, width, height, metrics, colors, bi) {
         const val = Math.round(maxVal * (1 - i / 4));
         ctx.fillText(val.toString(), padding.left - 15, y + 5);
     }
-    
+
     // Função para desenhar linha
     const drawLine = (data, color) => {
         ctx.strokeStyle = color;
@@ -1087,26 +1142,26 @@ function renderExpandedTimeline(ctx, width, height, metrics, colors, bi) {
             else ctx.lineTo(x, y);
         });
         ctx.stroke();
-        
+
         // Pontos
         sortedDates.forEach((date, i) => {
             const count = data[date] || 0;
             const x = padding.left + i * stepX;
             const y = padding.top + chartHeight - (count / maxVal) * chartHeight;
-            
+
             ctx.beginPath();
             ctx.arc(x, y, 5, 0, Math.PI * 2);
             ctx.fillStyle = color;
             ctx.fill();
         });
     };
-    
+
     // Linha de tickets criados (verde)
     drawLine(createdByDate, '#10b981');
-    
+
     // Linha de tickets resolvidos (azul)
     drawLine(resolvedByDate, '#3b82f6');
-    
+
     // Labels X
     sortedDates.forEach((date, i) => {
         if (i % Math.ceil(sortedDates.length / 12) === 0 || i === sortedDates.length - 1) {
@@ -1118,11 +1173,11 @@ function renderExpandedTimeline(ctx, width, height, metrics, colors, bi) {
             ctx.font = '12px system-ui';
             ctx.textAlign = 'right';
             const d = new Date(date);
-            ctx.fillText(`${d.getDate()}/${d.getMonth()+1}`, 0, 0);
+            ctx.fillText(`${d.getDate()}/${d.getMonth() + 1}`, 0, 0);
             ctx.restore();
         }
     });
-    
+
     // Legenda
     ctx.font = '14px system-ui';
     ctx.textAlign = 'left';
@@ -1132,7 +1187,7 @@ function renderExpandedTimeline(ctx, width, height, metrics, colors, bi) {
     ctx.fillStyle = '#3b82f6';
     ctx.fillRect(width - 180, 40, 12, 12);
     ctx.fillText('Resolvidos', width - 160, 51);
-    
+
     // Configurar tooltip
     const canvas = document.getElementById('expandedChart');
     const regions = sortedDates.map((date, i) => {
@@ -1145,7 +1200,7 @@ function renderExpandedTimeline(ctx, width, height, metrics, colors, bi) {
             data: { date, created, resolved }
         };
     });
-    
+
     window.setupExpandedTooltip(canvas, regions, (d) => {
         const dt = new Date(d.date);
         return `
@@ -1159,11 +1214,11 @@ function renderExpandedTimeline(ctx, width, height, metrics, colors, bi) {
 // Sistemas expandido em alta resolução
 function renderExpandedSystems(ctx, width, height, metrics, colors, bi) {
     const sistemasValidos = new Set([
-        'YUV', 'Telemetria', 'BI', 'SING', 'OPTZ', 'Light', 'Técnica', 
-        'Suporte', 'Outros', 'E-trip', 'E-clock', 'App Motorista', 
+        'YUV', 'Telemetria', 'BI', 'SING', 'OPTZ', 'Light', 'Técnica',
+        'Suporte', 'Outros', 'E-trip', 'E-clock', 'App Motorista',
         'SING/OPTZ', 'API', 'Portal', 'Videotelemetria'
     ]);
-    
+
     const counts = new Map();
     bi.filteredData.forEach(t => {
         let sistema = null;
@@ -1179,45 +1234,45 @@ function renderExpandedSystems(ctx, width, height, metrics, colors, bi) {
             else counts.set('Outros', (counts.get('Outros') || 0) + 1);
         }
     });
-    
-    let items = Array.from(counts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,12);
+
+    let items = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 12);
     if (items.length === 0) {
-        ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign='center';
-        ctx.fillText('Sem dados de sistemas', width/2, height/2); return;
+        ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
+        ctx.fillText('Sem dados de sistemas', width / 2, height / 2); return;
     }
 
     const padding = { top: 40, right: 120, bottom: 40, left: 180 };
     const chartWidth = width - padding.left - padding.right;
     const barHeight = Math.min(40, (height - padding.top - padding.bottom) / items.length - 10);
-    const maxVal = Math.max(...items.map(i=>i[1]));
+    const maxVal = Math.max(...items.map(i => i[1]));
     const gradients = bi.gradients;
 
     const regions = [];
-    const total = items.reduce((acc, [,v]) => acc + v, 0);
-    
+    const total = items.reduce((acc, [, v]) => acc + v, 0);
+
     items.forEach(([label, value], i) => {
         const y = padding.top + i * (barHeight + 10);
-        const w = (value/maxVal)*chartWidth;
+        const w = (value / maxVal) * chartWidth;
         const gColors = gradients[i % gradients.length];
-        const grad = ctx.createLinearGradient(padding.left,0,padding.left+w,0);
+        const grad = ctx.createLinearGradient(padding.left, 0, padding.left + w, 0);
         grad.addColorStop(0, gColors[0]); grad.addColorStop(1, gColors[1]);
-        
+
         ctx.shadowColor = gColors[0]; ctx.shadowBlur = 12;
         ctx.fillStyle = grad;
         ctx.beginPath(); ctx.roundRect(padding.left, y, w, barHeight, 8); ctx.fill();
         ctx.shadowBlur = 0;
-        
-        ctx.fillStyle = colors.text; ctx.font = 'bold 16px system-ui'; ctx.textAlign='right';
-        ctx.fillText(label, padding.left - 15, y + barHeight/2 + 6);
-        ctx.fillStyle = '#fff'; ctx.textAlign='left';
-        ctx.fillText(value.toLocaleString(), padding.left + w + 15, y + barHeight/2 + 6);
-        
+
+        ctx.fillStyle = colors.text; ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'right';
+        ctx.fillText(label, padding.left - 15, y + barHeight / 2 + 6);
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
+        ctx.fillText(value.toLocaleString(), padding.left + w + 15, y + barHeight / 2 + 6);
+
         regions.push({
             contains: (mx, my) => mx >= padding.left && mx <= padding.left + w && my >= y && my <= y + barHeight,
-            data: { label, value, percent: ((value/total)*100).toFixed(1), color: gColors[0] }
+            data: { label, value, percent: ((value / total) * 100).toFixed(1), color: gColors[0] }
         });
     });
-    
+
     // Configurar tooltip
     const canvas = document.getElementById('expandedChart');
     window.setupExpandedTooltip(canvas, regions, (d) => `
@@ -1233,58 +1288,55 @@ function renderExpandedSystems(ctx, width, height, metrics, colors, bi) {
 
 // SLA Trend expandido em alta resolução
 function renderExpandedSLATrend(ctx, width, height, metrics, colors, bi) {
-    const SLA_LIMIT = 4 * 60 * 60 * 1000;
     const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30*24*60*60*1000);
-    
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
     const byDate = {};
     bi.filteredData.forEach(ticket => {
-        const typeNorm = (ticket.type || '').toString().toLowerCase().replace(/\s+/g,' ').trim();
-        if (bi.ignoreTypesForSLA && bi.ignoreTypesForSLA.has(typeNorm)) return;
-        // Não filtrar por status atual - queremos medir 1ª resposta de todos os tickets
-        const first = ticket.stats_first_responded_at || ticket.stats_first_response_at;
-        if (!first || !ticket.created_at) return;
+        if (!ticket.created_at) return;
         const d = new Date(ticket.created_at);
         if (d < thirtyDaysAgo) return;
+        const slaStatus = bi.isWithinSLA ? bi.isWithinSLA(ticket, 4) : null;
+        if (slaStatus === null) return;
         const k = d.toISOString().split('T')[0];
         if (!byDate[k]) byDate[k] = { within: 0, outside: 0 };
-        const rt = new Date(first) - new Date(ticket.created_at);
-        if (rt <= SLA_LIMIT) byDate[k].within++; else byDate[k].outside++;
+        if (slaStatus) byDate[k].within++;
+        else byDate[k].outside++;
     });
-    
+
     const sortedDates = Object.keys(byDate).sort();
     if (sortedDates.length === 0) {
         ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Sem dados de SLA nos últimos 30 dias', width/2, height/2); return;
+        ctx.fillText('Sem dados de SLA nos últimos 30 dias', width / 2, height / 2); return;
     }
-    
+
     const dataPoints = sortedDates.map(d => {
         const t = byDate[d].within + byDate[d].outside;
         return { date: d, percent: t > 0 ? Math.round((byDate[d].within / t) * 100) : 0 };
     });
-    
+
     const padding = { top: 50, bottom: 80, left: 80, right: 50 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     const pointGap = chartWidth / (dataPoints.length - 1 || 1);
-    
+
     // Grid
     ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
         const y = padding.top + (i * chartHeight / 4);
         ctx.beginPath(); ctx.moveTo(padding.left, y); ctx.lineTo(width - padding.right, y); ctx.stroke();
         ctx.fillStyle = colors.textMuted; ctx.font = '14px system-ui'; ctx.textAlign = 'right';
-        ctx.fillText((100 - i*25) + '%', padding.left - 15, y + 5);
+        ctx.fillText((100 - i * 25) + '%', padding.left - 15, y + 5);
     }
-    
+
     // Linha meta 80%
-    const metaY = padding.top + chartHeight - (80/100)*chartHeight;
-    ctx.save(); ctx.strokeStyle = '#f59e0b'; ctx.setLineDash([8,4]); ctx.lineWidth = 2;
+    const metaY = padding.top + chartHeight - (80 / 100) * chartHeight;
+    ctx.save(); ctx.strokeStyle = '#f59e0b'; ctx.setLineDash([8, 4]); ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(padding.left, metaY); ctx.lineTo(width - padding.right, metaY); ctx.stroke();
     ctx.restore();
     ctx.fillStyle = '#f59e0b'; ctx.font = '14px system-ui'; ctx.textAlign = 'left';
     ctx.fillText('Meta 80%', width - padding.right + 10, metaY + 5);
-    
+
     // Linha
     ctx.beginPath(); ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 3;
     dataPoints.forEach((pt, i) => {
@@ -1293,27 +1345,27 @@ function renderExpandedSLATrend(ctx, width, height, metrics, colors, bi) {
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
     ctx.stroke();
-    
+
     // Pontos coloridos
     dataPoints.forEach((pt, i) => {
         const x = padding.left + i * pointGap;
         const y = padding.top + chartHeight - (pt.percent / 100) * chartHeight;
-        ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI*2);
+        ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2);
         ctx.fillStyle = pt.percent >= 80 ? '#10b981' : pt.percent >= 60 ? '#f59e0b' : '#ef4444';
         ctx.fill();
     });
-    
+
     // Labels X
     dataPoints.forEach((pt, i) => {
-        if (i % Math.ceil(dataPoints.length/10) === 0 || i === dataPoints.length - 1) {
+        if (i % Math.ceil(dataPoints.length / 10) === 0 || i === dataPoints.length - 1) {
             const x = padding.left + i * pointGap;
-            ctx.save(); ctx.translate(x, height - padding.bottom + 20); ctx.rotate(-Math.PI/4);
+            ctx.save(); ctx.translate(x, height - padding.bottom + 20); ctx.rotate(-Math.PI / 4);
             ctx.fillStyle = colors.textMuted; ctx.font = '12px system-ui'; ctx.textAlign = 'right';
-            const dt = new Date(pt.date); ctx.fillText(`${dt.getDate()}/${dt.getMonth()+1}`, 0, 0);
+            const dt = new Date(pt.date); ctx.fillText(`${dt.getDate()}/${dt.getMonth() + 1}`, 0, 0);
             ctx.restore();
         }
     });
-    
+
     // Configurar tooltip
     const canvas = document.getElementById('expandedChart');
     const regions = dataPoints.map((pt, i) => {
@@ -1323,7 +1375,7 @@ function renderExpandedSLATrend(ctx, width, height, metrics, colors, bi) {
             data: { date: pt.date, percent: pt.percent, within: byDate[pt.date].within, outside: byDate[pt.date].outside }
         };
     });
-    
+
     window.setupExpandedTooltip(canvas, regions, (d) => {
         const dt = new Date(d.date);
         const color = d.percent >= 80 ? '#10b981' : d.percent >= 60 ? '#f59e0b' : '#ef4444';
@@ -1338,73 +1390,68 @@ function renderExpandedSLATrend(ctx, width, height, metrics, colors, bi) {
 
 // SLA por Entidade expandido (corrigido para usar dados reais)
 function renderExpandedSLAByEntityFixed(ctx, width, height, metrics, colors, bi) {
-    const SLA_LIMIT = 4 * 60 * 60 * 1000;
+    const SLA_LIMIT_MS = 4 * 60 * 60 * 1000;
     const entityField = bi.currentView === 'pessoa' ? 'cf_tratativa' : 'cf_grupo_tratativa';
-    
+
     const byEntity = new Map();
     bi.filteredData.forEach(ticket => {
-        // Ignorar tipos configurados para SLA (consistente com gráfico pequeno)
-        const typeNorm = (ticket.type || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
-        if (bi.ignoreTypesForSLA && bi.ignoreTypesForSLA.has(typeNorm)) return;
-        // Não filtrar por status atual - queremos medir 1ª resposta de todos os tickets
-        
-        const first = ticket.stats_first_responded_at || ticket.stats_first_response_at;
-        if (!first || !ticket.created_at) return;
-        const entities = ticket[entityField] ? ticket[entityField].split(/[,;\/]/).map(e=>e.trim()).filter(e=>e&&bi.selectedEntities.has(e)) : [];
-        const rt = new Date(first) - new Date(ticket.created_at);
+        const rt = bi.getResponseTimeMs ? bi.getResponseTimeMs(ticket) : null;
+        if (rt === null) return;
+        const entities = ticket[entityField] ? ticket[entityField].split(/[,;\/]/).map(e => e.trim()).filter(e => e && bi.selectedEntities.has(e)) : [];
         entities.forEach(ent => {
             if (!byEntity.has(ent)) byEntity.set(ent, { within: 0, outside: 0 });
             const d = byEntity.get(ent);
-            if (rt <= SLA_LIMIT) d.within++; else d.outside++;
+            if (rt <= SLA_LIMIT_MS) d.within++;
+            else d.outside++;
         });
     });
-    
+
     const items = Array.from(byEntity.entries()).map(([label, d]) => {
         const total = d.within + d.outside;
-        return { label, percent: total > 0 ? Math.round((d.within/total)*100) : 0, total };
-    }).sort((a,b) => b.percent - a.percent).slice(0, 15);
-    
+        return { label, percent: total > 0 ? Math.round((d.within / total) * 100) : 0, total };
+    }).sort((a, b) => b.percent - a.percent).slice(0, 15);
+
     if (items.length === 0) {
         ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Sem dados de SLA para as entidades selecionadas', width/2, height/2); return;
+        ctx.fillText('Sem dados de SLA para as entidades selecionadas', width / 2, height / 2); return;
     }
-    
+
     const padding = { top: 40, right: 100, bottom: 40, left: 200 };
     const chartWidth = width - padding.left - padding.right;
     const barHeight = Math.min(38, (height - padding.top - padding.bottom) / items.length - 8);
-    
+
     // Linha meta 80%
-    const metaX = padding.left + (80/100)*chartWidth;
-    ctx.save(); ctx.strokeStyle = '#f59e0b'; ctx.setLineDash([6,4]); ctx.lineWidth = 2;
+    const metaX = padding.left + (80 / 100) * chartWidth;
+    ctx.save(); ctx.strokeStyle = '#f59e0b'; ctx.setLineDash([6, 4]); ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(metaX, padding.top - 10); ctx.lineTo(metaX, height - padding.bottom + 10); ctx.stroke();
     ctx.restore();
-    
+
     const regions = [];
-    
+
     items.forEach((item, i) => {
         const y = padding.top + i * (barHeight + 8);
         const w = (item.percent / 100) * chartWidth;
         const color = item.percent >= 80 ? '#10b981' : item.percent >= 60 ? '#f59e0b' : '#ef4444';
-        
+
         ctx.shadowColor = color; ctx.shadowBlur = 10;
         ctx.fillStyle = color;
         ctx.beginPath(); ctx.roundRect(padding.left, y, Math.max(5, w), barHeight, 6); ctx.fill();
         ctx.shadowBlur = 0;
-        
+
         ctx.fillStyle = colors.text; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'right';
-        const disp = item.label.length > 20 ? item.label.slice(0,18)+'..' : item.label;
-        ctx.fillText(`${i+1}. ${disp}`, padding.left - 12, y + barHeight/2 + 5);
-        
+        const disp = item.label.length > 20 ? item.label.slice(0, 18) + '..' : item.label;
+        ctx.fillText(`${i + 1}. ${disp}`, padding.left - 12, y + barHeight / 2 + 5);
+
         ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
-        ctx.fillText(`${item.percent}%`, padding.left + w + 12, y + barHeight/2 + 5);
-        
+        ctx.fillText(`${item.percent}%`, padding.left + w + 12, y + barHeight / 2 + 5);
+
         const entityData = byEntity.get(item.label);
         regions.push({
             contains: (mx, my) => mx >= padding.left && mx <= padding.left + Math.max(5, w) && my >= y && my <= y + barHeight,
             data: { label: item.label, percent: item.percent, total: item.total, within: entityData?.within || 0, outside: entityData?.outside || 0, color }
         });
     });
-    
+
     // Configurar tooltip
     const canvas = document.getElementById('expandedChart');
     window.setupExpandedTooltip(canvas, regions, (d) => `
@@ -1416,11 +1463,17 @@ function renderExpandedSLAByEntityFixed(ctx, width, height, metrics, colors, bi)
     `);
 }
 
-// SLA de Resolução por Entidade (meta: 24 horas)
+// SLA de Resolução por Entidade (meta por prioridade)
 function renderExpandedSLAResolutionByEntity(ctx, width, height, metrics, colors, bi) {
-    const SLA_RESOLUTION_LIMIT = 24 * 60 * 60 * 1000; // 24 horas em ms
+    const SLA_RESOLUTION_LIMITS = {
+        1: 24 * 60 * 60 * 1000,   // Urgente: 24h
+        2: 72 * 60 * 60 * 1000,   // Alta: 72h
+        3: 96 * 60 * 60 * 1000,   // Média: 96h
+        4: 168 * 60 * 60 * 1000   // Baixa: 168h
+    };
+    const DEFAULT_SLA_LIMIT = 96 * 60 * 60 * 1000;
     const entityField = bi.currentView === 'pessoa' ? 'cf_tratativa' : 'cf_grupo_tratativa';
-    
+
     const byEntity = new Map();
     bi.filteredData.forEach(ticket => {
         // Ignorar tipos configurados para SLA (consistente com gráfico pequeno)
@@ -1428,180 +1481,178 @@ function renderExpandedSLAResolutionByEntity(ctx, width, height, metrics, colors
         if (bi.ignoreTypesForSLA && bi.ignoreTypesForSLA.has(typeNorm)) return;
         // Ignorar status sem cronômetro de SLA (não se aplica a resolvidos pois queremos medir tempo total)
         // Para SLA de resolução, mantemos tickets resolvidos/fechados mesmo com toggle desligado
-        
+
         // Só conta tickets resolvidos/fechados
         if (![4, 5].includes(ticket.status)) return;
-        
+
         const resolved = ticket.stats_resolved_at || ticket.stats_closed_at || ticket.resolved_at || ticket.closed_at;
         if (!resolved || !ticket.created_at) return;
-        
-        const entities = ticket[entityField] ? ticket[entityField].split(/[,;\/]/).map(e=>e.trim()).filter(e=>e&&bi.selectedEntities.has(e)) : [];
+
+        const entities = ticket[entityField] ? ticket[entityField].split(/[,;\/]/).map(e => e.trim()).filter(e => e && bi.selectedEntities.has(e)) : [];
         const rt = new Date(resolved) - new Date(ticket.created_at);
-        
+        const priority = Number(ticket.priority) || 3;
+        const slaLimit = SLA_RESOLUTION_LIMITS[priority] || DEFAULT_SLA_LIMIT;
+
         entities.forEach(ent => {
             if (!byEntity.has(ent)) byEntity.set(ent, { within: 0, outside: 0 });
             const d = byEntity.get(ent);
-            if (rt <= SLA_RESOLUTION_LIMIT) d.within++; else d.outside++;
+            if (rt <= slaLimit) d.within++;
+            else d.outside++;
         });
     });
-    
+
     const items = Array.from(byEntity.entries()).map(([label, d]) => {
         const total = d.within + d.outside;
-        return { label, percent: total > 0 ? Math.round((d.within/total)*100) : 0, total };
-    }).sort((a,b) => b.percent - a.percent).slice(0, 15);
-    
+        return { label, percent: total > 0 ? Math.round((d.within / total) * 100) : 0, total };
+    }).sort((a, b) => b.percent - a.percent).slice(0, 15);
+
     if (items.length === 0) {
         ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Sem dados de resolução para as entidades selecionadas', width/2, height/2); return;
+        ctx.fillText('Sem dados de resolução para as entidades selecionadas', width / 2, height / 2); return;
     }
-    
+
     const padding = { top: 40, right: 100, bottom: 40, left: 200 };
     const chartWidth = width - padding.left - padding.right;
     const barHeight = Math.min(38, (height - padding.top - padding.bottom) / items.length - 8);
-    
+
     // Linha meta 80%
-    const metaX = padding.left + (80/100)*chartWidth;
-    ctx.save(); ctx.strokeStyle = '#f59e0b'; ctx.setLineDash([6,4]); ctx.lineWidth = 2;
+    const metaX = padding.left + (80 / 100) * chartWidth;
+    ctx.save(); ctx.strokeStyle = '#f59e0b'; ctx.setLineDash([6, 4]); ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(metaX, padding.top - 10); ctx.lineTo(metaX, height - padding.bottom + 10); ctx.stroke();
     ctx.restore();
-    
+
     // Título indicando meta
     ctx.fillStyle = colors.textMuted; ctx.font = '12px system-ui'; ctx.textAlign = 'right';
-    ctx.fillText('Meta: resolver em até 24h', width - 20, 20);
-    
+    ctx.fillText('Meta por prioridade: 24h / 72h / 96h / 168h', width - 20, 20);
+
     const regions = [];
-    
+
     items.forEach((item, i) => {
         const y = padding.top + i * (barHeight + 8);
         const w = (item.percent / 100) * chartWidth;
         const color = item.percent >= 80 ? '#10b981' : item.percent >= 60 ? '#f59e0b' : '#ef4444';
-        
+
         ctx.shadowColor = color; ctx.shadowBlur = 10;
         ctx.fillStyle = color;
         ctx.beginPath(); ctx.roundRect(padding.left, y, Math.max(5, w), barHeight, 6); ctx.fill();
         ctx.shadowBlur = 0;
-        
+
         ctx.fillStyle = colors.text; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'right';
-        const disp = item.label.length > 20 ? item.label.slice(0,18)+'..' : item.label;
-        ctx.fillText(`${i+1}. ${disp}`, padding.left - 12, y + barHeight/2 + 5);
-        
+        const disp = item.label.length > 20 ? item.label.slice(0, 18) + '..' : item.label;
+        ctx.fillText(`${i + 1}. ${disp}`, padding.left - 12, y + barHeight / 2 + 5);
+
         ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
-        ctx.fillText(`${item.percent}%`, padding.left + w + 12, y + barHeight/2 + 5);
-        
+        ctx.fillText(`${item.percent}%`, padding.left + w + 12, y + barHeight / 2 + 5);
+
         const entityData = byEntity.get(item.label);
         regions.push({
             contains: (mx, my) => mx >= padding.left && mx <= padding.left + Math.max(5, w) && my >= y && my <= y + barHeight,
             data: { label: item.label, percent: item.percent, total: item.total, within: entityData?.within || 0, outside: entityData?.outside || 0, color }
         });
     });
-    
+
     // Configurar tooltip
     const canvas = document.getElementById('expandedChart');
     window.setupExpandedTooltip(canvas, regions, (d) => `
         <strong>${d.label}</strong><br>
         <span style="color:${d.color}; font-size:1.2rem; font-weight:bold;">${d.percent}%</span> no SLA Resolução<br>
-        <span style="color:#10b981">✓ Até 24h: ${d.within}</span><br>
-        <span style="color:#ef4444">✗ Após 24h: ${d.outside}</span><br>
+        <span style="color:#10b981">✓ Dentro da meta: ${d.within}</span><br>
+        <span style="color:#ef4444">✗ Fora da meta: ${d.outside}</span><br>
         <span style="color:#94a3b8">Total resolvidos: ${d.total}</span>
     `);
 }
 
 // Quantidade SLA por Entidade (números absolutos)
 function renderExpandedSLACountByEntity(ctx, width, height, metrics, colors, bi) {
-    const SLA_LIMIT = 4 * 60 * 60 * 1000; // 4 horas
+    const SLA_LIMIT_MS = 4 * 60 * 60 * 1000; // 4 horas
     const entityField = bi.currentView === 'pessoa' ? 'cf_tratativa' : 'cf_grupo_tratativa';
-    
+
     const byEntity = new Map();
     bi.filteredData.forEach(ticket => {
-        // Ignorar tipos configurados para SLA (consistente com outros gráficos)
-        const typeNorm = (ticket.type || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
-        if (bi.ignoreTypesForSLA && bi.ignoreTypesForSLA.has(typeNorm)) return;
-        // Não filtrar por status atual - queremos medir 1ª resposta de todos os tickets
-        
-        const first = ticket.stats_first_responded_at || ticket.stats_first_response_at;
-        if (!first || !ticket.created_at) return;
-        
-        const entities = ticket[entityField] ? ticket[entityField].split(/[,;\/]/).map(e=>e.trim()).filter(e=>e&&bi.selectedEntities.has(e)) : [];
-        const rt = new Date(first) - new Date(ticket.created_at);
-        
+        const rt = bi.getResponseTimeMs ? bi.getResponseTimeMs(ticket) : null;
+        if (rt === null) return;
+
+        const entities = ticket[entityField] ? ticket[entityField].split(/[,;\/]/).map(e => e.trim()).filter(e => e && bi.selectedEntities.has(e)) : [];
+
         entities.forEach(ent => {
             if (!byEntity.has(ent)) byEntity.set(ent, { within: 0, outside: 0 });
             const d = byEntity.get(ent);
-            if (rt <= SLA_LIMIT) d.within++; else d.outside++;
+            if (rt <= SLA_LIMIT_MS) d.within++;
+            else d.outside++;
         });
     });
-    
+
     const items = Array.from(byEntity.entries()).map(([label, d]) => {
         const total = d.within + d.outside;
-        const percent = total > 0 ? Math.round((d.within/total)*100) : 0;
+        const percent = total > 0 ? Math.round((d.within / total) * 100) : 0;
         return { label, within: d.within, outside: d.outside, total, percent };
-    }).sort((a,b) => b.total - a.total).slice(0, 20);
-    
+    }).sort((a, b) => b.total - a.total).slice(0, 20);
+
     if (items.length === 0) {
         ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Sem dados de SLA para as entidades selecionadas', width/2, height/2); return;
+        ctx.fillText('Sem dados de SLA para as entidades selecionadas', width / 2, height / 2); return;
     }
-    
+
     const padding = { top: 50, right: 50, bottom: 40, left: 200 };
     const chartWidth = width - padding.left - padding.right;
     const barHeight = Math.min(32, (height - padding.top - padding.bottom) / items.length - 6);
     const maxTotal = Math.max(...items.map(i => i.total));
-    
+
     // Título
     ctx.fillStyle = colors.text; ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText('Quantidade de Tickets por SLA (1ª Resposta)', width/2, 25);
-    
+    ctx.fillText('Quantidade de Tickets por SLA (1ª Resposta)', width / 2, 25);
+
     // Legenda
     ctx.font = '12px system-ui';
     ctx.fillStyle = '#10b981'; ctx.fillRect(width - 180, 15, 12, 12);
     ctx.fillStyle = colors.text; ctx.textAlign = 'left'; ctx.fillText('Dentro (≤4h)', width - 165, 25);
     ctx.fillStyle = '#ef4444'; ctx.fillRect(width - 90, 15, 12, 12);
     ctx.fillStyle = colors.text; ctx.fillText('Fora (>4h)', width - 75, 25);
-    
+
     const regions = [];
-    
+
     items.forEach((item, i) => {
         const y = padding.top + i * (barHeight + 6);
         const totalWidth = (item.total / maxTotal) * chartWidth;
         const withinWidth = (item.within / maxTotal) * chartWidth;
         const outsideWidth = (item.outside / maxTotal) * chartWidth;
-        
+
         // Barra "dentro" (verde)
         ctx.fillStyle = '#10b981';
         ctx.beginPath(); ctx.roundRect(padding.left, y, Math.max(2, withinWidth), barHeight, [4, 0, 0, 4]); ctx.fill();
-        
+
         // Barra "fora" (vermelho) - continua onde a verde terminou
         if (item.outside > 0) {
             ctx.fillStyle = '#ef4444';
             ctx.beginPath(); ctx.roundRect(padding.left + withinWidth, y, Math.max(2, outsideWidth), barHeight, [0, 4, 4, 0]); ctx.fill();
         }
-        
+
         // Nome da entidade
         ctx.fillStyle = colors.text; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'right';
-        const disp = item.label.length > 22 ? item.label.slice(0,20)+'..' : item.label;
-        ctx.fillText(`${i+1}. ${disp}`, padding.left - 10, y + barHeight/2 + 4);
-        
+        const disp = item.label.length > 22 ? item.label.slice(0, 20) + '..' : item.label;
+        ctx.fillText(`${i + 1}. ${disp}`, padding.left - 10, y + barHeight / 2 + 4);
+
         // Números dentro das barras
         ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
         if (withinWidth > 25) {
             ctx.fillStyle = '#fff';
-            ctx.fillText(item.within.toString(), padding.left + withinWidth/2, y + barHeight/2 + 4);
+            ctx.fillText(item.within.toString(), padding.left + withinWidth / 2, y + barHeight / 2 + 4);
         }
         if (outsideWidth > 25) {
             ctx.fillStyle = '#fff';
-            ctx.fillText(item.outside.toString(), padding.left + withinWidth + outsideWidth/2, y + barHeight/2 + 4);
+            ctx.fillText(item.outside.toString(), padding.left + withinWidth + outsideWidth / 2, y + barHeight / 2 + 4);
         }
-        
+
         // Total no final
         ctx.fillStyle = colors.textMuted; ctx.font = '12px system-ui'; ctx.textAlign = 'left';
-        ctx.fillText(`${item.total} (${item.percent}%)`, padding.left + totalWidth + 8, y + barHeight/2 + 4);
-        
+        ctx.fillText(`${item.total} (${item.percent}%)`, padding.left + totalWidth + 8, y + barHeight / 2 + 4);
+
         regions.push({
             contains: (mx, my) => mx >= padding.left && mx <= padding.left + totalWidth && my >= y && my <= y + barHeight,
             data: item
         });
     });
-    
+
     // Tooltip
     const canvas = document.getElementById('expandedChart');
     window.setupExpandedTooltip(canvas, regions, (d) => `
@@ -1626,35 +1677,35 @@ function renderExpandedStatusStacked(ctx, width, height, metrics, colors, bi) {
         }))
         .filter(i => i.count > 0)
         .sort((a, b) => b.count - a.count);
-    
+
     const total = items.reduce((sum, i) => sum + i.count, 0);
-    
+
     if (items.length === 0 || total === 0) {
         ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Sem dados de status', width/2, height/2); return;
+        ctx.fillText('Sem dados de status', width / 2, height / 2); return;
     }
-    
+
     const padding = { top: 40, right: 120, bottom: 40, left: 220 };
     const chartWidth = width - padding.left - padding.right;
     const barHeight = Math.min(35, (height - padding.top - padding.bottom) / items.length - 8);
     const maxVal = Math.max(...items.map(i => i.count));
-    
+
     items.forEach((item, i) => {
         const y = padding.top + i * (barHeight + 8);
         const w = (item.count / maxVal) * chartWidth;
         const pct = ((item.count / total) * 100).toFixed(1);
-        
+
         ctx.shadowColor = item.color; ctx.shadowBlur = 8;
         ctx.fillStyle = item.color;
         ctx.beginPath(); ctx.roundRect(padding.left, y, Math.max(5, w), barHeight, 6); ctx.fill();
         ctx.shadowBlur = 0;
-        
+
         ctx.fillStyle = colors.text; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'right';
-        const disp = item.label.length > 22 ? item.label.slice(0,20)+'..' : item.label;
-        ctx.fillText(disp, padding.left - 12, y + barHeight/2 + 5);
-        
+        const disp = item.label.length > 22 ? item.label.slice(0, 20) + '..' : item.label;
+        ctx.fillText(disp, padding.left - 12, y + barHeight / 2 + 5);
+
         ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
-        ctx.fillText(`${item.count} (${pct}%)`, padding.left + w + 12, y + barHeight/2 + 5);
+        ctx.fillText(`${item.count} (${pct}%)`, padding.left + w + 12, y + barHeight / 2 + 5);
     });
 }
 
@@ -1663,51 +1714,51 @@ function renderExpandedAgingHistogram(ctx, width, height, metrics, colors, bi) {
     const buckets = metrics.agingBuckets || { '0-2d': 0, '3-7d': 0, '8-14d': 0, '15-30d': 0, '>30d': 0 };
     const bucketColors = { '0-2d': '#10b981', '3-7d': '#3b82f6', '8-14d': '#f59e0b', '15-30d': '#f97316', '>30d': '#ef4444' };
     const items = Object.entries(buckets).map(([label, count]) => ({ label, count, color: bucketColors[label] || '#3b82f6' }));
-    const total = items.reduce((a,b) => a + b.count, 0);
-    
+    const total = items.reduce((a, b) => a + b.count, 0);
+
     if (total === 0) {
         ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Sem backlog para analisar', width/2, height/2); return;
+        ctx.fillText('Sem backlog para analisar', width / 2, height / 2); return;
     }
-    
+
     const padding = { top: 60, bottom: 80, left: 80, right: 40 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     const barWidth = chartWidth / items.length - 30;
     const maxCount = Math.max(...items.map(i => i.count), 1);
-    
+
     // Grid
     ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
         const y = padding.top + (i * chartHeight / 4);
         ctx.beginPath(); ctx.moveTo(padding.left, y); ctx.lineTo(width - padding.right, y); ctx.stroke();
         ctx.fillStyle = colors.textMuted; ctx.font = '14px system-ui'; ctx.textAlign = 'right';
-        ctx.fillText(Math.round(maxCount - i*maxCount/4).toString(), padding.left - 15, y + 5);
+        ctx.fillText(Math.round(maxCount - i * maxCount / 4).toString(), padding.left - 15, y + 5);
     }
-    
+
     // Barras
     items.forEach((item, i) => {
         const x = padding.left + i * (barWidth + 30) + 15;
         const h = (item.count / maxCount) * chartHeight;
         const y = padding.top + chartHeight - h;
-        
+
         ctx.shadowColor = item.color; ctx.shadowBlur = 12;
         ctx.fillStyle = item.color;
         ctx.beginPath(); ctx.roundRect(x, y, barWidth, h, 8); ctx.fill();
         ctx.shadowBlur = 0;
-        
+
         // Valor
         ctx.fillStyle = '#fff'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText(item.count.toString(), x + barWidth/2, y - 12);
-        
+        ctx.fillText(item.count.toString(), x + barWidth / 2, y - 12);
+
         // Label
         ctx.fillStyle = colors.text; ctx.font = '14px system-ui';
-        ctx.fillText(item.label, x + barWidth/2, height - padding.bottom + 25);
+        ctx.fillText(item.label, x + barWidth / 2, height - padding.bottom + 25);
     });
-    
+
     // Título
     ctx.fillStyle = colors.text; ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText('Idade dos Tickets em Aberto', width/2, 30);
+    ctx.fillText('Idade dos Tickets em Aberto', width / 2, 30);
 }
 
 // Pipeline/Funnel expandido (mesma visualização do normal)
@@ -1719,41 +1770,41 @@ function renderExpandedPipelineFunnel(ctx, width, height, metrics, colors, bi) {
         { label: 'Aguardando', status: 6, color: '#8b5cf6' },
         { label: 'Pendente', status: 3, color: '#f59e0b' }
     ];
-    
+
     const counts = metrics.statusCounts || {};
     const items = stages.map(s => ({ ...s, count: counts[s.status] || 0 })).filter(s => s.count > 0);
-    const total = items.reduce((a,b) => a + b.count, 0);
-    
+    const total = items.reduce((a, b) => a + b.count, 0);
+
     if (total === 0) {
         ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Nenhum ticket ativo', width/2, height/2); return;
+        ctx.fillText('Nenhum ticket ativo', width / 2, height / 2); return;
     }
-    
+
     // Título
     ctx.fillStyle = colors.text; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText(`Total Ativos: ${total.toLocaleString()}`, width/2, 35);
-    
+    ctx.fillText(`Total Ativos: ${total.toLocaleString()}`, width / 2, 35);
+
     const padding = { top: 70, bottom: 50, left: 180, right: 150 };
     const barHeight = Math.min(55, (height - padding.top - padding.bottom) / items.length - 12);
     const maxVal = Math.max(...items.map(i => i.count), 1);
     const chartWidth = width - padding.left - padding.right;
-    
+
     items.forEach((item, i) => {
         const y = padding.top + i * (barHeight + 12);
         const barWidth = (item.count / maxVal) * chartWidth;
-        
+
         ctx.shadowColor = item.color; ctx.shadowBlur = 12;
         ctx.fillStyle = item.color;
         ctx.beginPath(); ctx.roundRect(padding.left, y, barWidth, barHeight, 8); ctx.fill();
         ctx.shadowBlur = 0;
-        
+
         // Label esquerda
         ctx.fillStyle = colors.text; ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'right';
-        ctx.fillText(item.label, padding.left - 15, y + barHeight/2 + 6);
-        
+        ctx.fillText(item.label, padding.left - 15, y + barHeight / 2 + 6);
+
         // Valor à direita
         ctx.fillStyle = colors.text; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'left';
-        ctx.fillText(`${item.count.toLocaleString()} (${Math.round((item.count/total)*100)}%)`, padding.left + barWidth + 15, y + barHeight/2 + 6);
+        ctx.fillText(`${item.count.toLocaleString()} (${Math.round((item.count / total) * 100)}%)`, padding.left + barWidth + 15, y + barHeight / 2 + 6);
     });
 }
 
@@ -1763,56 +1814,56 @@ function renderExpandedFinalized(ctx, width, height, metrics, colors, bi) {
     const resolvido = counts[4] || 0;
     const fechado = counts[5] || 0;
     const total = resolvido + fechado;
-    
+
     if (total === 0) {
         ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Nenhum ticket finalizado', width/2, height/2); return;
+        ctx.fillText('Nenhum ticket finalizado', width / 2, height / 2); return;
     }
-    
+
     // Título
     ctx.fillStyle = colors.text; ctx.font = 'bold 24px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText(`Total Finalizados: ${total.toLocaleString()}`, width/2, 50);
-    
+    ctx.fillText(`Total Finalizados: ${total.toLocaleString()}`, width / 2, 50);
+
     const padding = { left: 100, right: 100 };
     const chartWidth = width - padding.left - padding.right;
     const barHeight = 70;
     const centerY = height / 2;
-    
+
     // Barra empilhada horizontal
     const resolvidoWidth = (resolvido / total) * chartWidth;
     const fechadoWidth = (fechado / total) * chartWidth;
-    
+
     // Resolvido (esquerda)
     ctx.shadowColor = '#10b981'; ctx.shadowBlur = 15;
     ctx.fillStyle = '#10b981';
-    ctx.beginPath(); ctx.roundRect(padding.left, centerY - barHeight/2, resolvidoWidth, barHeight, [10, 0, 0, 10]); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(padding.left, centerY - barHeight / 2, resolvidoWidth, barHeight, [10, 0, 0, 10]); ctx.fill();
     ctx.shadowBlur = 0;
-    
+
     // Fechado (direita)
     ctx.shadowColor = '#059669'; ctx.shadowBlur = 15;
     ctx.fillStyle = '#059669';
-    ctx.beginPath(); ctx.roundRect(padding.left + resolvidoWidth, centerY - barHeight/2, fechadoWidth, barHeight, [0, 10, 10, 0]); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(padding.left + resolvidoWidth, centerY - barHeight / 2, fechadoWidth, barHeight, [0, 10, 10, 0]); ctx.fill();
     ctx.shadowBlur = 0;
-    
+
     // Labels dentro das barras
     ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
     if (resolvidoWidth > 100) {
-        ctx.fillText(`Resolvido: ${resolvido.toLocaleString()}`, padding.left + resolvidoWidth/2, centerY + 6);
+        ctx.fillText(`Resolvido: ${resolvido.toLocaleString()}`, padding.left + resolvidoWidth / 2, centerY + 6);
     }
     if (fechadoWidth > 100) {
-        ctx.fillText(`Fechado: ${fechado.toLocaleString()}`, padding.left + resolvidoWidth + fechadoWidth/2, centerY + 6);
+        ctx.fillText(`Fechado: ${fechado.toLocaleString()}`, padding.left + resolvidoWidth + fechadoWidth / 2, centerY + 6);
     }
-    
+
     // Legenda abaixo
     const legendY = height - 60;
     ctx.font = '16px system-ui';
-    ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.roundRect(width/2 - 150, legendY - 10, 18, 18, 3); ctx.fill();
+    ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.roundRect(width / 2 - 150, legendY - 10, 18, 18, 3); ctx.fill();
     ctx.fillStyle = colors.text; ctx.textAlign = 'left';
-    ctx.fillText(`Resolvido ${Math.round((resolvido/total)*100)}%`, width/2 - 125, legendY + 4);
-    
-    ctx.fillStyle = '#059669'; ctx.beginPath(); ctx.roundRect(width/2 + 40, legendY - 10, 18, 18, 3); ctx.fill();
+    ctx.fillText(`Resolvido ${Math.round((resolvido / total) * 100)}%`, width / 2 - 125, legendY + 4);
+
+    ctx.fillStyle = '#059669'; ctx.beginPath(); ctx.roundRect(width / 2 + 40, legendY - 10, 18, 18, 3); ctx.fill();
     ctx.fillStyle = colors.text;
-    ctx.fillText(`Fechado ${Math.round((fechado/total)*100)}%`, width/2 + 65, legendY + 4);
+    ctx.fillText(`Fechado ${Math.round((fechado / total) * 100)}%`, width / 2 + 65, legendY + 4);
 }
 
 // Productivity Ranking expandido
@@ -1820,30 +1871,30 @@ function renderExpandedProductivityRanking(ctx, width, height, metrics, colors, 
     const prodMetrics = bi._lastProductivityMetrics || [];
     if (!prodMetrics.length) {
         ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Sem dados de produtividade', width/2, height/2); return;
+        ctx.fillText('Sem dados de produtividade', width / 2, height / 2); return;
     }
-    
+
     const top15 = prodMetrics.slice(0, 15);
     const padding = { top: 40, right: 100, bottom: 40, left: 200 };
     const chartWidth = width - padding.left - padding.right;
     const barHeight = Math.min(35, (height - padding.top - padding.bottom) / top15.length - 8);
-    
+
     top15.forEach((m, i) => {
         const y = padding.top + i * (barHeight + 8);
         const barWidth = (m.productivityIndex / 100) * chartWidth;
         const color = m.productivityIndex >= 70 ? '#10b981' : m.productivityIndex >= 40 ? '#f59e0b' : '#ef4444';
-        
+
         ctx.shadowColor = color; ctx.shadowBlur = 10;
         ctx.fillStyle = color;
         ctx.beginPath(); ctx.roundRect(padding.left, y, barWidth, barHeight, 6); ctx.fill();
         ctx.shadowBlur = 0;
-        
+
         ctx.fillStyle = colors.text; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'right';
         const name = m.name.length > 22 ? m.name.substring(0, 20) + '..' : m.name;
-        ctx.fillText(`${i+1}. ${name}`, padding.left - 12, y + barHeight/2 + 5);
-        
+        ctx.fillText(`${i + 1}. ${name}`, padding.left - 12, y + barHeight / 2 + 5);
+
         ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
-        ctx.fillText(`${m.productivityIndex}`, padding.left + barWidth + 12, y + barHeight/2 + 5);
+        ctx.fillText(`${m.productivityIndex}`, padding.left + barWidth + 12, y + barHeight / 2 + 5);
     });
 }
 
@@ -1852,9 +1903,9 @@ function renderExpandedTicketsPerDay(ctx, width, height, metrics, colors, bi) {
     const prodMetrics = bi._lastProductivityMetrics || [];
     if (!prodMetrics.length) {
         ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Sem dados', width/2, height/2); return;
+        ctx.fillText('Sem dados', width / 2, height / 2); return;
     }
-    
+
     const top12 = prodMetrics.slice(0, 12);
     const padding = { top: 50, bottom: 100, left: 60, right: 40 };
     const chartWidth = width - padding.left - padding.right;
@@ -1862,7 +1913,7 @@ function renderExpandedTicketsPerDay(ctx, width, height, metrics, colors, bi) {
     const barWidth = chartWidth / top12.length - 15;
     const maxVal = Math.max(...top12.map(m => parseFloat(m.ticketsPerDay)), 1);
     const gradients = bi.gradients;
-    
+
     top12.forEach((m, i) => {
         const x = padding.left + i * (barWidth + 15) + 7;
         const barH = (parseFloat(m.ticketsPerDay) / maxVal) * chartHeight;
@@ -1870,18 +1921,18 @@ function renderExpandedTicketsPerDay(ctx, width, height, metrics, colors, bi) {
         const gColors = gradients[i % gradients.length];
         const grad = ctx.createLinearGradient(0, y, 0, y + barH);
         grad.addColorStop(0, gColors[0]); grad.addColorStop(1, gColors[1]);
-        
+
         ctx.shadowColor = gColors[0]; ctx.shadowBlur = 10;
         ctx.fillStyle = grad;
         ctx.beginPath(); ctx.roundRect(x, y, barWidth, barH, 6); ctx.fill();
         ctx.shadowBlur = 0;
-        
+
         ctx.fillStyle = '#fff'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText(m.ticketsPerDay, x + barWidth/2, y - 10);
-        
+        ctx.fillText(m.ticketsPerDay, x + barWidth / 2, y - 10);
+
         ctx.save();
-        ctx.translate(x + barWidth/2, height - padding.bottom + 15);
-        ctx.rotate(-Math.PI/4);
+        ctx.translate(x + barWidth / 2, height - padding.bottom + 15);
+        ctx.rotate(-Math.PI / 4);
         ctx.fillStyle = colors.textMuted; ctx.font = '12px system-ui'; ctx.textAlign = 'right';
         const name = m.name.length > 12 ? m.name.substring(0, 10) + '..' : m.name;
         ctx.fillText(name, 0, 0);
@@ -1895,28 +1946,28 @@ function renderExpandedByDayOfWeek(ctx, width, height, metrics, colors, bi) {
     const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     const daysShort = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     const totals = [0, 0, 0, 0, 0, 0, 0];
-    
+
     bi.filteredData.forEach(t => {
         const d = new Date(t.created_at);
         if (!isNaN(d.getTime())) totals[d.getDay()]++;
     });
-    
+
     const total = totals.reduce((s, c) => s + c, 0);
     if (total === 0) {
         ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Sem dados no período', width/2, height/2); return;
+        ctx.fillText('Sem dados no período', width / 2, height / 2); return;
     }
-    
+
     const padding = { top: 60, bottom: 70, left: 80, right: 60 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     const barWidth = chartWidth / 7 - 20;
     const maxVal = Math.max(...totals, 1);
-    
+
     // Título
     ctx.fillStyle = colors.text; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText('Tickets por Dia da Semana', width/2, 30);
-    
+    ctx.fillText('Tickets por Dia da Semana', width / 2, 30);
+
     const regions = [];
     totals.forEach((val, i) => {
         const x = padding.left + i * (barWidth + 20) + 10;
@@ -1924,26 +1975,26 @@ function renderExpandedByDayOfWeek(ctx, width, height, metrics, colors, bi) {
         const y = padding.top + chartHeight - barH;
         const color = i === 0 || i === 6 ? '#8b5cf6' : '#3b82f6';
         const percent = Math.round((val / total) * 100);
-        
+
         ctx.shadowColor = color; ctx.shadowBlur = 12;
         ctx.fillStyle = color;
         ctx.beginPath(); ctx.roundRect(x, y, barWidth, barH, 8); ctx.fill();
         ctx.shadowBlur = 0;
-        
+
         ctx.fillStyle = '#fff'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText(val.toString(), x + barWidth/2, y - 12);
-        
+        ctx.fillText(val.toString(), x + barWidth / 2, y - 12);
+
         ctx.fillStyle = colors.text; ctx.font = 'bold 14px system-ui';
-        ctx.fillText(daysShort[i], x + barWidth/2, height - 35);
+        ctx.fillText(daysShort[i], x + barWidth / 2, height - 35);
         ctx.font = '12px system-ui'; ctx.fillStyle = colors.textMuted;
-        ctx.fillText(`${percent}%`, x + barWidth/2, height - 18);
-        
+        ctx.fillText(`${percent}%`, x + barWidth / 2, height - 18);
+
         regions.push({
             contains: (mx, my) => mx >= x && mx <= x + barWidth && my >= y && my <= padding.top + chartHeight,
             data: { day: days[i], dayShort: daysShort[i], count: val, percent, color, total, isWeekend: i === 0 || i === 6 }
         });
     });
-    
+
     const canvas = document.getElementById('expandedChart');
     window.setupExpandedTooltip(canvas, regions, (d) => `
         <strong>${d.day}</strong>${d.isWeekend ? ' <span style="color:#8b5cf6">(fim de semana)</span>' : ''}<br>
@@ -1956,68 +2007,68 @@ function renderExpandedByDayOfWeek(ctx, width, height, metrics, colors, bi) {
 function renderExpandedByHour(ctx, width, height, metrics, colors, bi) {
     // Calcular diretamente de filteredData (mesma lógica do gráfico normal)
     const totals = new Array(24).fill(0);
-    
+
     bi.filteredData.forEach(t => {
         const d = new Date(t.created_at);
         if (!isNaN(d.getTime())) totals[d.getHours()]++;
     });
-    
+
     const total = totals.reduce((s, c) => s + c, 0);
     if (total === 0) {
         ctx.fillStyle = colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Sem dados no período', width/2, height/2); return;
+        ctx.fillText('Sem dados no período', width / 2, height / 2); return;
     }
-    
+
     const padding = { top: 60, bottom: 70, left: 80, right: 60 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     const barWidth = chartWidth / 24 - 4;
     const maxVal = Math.max(...totals, 1);
-    
+
     // Título
     ctx.fillStyle = colors.text; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText('Tickets por Hora do Dia', width/2, 30);
-    
+    ctx.fillText('Tickets por Hora do Dia', width / 2, 30);
+
     const regions = [];
     totals.forEach((val, i) => {
         const x = padding.left + i * (barWidth + 4) + 2;
         const barH = Math.max(2, (val / maxVal) * chartHeight);
         const y = padding.top + chartHeight - barH;
-        const isBusinessHour = i >= 8 && i <= 18;
+        const isBusinessHour = i >= 9 && i < 18;
         const color = isBusinessHour ? '#10b981' : '#3b82f6';
         const percent = Math.round((val / total) * 100);
-        
+
         ctx.fillStyle = color;
         ctx.beginPath(); ctx.roundRect(x, y, barWidth, barH, 3); ctx.fill();
-        
+
         // Mostrar valor no topo das barras maiores
         if (val > 0 && val >= maxVal * 0.3) {
             ctx.fillStyle = '#fff'; ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center';
-            ctx.fillText(val.toString(), x + barWidth/2, y - 5);
+            ctx.fillText(val.toString(), x + barWidth / 2, y - 5);
         }
-        
+
         if (i % 3 === 0) {
             ctx.fillStyle = colors.textMuted; ctx.font = '12px system-ui'; ctx.textAlign = 'center';
-            ctx.fillText(`${i}h`, x + barWidth/2, height - 40);
+            ctx.fillText(`${i}h`, x + barWidth / 2, height - 40);
         }
-        
+
         regions.push({
             contains: (mx, my) => mx >= x && mx <= x + barWidth && my >= y && my <= padding.top + chartHeight,
             data: { hour: i, count: val, percent, color, total, isBusinessHour }
         });
     });
-    
+
     // Linha de horário comercial
-    const startX = padding.left + 8 * (barWidth + 4);
+    const startX = padding.left + 9 * (barWidth + 4);
     const endX = padding.left + 18 * (barWidth + 4);
-    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([5,5]);
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
     ctx.beginPath(); ctx.moveTo(startX, padding.top); ctx.lineTo(startX, height - padding.bottom); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(endX, padding.top); ctx.lineTo(endX, height - padding.bottom); ctx.stroke();
     ctx.setLineDash([]);
-    
+
     ctx.fillStyle = '#f59e0b'; ctx.font = '14px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText('Horário Comercial (8h-18h)', (startX + endX)/2, padding.top - 15);
-    
+    ctx.fillText('Horário Comercial (9h-18h)', (startX + endX) / 2, padding.top - 15);
+
     const canvas = document.getElementById('expandedChart');
     window.setupExpandedTooltip(canvas, regions, (d) => `
         <strong>${d.hour}:00 - ${d.hour}:59</strong>${d.isBusinessHour ? ' <span style="color:#10b981">(comercial)</span>' : ''}<br>
@@ -2028,22 +2079,15 @@ function renderExpandedByHour(ctx, width, height, metrics, colors, bi) {
 
 // SLA expandido em alta resolução
 function renderExpandedSLA(ctx, width, height, metrics, colors, bi) {
-    const SLA_LIMIT = 4 * 60 * 60 * 1000;
     let slaWithin = 0, slaOutside = 0;
-    
+
     bi.filteredData.forEach(ticket => {
-        // Ignorar tipos configurados para SLA (consistente com gráfico pequeno)
-        const typeNorm = (ticket.type || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
-        if (bi.ignoreTypesForSLA && bi.ignoreTypesForSLA.has(typeNorm)) return;
-        // Não filtrar por status atual - queremos medir 1ª resposta de todos os tickets
-        
-        const first = ticket.stats_first_responded_at || ticket.stats_first_response_at;
-        if (first && ticket.created_at) {
-            const rt = new Date(first) - new Date(ticket.created_at);
-            if (rt <= SLA_LIMIT) slaWithin++; else slaOutside++;
-        }
+        const slaStatus = bi.isWithinSLA ? bi.isWithinSLA(ticket, 4) : null;
+        if (slaStatus === null) return;
+        if (slaStatus) slaWithin++;
+        else slaOutside++;
     });
-    
+
     const total = slaWithin + slaOutside;
     if (total === 0) {
         ctx.fillStyle = colors.textMuted;
@@ -2052,14 +2096,14 @@ function renderExpandedSLA(ctx, width, height, metrics, colors, bi) {
         ctx.fillText('Sem dados de SLA', width / 2, height / 2);
         return;
     }
-    
+
     const slaPercent = (slaWithin / total) * 100;
-    
+
     const centerX = width / 2;
     const centerY = height / 2;
     const radius = Math.min(width, height) / 2.5;
     const innerRadius = radius * 0.7;
-    
+
     // Background arc
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
@@ -2067,16 +2111,16 @@ function renderExpandedSLA(ctx, width, height, metrics, colors, bi) {
     ctx.closePath();
     ctx.fillStyle = 'rgba(239,68,68,0.3)';
     ctx.fill();
-    
+
     // SLA arc
     const slaAngle = (slaPercent / 100) * Math.PI * 2;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, -Math.PI/2, -Math.PI/2 + slaAngle);
-    ctx.arc(centerX, centerY, innerRadius, -Math.PI/2 + slaAngle, -Math.PI/2, true);
+    ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + slaAngle);
+    ctx.arc(centerX, centerY, innerRadius, -Math.PI / 2 + slaAngle, -Math.PI / 2, true);
     ctx.closePath();
     ctx.fillStyle = slaPercent >= 80 ? '#10b981' : slaPercent >= 60 ? '#f59e0b' : '#ef4444';
     ctx.fill();
-    
+
     // Centro
     ctx.fillStyle = colors.text;
     ctx.font = 'bold 56px system-ui';
@@ -2085,42 +2129,42 @@ function renderExpandedSLA(ctx, width, height, metrics, colors, bi) {
     ctx.font = '18px system-ui';
     ctx.fillStyle = colors.textMuted;
     ctx.fillText('Conformidade SLA', centerX, centerY + 45);
-    
+
     // Legenda
     ctx.font = '14px system-ui';
     ctx.textAlign = 'left';
     ctx.fillStyle = '#10b981';
-    ctx.fillText(`✓ Dentro: ${slaWithin}`, width/2 - 80, height - 40);
+    ctx.fillText(`✓ Dentro: ${slaWithin}`, width / 2 - 80, height - 40);
     ctx.fillStyle = '#ef4444';
-    ctx.fillText(`✗ Fora: ${slaOutside}`, width/2 + 20, height - 40);
-    
+    ctx.fillText(`✗ Fora: ${slaOutside}`, width / 2 + 20, height - 40);
+
     // Configurar tooltip para donut
     const canvas = document.getElementById('expandedChart');
     const regions = [
         {
             contains: (mx, my) => {
                 const dx = mx - centerX, dy = my - centerY;
-                const dist = Math.sqrt(dx*dx + dy*dy);
+                const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist < innerRadius || dist > radius) return false;
-                let angle = Math.atan2(dy, dx) + Math.PI/2;
+                let angle = Math.atan2(dy, dx) + Math.PI / 2;
                 if (angle < 0) angle += Math.PI * 2;
                 return angle <= slaAngle;
             },
-            data: { type: 'within', value: slaWithin, percent: ((slaWithin/total)*100).toFixed(1) }
+            data: { type: 'within', value: slaWithin, percent: ((slaWithin / total) * 100).toFixed(1) }
         },
         {
             contains: (mx, my) => {
                 const dx = mx - centerX, dy = my - centerY;
-                const dist = Math.sqrt(dx*dx + dy*dy);
+                const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist < innerRadius || dist > radius) return false;
-                let angle = Math.atan2(dy, dx) + Math.PI/2;
+                let angle = Math.atan2(dy, dx) + Math.PI / 2;
                 if (angle < 0) angle += Math.PI * 2;
                 return angle > slaAngle;
             },
-            data: { type: 'outside', value: slaOutside, percent: ((slaOutside/total)*100).toFixed(1) }
+            data: { type: 'outside', value: slaOutside, percent: ((slaOutside / total) * 100).toFixed(1) }
         }
     ];
-    
+
     window.setupExpandedTooltip(canvas, regions, (d) => d.type === 'within' ? `
         <span style="color:#10b981; font-weight:bold;">✓ Dentro do SLA</span><br>
         <strong>${d.value}</strong> tickets (${d.percent}%)<br>
@@ -2135,10 +2179,17 @@ function renderExpandedSLA(ctx, width, height, metrics, colors, bi) {
 // ========== FUNÇÕES DE RENDERIZAÇÃO EXPANDIDA PARA NOVOS GRÁFICOS ==========
 
 function renderExpandedFirstResponse(ctx, width, height, bi) {
-    const ticketsWithFR = bi.filteredData.filter(t => t.stats_first_responded_at && t.created_at);
-    if (!ticketsWithFR.length) {
+    const responseHours = [];
+    bi.filteredData.forEach(t => {
+        const responseMs = bi.getResponseTimeMs ? bi.getResponseTimeMs(t) : null;
+        if (responseMs === null) return;
+        const hours = responseMs / (1000 * 60 * 60);
+        if (hours > 0) responseHours.push(hours);
+    });
+
+    if (!responseHours.length) {
         ctx.fillStyle = bi.colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Sem dados de First Response', width/2, height/2); return;
+        ctx.fillText('Sem dados de First Response', width / 2, height / 2); return;
     }
     const faixas = [
         { label: '< 1 hora', min: 0, max: 1, color: '#10b981', count: 0 },
@@ -2148,19 +2199,18 @@ function renderExpandedFirstResponse(ctx, width, height, bi) {
         { label: '> 24 horas', min: 24, max: Infinity, color: '#ef4444', count: 0 }
     ];
     let totalHours = 0;
-    ticketsWithFR.forEach(t => {
-        const hours = (new Date(t.stats_first_responded_at) - new Date(t.created_at)) / (1000 * 60 * 60);
+    responseHours.forEach(hours => {
         if (hours > 0) { totalHours += hours; const f = faixas.find(fx => hours >= fx.min && hours < fx.max); if (f) f.count++; }
     });
-    const avgHours = totalHours / ticketsWithFR.length;
+    const avgHours = totalHours / responseHours.length;
     const items = faixas.filter(f => f.count > 0);
     const maxCount = Math.max(...items.map(i => i.count), 1);
     const pad = { left: 160, right: 80, top: 80, bottom: 50 };
     const barH = Math.min(50, (height - pad.top - pad.bottom) / items.length - 15);
-    
+
     ctx.fillStyle = bi.colors.text; ctx.font = 'bold 24px system-ui'; ctx.textAlign = 'center';
     ctx.fillText(`Média: ${avgHours.toFixed(1)} horas`, width / 2, 45);
-    
+
     items.forEach((item, i) => {
         const y = pad.top + i * (barH + 15);
         const bw = Math.max(20, (item.count / maxCount) * (width - pad.left - pad.right));
@@ -2182,25 +2232,25 @@ function renderExpandedCSAT(ctx, width, height, bi) {
     }).filter(r => r !== null && r > 0);
     if (!ratings.length) {
         ctx.fillStyle = bi.colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Sem dados de satisfação', width/2, height/2); return;
+        ctx.fillText('Sem dados de satisfação', width / 2, height / 2); return;
     }
     const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
     const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     ratings.forEach(r => { if (distribution[r] !== undefined) distribution[r]++; });
-    
+
     const cx = width / 2, cy = height / 2 - 30, r = Math.min(width, height) / 3;
     const color = avg >= 4 ? '#10b981' : avg >= 3 ? '#f59e0b' : '#ef4444';
-    
+
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fill();
     ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + (avg / 5) * Math.PI * 2);
     ctx.strokeStyle = color; ctx.lineWidth = 30; ctx.lineCap = 'round'; ctx.stroke();
-    
+
     ctx.fillStyle = bi.colors.text; ctx.font = 'bold 64px system-ui'; ctx.textAlign = 'center';
     ctx.fillText(`${avg.toFixed(1)}`, cx, cy + 20);
     ctx.font = '18px system-ui'; ctx.fillStyle = bi.colors.textMuted;
     ctx.fillText(`${ratings.length} avaliações`, cx, cy + 55);
-    
+
     // Distribuição
     ctx.font = '16px system-ui'; ctx.textAlign = 'center';
     const distY = height - 50;
@@ -2223,10 +2273,10 @@ function renderExpandedHeatmap(ctx, width, height, bi) {
     const pad = { left: 100, right: 30, top: 50, bottom: 40 };
     const cellW = (width - pad.left - pad.right) / 24;
     const cellH = (height - pad.top - pad.bottom) / 7;
-    
+
     ctx.fillStyle = bi.colors.text; ctx.font = 'bold 20px system-ui'; ctx.textAlign = 'center';
     ctx.fillText('Heatmap de Tickets por Dia/Hora', width / 2, 30);
-    
+
     for (let d = 0; d < 7; d++) {
         ctx.fillStyle = bi.colors.text; ctx.font = '14px system-ui'; ctx.textAlign = 'right';
         ctx.fillText(dias[d], pad.left - 10, pad.top + d * cellH + cellH / 2 + 5);
@@ -2238,13 +2288,13 @@ function renderExpandedHeatmap(ctx, width, height, bi) {
             if (val > 0 && cellW > 25) {
                 ctx.fillStyle = intensity > 0.5 ? '#fff' : bi.colors.text;
                 ctx.font = '10px system-ui'; ctx.textAlign = 'center';
-                ctx.fillText(val.toString(), pad.left + hr * cellW + cellW/2, pad.top + d * cellH + cellH/2 + 4);
+                ctx.fillText(val.toString(), pad.left + hr * cellW + cellW / 2, pad.top + d * cellH + cellH / 2 + 4);
             }
         }
     }
     for (let h = 0; h < 24; h += 2) {
         ctx.fillStyle = bi.colors.textMuted; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText(`${h}h`, pad.left + h * cellW + cellW/2, height - 15);
+        ctx.fillText(`${h}h`, pad.left + h * cellW + cellW / 2, height - 15);
     }
 }
 
@@ -2261,15 +2311,15 @@ function renderExpandedWorkload(ctx, width, height, bi) {
         if (p) String(p).split(/[,;\/]/).map(x => x.trim()).filter(x => x).forEach(x => workload[x] = (workload[x] || 0) + 1);
     });
     const sorted = Object.entries(workload).sort((a, b) => b[1] - a[1]).slice(0, 10);
-    if (!sorted.length) { ctx.fillStyle = bi.colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Sem tickets em aberto', width/2, height/2); return; }
-    
+    if (!sorted.length) { ctx.fillStyle = bi.colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Sem tickets em aberto', width / 2, height / 2); return; }
+
     const maxVal = sorted[0][1];
     const pad = { left: 200, right: 80, top: 50, bottom: 30 };
     const barH = Math.min(40, (height - pad.top - pad.bottom) / sorted.length - 10);
-    
+
     ctx.fillStyle = bi.colors.text; ctx.font = 'bold 20px system-ui'; ctx.textAlign = 'center';
     ctx.fillText('Carga de Trabalho por Pessoa', width / 2, 30);
-    
+
     sorted.forEach(([name, count], i) => {
         const y = pad.top + i * (barH + 10);
         const bw = Math.max(20, (count / maxVal) * (width - pad.left - pad.right));
@@ -2289,73 +2339,73 @@ function renderExpandedComparativoMensal(ctx, width, height, bi) {
     // Usar mesma lógica do gráfico normal
     let period1Start, period1End, period2Start, period2End;
     let period1Label, period2Label;
-    
+
     const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     const monthsShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    
+
     if (bi.periodFilter === 'custom' && bi.customDateRange && bi.customDateRange.start && bi.customDateRange.end) {
         const start = new Date(bi.customDateRange.start);
         const end = new Date(bi.customDateRange.end);
         const diffMs = end - start;
         const midDate = new Date(start.getTime() + diffMs / 2);
-        
+
         period1Start = start;
         period1End = new Date(midDate.getTime() - 1);
         period2Start = midDate;
         period2End = end;
-        
+
         const formatShort = (d) => `${d.getDate()}/${d.getMonth() + 1}`;
         period1Label = `${formatShort(period1Start)} - ${formatShort(period1End)}`;
         period2Label = `${formatShort(period2Start)} - ${formatShort(period2End)}`;
     } else if (bi.periodFilter !== 'all') {
         const days = parseInt(bi.periodFilter) || 30;
         const now = new Date();
-        
+
         period2End = new Date(now);
         period2Start = new Date(now);
         period2Start.setDate(period2Start.getDate() - days);
-        
+
         period1End = new Date(period2Start);
         period1End.setDate(period1End.getDate() - 1);
         period1Start = new Date(period1End);
         period1Start.setDate(period1Start.getDate() - days + 1);
-        
+
         period1Label = `Anterior (${days}d)`;
         period2Label = `Atual (${days}d)`;
     } else {
         const now = new Date();
         const thisMonth = now.getMonth(), lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
         const thisYear = now.getFullYear(), lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
-        
+
         period1Start = new Date(lastMonthYear, lastMonth, 1);
         period1End = new Date(thisYear, thisMonth, 0);
         period2Start = new Date(thisYear, thisMonth, 1);
         period2End = now;
-        
+
         period1Label = months[lastMonth];
         period2Label = months[thisMonth];
     }
-    
+
     let period1Count = 0, period2Count = 0;
     bi.filteredData.forEach(t => {
         const d = new Date(t.created_at);
         if (d >= period1Start && d <= period1End) period1Count++;
         else if (d >= period2Start && d <= period2End) period2Count++;
     });
-    
+
     const items = [{ label: period1Label, value: period1Count, color: '#64748b' }, { label: period2Label, value: period2Count, color: '#667eea' }];
     const maxVal = Math.max(...items.map(i => i.value), 1);
-    
+
     const diff = period1Count > 0 ? ((period2Count - period1Count) / period1Count * 100) : (period2Count > 0 ? 100 : 0);
     ctx.fillStyle = diff >= 0 ? '#10b981' : '#ef4444'; ctx.font = 'bold 32px system-ui'; ctx.textAlign = 'center';
     ctx.fillText(`${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%`, width / 2, 55);
     ctx.fillStyle = bi.colors.textMuted; ctx.font = '16px system-ui';
     ctx.fillText('variação em relação ao período anterior', width / 2, 85);
-    
+
     const pad = { left: 150, right: 150, top: 130, bottom: 90 };
     const barW = (width - pad.left - pad.right - 120) / 2;
     const chartH = height - pad.top - pad.bottom;
-    
+
     items.forEach((item, i) => {
         const x = pad.left + i * (barW + 120);
         const barH = Math.max(20, (item.value / maxVal) * chartH);
@@ -2372,7 +2422,7 @@ function renderExpandedComparativoMensal(ctx, width, height, bi) {
 function renderExpandedTendencia(ctx, width, height, bi) {
     // Usar mesma lógica do gráfico normal (respeitar período selecionado)
     let periodStart, periodEnd;
-    
+
     if (bi.periodFilter === 'custom' && bi.customDateRange && bi.customDateRange.start && bi.customDateRange.end) {
         periodStart = new Date(bi.customDateRange.start);
         periodEnd = new Date(bi.customDateRange.end);
@@ -2386,12 +2436,12 @@ function renderExpandedTendencia(ctx, width, height, bi) {
         periodStart = new Date();
         periodStart.setDate(periodStart.getDate() - 56); // 8 semanas
     }
-    
+
     // Calcular número de semanas no período
     const totalDays = Math.ceil((periodEnd - periodStart) / (1000 * 60 * 60 * 24));
     const numWeeks = Math.min(Math.max(Math.ceil(totalDays / 7), 2), 8);
     const daysPerWeek = Math.ceil(totalDays / numWeeks);
-    
+
     const weeks = [];
     for (let i = 0; i < numWeeks; i++) {
         const start = new Date(periodStart);
@@ -2399,40 +2449,40 @@ function renderExpandedTendencia(ctx, width, height, bi) {
         const end = new Date(start);
         end.setDate(end.getDate() + daysPerWeek - 1);
         if (end > periodEnd) end.setTime(periodEnd.getTime());
-        
-        weeks.push({ 
-            start, 
-            end, 
-            count: 0, 
+
+        weeks.push({
+            start,
+            end,
+            count: 0,
             label: `Sem ${i + 1}`,
             dateLabel: `${start.getDate()}/${start.getMonth() + 1}`
         });
     }
-    
+
     // Contar tickets por semana
-    bi.filteredData.forEach(t => { 
-        const d = new Date(t.created_at); 
-        weeks.forEach(w => { 
-            if (d >= w.start && d <= w.end) w.count++; 
-        }); 
+    bi.filteredData.forEach(t => {
+        const d = new Date(t.created_at);
+        weeks.forEach(w => {
+            if (d >= w.start && d <= w.end) w.count++;
+        });
     });
-    
+
     const maxVal = Math.max(...weeks.map(w => w.count), 1);
     const total = weeks.reduce((s, w) => s + w.count, 0);
-    
+
     if (total === 0) {
         ctx.fillStyle = bi.colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('Sem dados no período', width/2, height/2); return;
+        ctx.fillText('Sem dados no período', width / 2, height / 2); return;
     }
-    
+
     const pad = { left: 100, right: 80, top: 70, bottom: 90 };
     const chartW = width - pad.left - pad.right, chartH = height - pad.top - pad.bottom;
     const stepX = weeks.length > 1 ? chartW / (weeks.length - 1) : chartW;
-    
+
     // Título
     ctx.fillStyle = bi.colors.text; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText('Tendência Semanal', width/2, 35);
-    
+    ctx.fillText('Tendência Semanal', width / 2, 35);
+
     // Área sob a linha
     ctx.beginPath();
     ctx.moveTo(pad.left, height - pad.bottom);
@@ -2446,7 +2496,7 @@ function renderExpandedTendencia(ctx, width, height, bi) {
     grad.addColorStop(0, 'rgba(102, 126, 234, 0.4)');
     grad.addColorStop(1, 'rgba(102, 126, 234, 0.05)');
     ctx.fillStyle = grad; ctx.fill();
-    
+
     // Linha
     ctx.strokeStyle = '#667eea'; ctx.lineWidth = 4; ctx.beginPath();
     weeks.forEach((wk, i) => {
@@ -2454,13 +2504,13 @@ function renderExpandedTendencia(ctx, width, height, bi) {
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
     ctx.stroke();
-    
+
     // Pontos e labels
     weeks.forEach((wk, i) => {
         const x = pad.left + i * stepX, y = pad.top + chartH - (wk.count / maxVal) * chartH;
         ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fillStyle = '#667eea'; ctx.fill();
         ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
-        
+
         ctx.fillStyle = '#ef4444'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
         ctx.fillText(wk.count.toLocaleString(), x, y - 22);
         ctx.font = '14px system-ui'; ctx.fillStyle = bi.colors.text;
@@ -2471,28 +2521,23 @@ function renderExpandedTendencia(ctx, width, height, bi) {
 }
 
 function renderExpandedRankingSLA(ctx, width, height, bi) {
-    const SLA_LIMIT = 4 * 60 * 60 * 1000;
+    const SLA_LIMIT_MS = 4 * 60 * 60 * 1000;
     const personSLA = {};
     const treatField = bi.currentView === 'pessoa' ? 'cf_tratativa' : 'cf_grupo_tratativa';
     bi.filteredData.forEach(t => {
-        // Ignorar tipos configurados para SLA (consistente com gráfico pequeno)
-        const typeNorm = (t.type || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
-        if (bi.ignoreTypesForSLA && bi.ignoreTypesForSLA.has(typeNorm)) return;
-        // Não filtrar por status atual - queremos medir 1ª resposta de todos os tickets
-        
         const p = t.custom_fields?.[treatField] || t[treatField];
-        const fr = t.stats_first_responded_at || t.first_responded_at;
-        if (!p || !fr || !t.created_at) return;
-        const time = new Date(fr) - new Date(t.created_at);
+        if (!p) return;
+        const time = bi.getResponseTimeMs ? bi.getResponseTimeMs(t) : null;
+        if (time === null) return;
         String(p).split(/[,;\/]/).map(x => x.trim()).filter(x => x).forEach(name => {
             if (!personSLA[name]) personSLA[name] = { within: 0, total: 0 };
             personSLA[name].total++;
-            if (time <= SLA_LIMIT) personSLA[name].within++;
+            if (time <= SLA_LIMIT_MS) personSLA[name].within++;
         });
     });
     const sorted = Object.entries(personSLA).filter(([, v]) => v.total >= 3).map(([name, v]) => ({ name, rate: (v.within / v.total) * 100, total: v.total })).sort((a, b) => b.rate - a.rate).slice(0, 10);
-    if (!sorted.length) { ctx.fillStyle = bi.colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Dados insuficientes', width/2, height/2); return; }
-    
+    if (!sorted.length) { ctx.fillStyle = bi.colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Dados insuficientes', width / 2, height / 2); return; }
+
     renderExpandedRankingBars(ctx, width, height, sorted, '%', bi, 'Ranking por SLA');
 }
 
@@ -2510,44 +2555,44 @@ function renderExpandedRankingResolucao(ctx, width, height, bi) {
         });
     });
     const sorted = Object.entries(personRes).filter(([, v]) => v.total >= 3).map(([name, v]) => ({ name, rate: (v.resolved / v.total) * 100, total: v.total })).sort((a, b) => b.rate - a.rate).slice(0, 10);
-    if (!sorted.length) { ctx.fillStyle = bi.colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Dados insuficientes', width/2, height/2); return; }
-    
+    if (!sorted.length) { ctx.fillStyle = bi.colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Dados insuficientes', width / 2, height / 2); return; }
+
     renderExpandedRankingBars(ctx, width, height, sorted, '%', bi, 'Ranking por Resolução');
 }
 
 function renderExpandedEficiencia(ctx, width, height, bi) {
     // Usar resolvedInPeriod (tickets resolvidos no período selecionado)
     const resolvedData = bi.resolvedInPeriod || [];
-    
+
     // Calcular dias do período para média correta
     const periodDays = bi.periodFilter === 'all' ? 365 : parseInt(bi.periodFilter) || 30;
-    
+
     const personEff = {};
     const treatField = bi.currentView === 'pessoa' ? 'cf_tratativa' : 'cf_grupo_tratativa';
-    
+
     resolvedData.forEach(t => {
         // Acessar campo diretamente (não nested em custom_fields)
         const p = t[treatField] || t.custom_fields?.[treatField];
         if (!p) return;
-        String(p).split(/[,;\/]/).map(x => x.trim()).filter(x => x).forEach(name => { 
-            personEff[name] = (personEff[name] || 0) + 1; 
+        String(p).split(/[,;\/]/).map(x => x.trim()).filter(x => x).forEach(name => {
+            personEff[name] = (personEff[name] || 0) + 1;
         });
     });
-    
+
     // Calcular taxa por dia e ordenar
     const sorted = Object.entries(personEff)
         .map(([name, count]) => ({ name, rate: count / periodDays, total: count }))
         .sort((a, b) => b.total - a.total)
         .slice(0, 10);
-    
-    if (!sorted.length) { 
-        ctx.fillStyle = bi.colors.textMuted; 
-        ctx.font = '20px system-ui'; 
-        ctx.textAlign = 'center'; 
-        ctx.fillText('Sem dados de resolução no período', width/2, height/2); 
-        return; 
+
+    if (!sorted.length) {
+        ctx.fillStyle = bi.colors.textMuted;
+        ctx.font = '20px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('Sem dados de resolução no período', width / 2, height / 2);
+        return;
     }
-    
+
     renderExpandedRankingBars(ctx, width, height, sorted, '/dia', bi, 'Índice de Eficiência');
 }
 
@@ -2557,7 +2602,7 @@ function renderExpandedRankingBars(ctx, width, height, items, suffix, bi, title)
     const chartWidth = width - pad.left - pad.right;
     const barH = Math.min(42, (height - pad.top - pad.bottom) / items.length - 12);
     const borderRadius = 8;
-    
+
     // Paleta premium
     const premiumColors = [
         { main: '#fbbf24', glow: '#fcd34d', dark: '#f59e0b' },  // Gold (1º)
@@ -2571,45 +2616,45 @@ function renderExpandedRankingBars(ctx, width, height, items, suffix, bi, title)
         { main: '#ec4899', glow: '#f472b6', dark: '#db2777' },  // Pink
         { main: '#f97316', glow: '#fb923c', dark: '#ea580c' },  // Orange
     ];
-    
+
     // Título
     ctx.fillStyle = bi.colors.text;
     ctx.font = 'bold 20px system-ui';
     ctx.textAlign = 'center';
     ctx.fillText(title, width / 2, 35);
-    
+
     const regions = [];
     items.forEach((item, i) => {
         const y = pad.top + i * (barH + 12);
         const bw = Math.max(20, (item.rate / maxVal) * chartWidth);
         const colorSet = premiumColors[i % premiumColors.length];
-        
+
         ctx.save();
-        
+
         // Fundo (track)
         ctx.fillStyle = 'rgba(255,255,255,0.03)';
         ctx.beginPath();
         ctx.roundRect(pad.left, y, chartWidth, barH, borderRadius);
         ctx.fill();
-        
+
         // Sombra premium
         ctx.shadowColor = colorSet.glow;
         ctx.shadowBlur = 14;
         ctx.shadowOffsetY = 2;
-        
+
         // Gradiente premium
         const gradient = ctx.createLinearGradient(pad.left, y, pad.left + bw, y);
         gradient.addColorStop(0, colorSet.dark);
         gradient.addColorStop(0.3, colorSet.main);
         gradient.addColorStop(0.7, colorSet.main);
         gradient.addColorStop(1, colorSet.glow);
-        
+
         // Barra principal
         ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.roundRect(pad.left, y, bw, barH, borderRadius);
         ctx.fill();
-        
+
         // Glass effect
         const glassGradient = ctx.createLinearGradient(0, y, 0, y + barH);
         glassGradient.addColorStop(0, 'rgba(255,255,255,0.25)');
@@ -2619,28 +2664,28 @@ function renderExpandedRankingBars(ctx, width, height, items, suffix, bi, title)
         ctx.beginPath();
         ctx.roundRect(pad.left, y, bw, barH, borderRadius);
         ctx.fill();
-        
+
         ctx.restore();
-        
+
         // Nome
         ctx.fillStyle = 'rgba(255,255,255,0.9)';
         ctx.font = '500 14px system-ui';
         ctx.textAlign = 'right';
         ctx.fillText(`${i + 1}. ${item.name.length > 22 ? item.name.slice(0, 20) + '..' : item.name}`, pad.left - 15, y + barH / 2 + 5);
-        
+
         // Valor
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 15px system-ui';
         ctx.textAlign = 'left';
         ctx.fillText(`${item.rate.toFixed(1)}${suffix}`, pad.left + bw + 15, y + barH / 2 + 5);
-        
+
         // Região para tooltip
         regions.push({
             contains: (mx, my) => mx >= pad.left && mx <= pad.left + bw && my >= y && my <= y + barH,
             data: { ...item, rank: i + 1, color: colorSet.main, suffix, title }
         });
     });
-    
+
     // Configurar tooltip
     const canvas = document.getElementById('expandedChart');
     window.setupExpandedTooltip(canvas, regions, (d) => `
@@ -2671,15 +2716,15 @@ function renderExpandedParados(ctx, width, height, bi) {
         if (f) f.count++;
     });
     const items = faixas.filter(f => f.count > 0);
-    if (!items.length) { ctx.fillStyle = bi.colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Nenhum ticket parado', width/2, height/2); return; }
-    
+    if (!items.length) { ctx.fillStyle = bi.colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Nenhum ticket parado', width / 2, height / 2); return; }
+
     ctx.fillStyle = bi.colors.text; ctx.font = 'bold 24px system-ui'; ctx.textAlign = 'center';
     ctx.fillText(`Total de Tickets Parados: ${staleTickets.length}`, width / 2, 45);
-    
+
     const maxCount = Math.max(...items.map(i => i.count), 1);
     const pad = { left: 180, right: 80, top: 80, bottom: 50 };
     const barH = Math.min(50, (height - pad.top - pad.bottom) / items.length - 15);
-    
+
     items.forEach((item, i) => {
         const y = pad.top + i * (barH + 15);
         const bw = Math.max(20, (item.count / maxCount) * (width - pad.left - pad.right));
@@ -2709,15 +2754,15 @@ function renderExpandedAguardando(ctx, width, height, bi) {
         if (f) f.count++;
     });
     const items = faixas.filter(f => f.count > 0);
-    if (!items.length) { ctx.fillStyle = bi.colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Nenhum aguardando cliente', width/2, height/2); return; }
-    
+    if (!items.length) { ctx.fillStyle = bi.colors.textMuted; ctx.font = '20px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Nenhum aguardando cliente', width / 2, height / 2); return; }
+
     ctx.fillStyle = bi.colors.text; ctx.font = 'bold 24px system-ui'; ctx.textAlign = 'center';
     ctx.fillText(`Aguardando Cliente: ${aguardando.length} tickets`, width / 2, 45);
-    
+
     const maxCount = Math.max(...items.map(i => i.count), 1);
     const pad = { left: 180, right: 80, top: 80, bottom: 50 };
     const barH = Math.min(50, (height - pad.top - pad.bottom) / items.length - 15);
-    
+
     items.forEach((item, i) => {
         const y = pad.top + i * (barH + 15);
         const bw = Math.max(20, (item.count / maxCount) * (width - pad.left - pad.right));
@@ -2736,14 +2781,14 @@ function renderExpandedAguardando(ctx, width, height, bi) {
 function renderExpandedPendentes(ctx, width, height, bi) {
     const now = new Date();
     const openStatuses = [2, 6, 8, 10, 11, 12, 13, 14, 15, 18, 19, 20];
-    
+
     const categories = {
         'Aguardando Cliente': { color: '#f59e0b', count: 0 },
         'Aguardando Parceiros': { color: '#a855f7', count: 0 },
         'Pausado': { color: '#64748b', count: 0 },
         'Parado (sem atividade)': { color: '#ef4444', count: 0 }
     };
-    
+
     bi.filteredData.forEach(t => {
         const status = Number(t.status);
         if (status === 7) categories['Aguardando Cliente'].count++;
@@ -2755,10 +2800,10 @@ function renderExpandedPendentes(ctx, width, height, bi) {
             if (daysSinceUpdate >= 5) categories['Parado (sem atividade)'].count++;
         }
     });
-    
+
     const items = Object.entries(categories).filter(([, d]) => d.count > 0).sort((a, b) => b[1].count - a[1].count);
     const total = items.reduce((sum, [, d]) => sum + d.count, 0);
-    
+
     if (total === 0) {
         ctx.fillStyle = bi.colors.textMuted;
         ctx.font = '24px system-ui';
@@ -2766,30 +2811,30 @@ function renderExpandedPendentes(ctx, width, height, bi) {
         ctx.fillText('✅ Nenhum ticket pendente!', width / 2, height / 2);
         return;
     }
-    
+
     // Título
     ctx.fillStyle = bi.colors.text;
     ctx.font = 'bold 24px system-ui';
     ctx.textAlign = 'center';
     ctx.fillText(`⏳ ${total} Tickets Pendentes`, width / 2, 40);
-    
+
     // DONUT em alta resolução
     const centerX = width / 2 - 150;
     const centerY = height / 2 + 20;
     const outerRadius = Math.min(width, height) / 2 - 100;
     const innerRadius = outerRadius * 0.55;
     const regions = [];
-    
+
     let startAngle = -Math.PI / 2;
-    
+
     items.forEach(([label, data], index) => {
         const percent = data.count / total;
         const endAngle = startAngle + percent * Math.PI * 2;
-        
+
         ctx.save();
         ctx.shadowColor = data.color;
         ctx.shadowBlur = 25;
-        
+
         ctx.beginPath();
         ctx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
         ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
@@ -2797,7 +2842,7 @@ function renderExpandedPendentes(ctx, width, height, bi) {
         ctx.fillStyle = data.color;
         ctx.fill();
         ctx.restore();
-        
+
         regions.push({
             contains: (mx, my) => {
                 const dx = mx - centerX;
@@ -2810,10 +2855,10 @@ function renderExpandedPendentes(ctx, width, height, bi) {
             },
             data: { label, count: data.count, percent: Math.round(percent * 100), color: data.color }
         });
-        
+
         startAngle = endAngle;
     });
-    
+
     // Total no centro
     ctx.fillStyle = bi.colors.text;
     ctx.font = 'bold 48px system-ui';
@@ -2822,16 +2867,16 @@ function renderExpandedPendentes(ctx, width, height, bi) {
     ctx.font = '18px system-ui';
     ctx.fillStyle = bi.colors.textMuted;
     ctx.fillText('pendentes', centerX, centerY + 45);
-    
+
     // Legenda à direita
     const legendX = width - 250;
     let legendY = 100;
     items.forEach(([label, data]) => {
         const percent = Math.round((data.count / total) * 100);
-        
+
         ctx.fillStyle = data.color;
         ctx.fillRect(legendX, legendY - 12, 18, 18);
-        
+
         ctx.fillStyle = bi.colors.text;
         ctx.font = 'bold 18px system-ui';
         ctx.textAlign = 'left';
@@ -2839,10 +2884,10 @@ function renderExpandedPendentes(ctx, width, height, bi) {
         ctx.fillStyle = bi.colors.textMuted;
         ctx.font = '16px system-ui';
         ctx.fillText(`${data.count} (${percent}%)`, legendX + 30, legendY + 25);
-        
+
         legendY += 60;
     });
-    
+
     // Badge informativo
     ctx.fillStyle = 'rgba(102, 126, 234, 0.15)';
     ctx.beginPath();
@@ -2852,7 +2897,7 @@ function renderExpandedPendentes(ctx, width, height, bi) {
     ctx.font = '14px system-ui';
     ctx.textAlign = 'center';
     ctx.fillText('🔗 Unifica: Parados + Aguardando Cliente/Parceiros', width / 2, height - 27);
-    
+
     // Tooltip
     const canvas = document.getElementById('expandedChart');
     window.setupExpandedTooltip(canvas, regions, (d) => `
@@ -2866,8 +2911,199 @@ function renderExpandedPendentes(ctx, width, height, bi) {
     `);
 }
 
+// Tempo Médio de Resolução expandido (Alta Resolução) com PAGINAÇÃO
+function renderExpandedAvgResolutionTime(ctx, width, height, bi) {
+    const entityField = bi.currentView === 'pessoa' ? 'cf_tratativa' : 'cf_grupo_tratativa';
+    const state = window.biAnalytics?._expandState || window._biExpandState;
+    
+    // Tipos a ignorar
+    const ignoreTypes = bi.ignoreTypesForSLA || new Set();
+    
+    // Agregar por entidade
+    const byEntity = new Map();
+    let totalExcluded = 0;
+
+    bi.filteredData.forEach(ticket => {
+        const typeNorm = (ticket.type || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
+        if (ignoreTypes.has(typeNorm)) {
+            totalExcluded++;
+            return;
+        }
+
+        if (![4, 5].includes(Number(ticket.status))) return;
+
+        const resolved = ticket.stats_resolved_at || ticket.stats_closed_at || ticket.resolved_at || ticket.closed_at;
+        if (!resolved || !ticket.created_at) return;
+
+        const resolutionTimeMs = new Date(resolved) - new Date(ticket.created_at);
+        const resolutionTimeHours = resolutionTimeMs / (1000 * 60 * 60);
+
+        if (resolutionTimeHours <= 0 || resolutionTimeHours > 720) return;
+
+        const entities = ticket[entityField] ? ticket[entityField].split(/[,;\/]/).map(e => e.trim()).filter(e => e && bi.selectedEntities.has(e)) : [];
+
+        entities.forEach(ent => {
+            if (!byEntity.has(ent)) byEntity.set(ent, { times: [], tickets: [] });
+            const d = byEntity.get(ent);
+            d.times.push(resolutionTimeHours);
+            d.tickets.push(ticket);
+        });
+    });
+
+    // Calcular métricas
+    const allItems = Array.from(byEntity.entries()).map(([label, d]) => {
+        const avgHours = d.times.length > 0 ? d.times.reduce((a, b) => a + b, 0) / d.times.length : 0;
+        return { label, avgHours, count: d.times.length, tickets: d.tickets };
+    }).sort((a, b) => a.avgHours - b.avgHours);
+
+    if (allItems.length === 0) {
+        ctx.fillStyle = bi.colors.textMuted;
+        ctx.font = '24px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('Sem dados de resolução', width / 2, height / 2 - 15);
+        ctx.font = '16px system-ui';
+        ctx.fillText('(excluindo Melhorias e Projetos)', width / 2, height / 2 + 15);
+        return;
+    }
+
+    // Paginação
+    const perPage = 12;
+    state._avgResolutionTimeTotal = allItems.length; // Armazenar total para navegação
+    const totalPages = Math.ceil(allItems.length / perPage);
+    const currentPage = Math.min(state.page || 0, totalPages - 1);
+    state.page = currentPage;
+    const startIdx = currentPage * perPage;
+    const items = allItems.slice(startIdx, startIdx + perPage);
+
+    const formatTime = (hours) => {
+        if (hours < 1) return `${Math.round(hours * 60)}min`;
+        if (hours < 24) return `${hours.toFixed(1)}h`;
+        return `${(hours / 24).toFixed(1)}d`;
+    };
+
+    const getColor = (hours) => {
+        if (hours <= 24) return '#10b981';
+        if (hours <= 48) return '#f59e0b';
+        return '#ef4444';
+    };
+
+    // Header
+    ctx.fillStyle = bi.colors.textMuted;
+    ctx.font = '14px system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText(`⚠️ Exclui Melhorias/Projetos (${totalExcluded} ignorados)`, 20, 30);
+    
+    // Info de paginação no header
+    ctx.textAlign = 'right';
+    ctx.fillText(`Total: ${allItems.length} pessoas`, width - 20, 30);
+
+    const padding = { top: 60, right: 120, bottom: 80, left: 180 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+    const barHeight = Math.min(35, chartHeight / items.length - 6);
+    const gap = 6;
+    const maxAvg = Math.max(...items.map(i => i.avgHours), 24);
+
+    // Meta 24h
+    const meta24hX = padding.left + (24 / maxAvg) * chartWidth;
+    if (meta24hX <= width - padding.right) {
+        ctx.save();
+        ctx.strokeStyle = '#10b981';
+        ctx.setLineDash([8, 5]);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(meta24hX, padding.top - 15);
+        ctx.lineTo(meta24hX, padding.top + chartHeight + 10);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.fillStyle = '#10b981';
+        ctx.font = 'bold 12px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('Meta 24h', meta24hX, padding.top - 25);
+    }
+
+    const regions = [];
+
+    items.forEach((item, index) => {
+        const globalIndex = startIdx + index;
+        const y = padding.top + index * (barHeight + gap);
+        const w = (item.avgHours / maxAvg) * chartWidth;
+        const color = getColor(item.avgHours);
+
+        // Barra com sombra
+        ctx.save();
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 20;
+        ctx.fillStyle = color;
+        ctx.fillRect(padding.left, y, Math.max(w, 6), barHeight);
+        ctx.restore();
+
+        // Label
+        ctx.fillStyle = bi.colors.text;
+        ctx.font = 'bold 14px system-ui';
+        ctx.textAlign = 'right';
+        const disp = item.label.length > 18 ? item.label.slice(0, 18) + '..' : item.label;
+        ctx.fillText(`${globalIndex + 1}. ${disp}`, padding.left - 12, y + barHeight / 2 + 5);
+
+        // Valor
+        ctx.textAlign = 'left';
+        ctx.font = 'bold 16px system-ui';
+        ctx.fillStyle = color;
+        ctx.fillText(formatTime(item.avgHours), padding.left + Math.max(w, 6) + 12, y + barHeight / 2 + 5);
+
+        // Quantidade
+        ctx.fillStyle = bi.colors.textMuted;
+        ctx.font = '12px system-ui';
+        ctx.fillText(`(${item.count})`, padding.left + Math.max(w, 6) + 70, y + barHeight / 2 + 5);
+
+        regions.push({
+            contains: (mx, my) => mx >= padding.left && mx <= padding.left + Math.max(w, 6) && my >= y && my <= y + barHeight,
+            data: { label: item.label, avgHours: item.avgHours, count: item.count, color, tickets: item.tickets }
+        });
+    });
+
+    // Legenda
+    ctx.fillStyle = bi.colors.textMuted;
+    ctx.font = '14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('🟢 ≤24h   🟡 24-48h   🔴 >48h', width / 2, height - 55);
+
+    // Atualizar info de página no painel de navegação existente
+    const pageInfo = document.getElementById('expandedPageInfo');
+    if (pageInfo) pageInfo.textContent = `${currentPage + 1} / ${totalPages}`;
+
+    // Mostrar painel de navegação se houver mais de uma página
+    const paginationEl = document.getElementById('expandedPagination');
+    if (paginationEl) {
+        paginationEl.style.display = totalPages > 1 ? 'flex' : 'none';
+    }
+
+    // Tooltip com callback de clique para mostrar tickets
+    const canvas = document.getElementById('expandedChart');
+    window.setupExpandedTooltip(canvas, regions, (d) => {
+        const avgDisplay = d.avgHours < 1 ? `${Math.round(d.avgHours * 60)} min` : d.avgHours < 24 ? `${d.avgHours.toFixed(1)} horas` : `${(d.avgHours / 24).toFixed(1)} dias`;
+        return `
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:${d.color};"></span>
+                <strong style="font-size:1.1rem;">${d.label}</strong>
+            </div>
+            <div style="margin-top:8px;">
+                ⏱️ Tempo Médio: <span style="font-size:1.3rem;font-weight:bold;color:${d.color};">${avgDisplay}</span>
+            </div>
+            <div style="margin-top:4px;color:#94a3b8;">${d.count} tickets resolvidos</div>
+            <div style="margin-top:6px;font-size:0.8rem;color:#667eea;">🖱️ Clique para ver tickets</div>
+        `;
+    }, (d) => {
+        // Callback de clique - mostrar modal de tickets
+        if (d && d.tickets && bi._showTicketsModal) {
+            bi._showTicketsModal(d.tickets, d.label, 'Tempo Médio de Resolução');
+        }
+    });
+}
+
 // Helper para criar card de gráfico com botão de expansão - Premium SaaS
-window.createChartCard = function(chartId, title, canvasHeight = 250, extraStyles = '') {
+window.createChartCard = function (chartId, title, canvasHeight = 250, extraStyles = '') {
     // Remover emoji do título para usar ícone SVG
     const cleanTitle = title.replace(/^[^\w\s]+\s*/, '');
     return `
@@ -2897,9 +3133,9 @@ window.createChartCard = function(chartId, title, canvasHeight = 250, extraStyle
 
 // Helper global para setup de canvas com DPR correto (evita problema de re-render)
 // Disponível para todos os módulos de charts
-window.setupCanvas = function(canvas, height = 250) {
+window.setupCanvas = function (canvas, height = 250) {
     const dpr = window.devicePixelRatio || 1;
-    
+
     // Determinar largura - prioridade: salva > parent > offsetWidth > 400
     let width = canvas._savedWidth;
     if (!width || width <= 0) {
@@ -2915,24 +3151,24 @@ window.setupCanvas = function(canvas, height = 250) {
     if (!width || width <= 0) {
         width = 400; // fallback
     }
-    
+
     // Salvar para re-renders
     canvas._savedWidth = width;
     canvas._savedHeight = height;
-    
+
     // Definir tamanho do canvas (interno = pixels * DPR)
     canvas.width = width * dpr;
     canvas.height = height * dpr;
-    
+
     // IMPORTANTE: Definir tamanho visual (CSS) para manter coordenadas corretas
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';
-    
+
     const ctx = canvas.getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform antes de scale
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, width, height);
-    
+
     return { ctx, width, height, dpr };
 };
 
@@ -2947,15 +3183,15 @@ class BIAnalytics {
         this.allTimes = new Set();
         this.ticketsData = [];
         this.filteredData = [];
-        
+
         // PRÉ-FILTRO de time para aba Pessoas
         this.pessoasTeamFilter = 'all'; // 'all' ou nome do time
         this.pessoasByTeam = {}; // Mapeamento time -> Set de pessoas
-        
+
         // Filtro de período
         this.periodFilter = 'all'; // 'all', '7', '30', '90', '365', 'custom'
         this.customDateRange = { start: null, end: null }; // Para período personalizado
-        
+
         // Paginação para gráficos
         this.pagination = {
             top10: { page: 0, perPage: 10 },
@@ -2963,70 +3199,70 @@ class BIAnalytics {
             slaResolutionByEntity: { page: 0, perPage: 10 },
             slaCountByEntity: { page: 0, perPage: 10 }
         };
-        
+
         // Estado de expansão de gráficos (encapsulado na instância)
         this._expandState = {
             page: 0,
             chartId: null
         };
-        
+
         // Mapeamento global de status (números e strings) - Freshdesk Tryvia
         // Usar módulo centralizado se disponível
-        this.statusLabels = window.FRESHDESK_STATUS?.MAP ? 
+        this.statusLabels = window.FRESHDESK_STATUS?.MAP ?
             Object.fromEntries(Object.entries(window.FRESHDESK_STATUS.MAP).map(([k, v]) => [k, v.label])) : {
-            // IDs do Freshdesk Tryvia
-            2: 'Aberto',
-            3: 'Pendente',
-            4: 'Resolvido',
-            5: 'Fechado',
-            6: 'Em Homologação',
-            7: 'Aguardando Cliente',
-            8: 'Em Tratativa',
-            10: 'Em Análise',
-            11: 'Interno',
-            12: 'Aguardando Publicar HML',
-            13: 'Aguardando Publicar PROD',
-            14: 'MVP',
-            15: 'Validação-Atendimento',
-            16: 'Aguardando Parceiros',
-            17: 'Pausado',
-            18: 'Validação-CS',
-            19: 'Levantamento de Esforço',
-            20: 'Em Fila DEV',
-            21: 'Em Produção',
-            // Strings (Freshdesk padrão em inglês)
-            'Open': 'Aberto',
-            'Pending': 'Pendente',
-            'Resolved': 'Resolvido',
-            'Closed': 'Fechado'
-        };
-        
+                // IDs do Freshdesk Tryvia
+                2: 'Aberto',
+                3: 'Pendente',
+                4: 'Resolvido',
+                5: 'Fechado',
+                6: 'Em Homologação',
+                7: 'Aguardando Cliente',
+                8: 'Em Tratativa',
+                10: 'Em Análise',
+                11: 'Interno',
+                12: 'Aguardando Publicar HML',
+                13: 'Aguardando Publicar PROD',
+                14: 'MVP',
+                15: 'Validação-Atendimento',
+                16: 'Aguardando Parceiros',
+                17: 'Pausado',
+                18: 'Validação-CS',
+                19: 'Levantamento de Esforço',
+                20: 'Em Fila DEV',
+                21: 'Em Produção',
+                // Strings (Freshdesk padrão em inglês)
+                'Open': 'Aberto',
+                'Pending': 'Pendente',
+                'Resolved': 'Resolvido',
+                'Closed': 'Fechado'
+            };
+
         this.statusColors = window.FRESHDESK_STATUS?.MAP ?
             Object.fromEntries(Object.entries(window.FRESHDESK_STATUS.MAP).map(([k, v]) => [k, v.color])) : {
-            2: '#3b82f6',  // Aberto - azul
-            3: '#f59e0b',  // Pendente - amarelo
-            4: '#10b981',  // Resolvido - verde
-            5: '#6b7280',  // Fechado - cinza
-            6: '#8b5cf6',  // Em Homologação - roxo
-            7: '#f59e0b',  // Aguardando Cliente - laranja
-            8: '#06b6d4',  // Em Tratativa - ciano
-            10: '#06b6d4', // Em Análise - ciano
-            11: '#64748b', // Interno - cinza
-            12: '#3b82f6', // Aguardando Publicar HML - azul
-            13: '#8b5cf6', // Aguardando Publicar PROD - roxo
-            14: '#ec4899', // MVP - rosa
-            15: '#f97316', // Validação-Atendimento - laranja
-            16: '#a855f7', // Aguardando Parceiros - roxo
-            17: '#64748b', // Pausado - cinza
-            18: '#f97316', // Validação-CS - laranja
-            19: '#6366f1', // Levantamento de Esforço - indigo
-            20: '#ef4444', // Em Fila DEV - vermelho
-            21: '#10b981'  // Em Produção - verde
-        };
-        
+                2: '#3b82f6',  // Aberto - azul
+                3: '#f59e0b',  // Pendente - amarelo
+                4: '#10b981',  // Resolvido - verde
+                5: '#6b7280',  // Fechado - cinza
+                6: '#8b5cf6',  // Em Homologação - roxo
+                7: '#f59e0b',  // Aguardando Cliente - laranja
+                8: '#06b6d4',  // Em Tratativa - ciano
+                10: '#06b6d4', // Em Análise - ciano
+                11: '#64748b', // Interno - cinza
+                12: '#3b82f6', // Aguardando Publicar HML - azul
+                13: '#8b5cf6', // Aguardando Publicar PROD - roxo
+                14: '#ec4899', // MVP - rosa
+                15: '#f97316', // Validação-Atendimento - laranja
+                16: '#a855f7', // Aguardando Parceiros - roxo
+                17: '#64748b', // Pausado - cinza
+                18: '#f97316', // Validação-CS - laranja
+                19: '#6366f1', // Levantamento de Esforço - indigo
+                20: '#ef4444', // Em Fila DEV - vermelho
+                21: '#10b981'  // Em Produção - verde
+            };
+
         // Design System - Usa variáveis CSS para suportar temas
         this.colors = this.getThemeColors();
-        
+
         // Gradientes para gráficos
         this.gradients = [
             ['#667eea', '#764ba2'],
@@ -3040,8 +3276,9 @@ class BIAnalytics {
             ['#ff9a9e', '#fecfef'],
             ['#fbc2eb', '#a6c1ee']
         ];
-        
-        // Tipos a ignorar em cálculos de SLA (normalizados para minúsculas e espaços simples)
+
+        // Tipos a ignorar em cálculos de SLA e Tempo de Resolução (normalizados para minúsculas e espaços simples)
+        // Inclui Melhorias e Projetos que não devem impactar métricas de atendimento
         this.ignoreTypesForSLA = new Set([
             'melhoria',
             'melhoria api',
@@ -3051,9 +3288,19 @@ class BIAnalytics {
             'melhoria optz',
             'melhoria sing',
             'melhoria telemetria',
-            'melhoria yuv'
+            'melhoria yuv',
+            'projeto',
+            'projeto api',
+            'projeto app motorista',
+            'projeto bi',
+            'projeto etrip',
+            'projeto optz',
+            'projeto sing',
+            'projeto telemetria',
+            'projeto yuv',
+            'project'
         ].map(s => s.toLowerCase().replace(/\s+/g, ' ').trim()));
-        
+
         // Status a ignorar em cálculos de SLA (IDs do Freshdesk sem cronômetro de SLA)
         // Conforme configuração do Freshdesk: status com toggle de "Cronômetro de SLA" desligado
         this.ignoreStatusForSLA = new Set([
@@ -3061,6 +3308,7 @@ class BIAnalytics {
             4,   // Resolvido
             5,   // Fechado
             7,   // Aguardando Cliente
+            8,   // Aguardando Terceiro
             10,  // Em Análise
             11,  // Interno
             12,  // Aguardando publicar HML
@@ -3069,31 +3317,36 @@ class BIAnalytics {
             17,  // Pausado
             19   // Levantamento de esforço
         ]);
+
+        this.chsValue = null;
     }
-    
+
     initialize() {
         console.log('🚀 Inicializando BI Analytics');
         console.log(`📊 window.allTicketsCache contém: ${window.allTicketsCache?.length || 0} tickets`);
-        
+
         // Verificar dados disponíveis
         if (!window.allTicketsCache || window.allTicketsCache.length === 0) {
             this.showNoDataMessage();
             return;
         }
-        
+
         // SEMPRE usar dados mais recentes do cache
         this.ticketsData = window.allTicketsCache;
         console.log(`📊 ticketsData atualizado com: ${this.ticketsData.length} tickets`);
         this.extractEntities();
         this.injectStyles();
-        
+
         // Restaurar seleções da view atual
         if (this.currentView === 'pessoa' && this.selectedPessoas.size > 0) {
             this.selectedEntities = new Set(this.selectedPessoas);
         } else if (this.currentView === 'time' && this.selectedTimes.size > 0) {
             this.selectedEntities = new Set(this.selectedTimes);
         }
-        
+
+        // Buscar dados CHS iniciais
+        this.fetchCHSData();
+
         // Se já tem entidades selecionadas, re-analisar os dados
         if (this.selectedEntities.size > 0) {
             console.log(`📊 Restaurando filtros: ${this.selectedEntities.size} entidade(s) selecionada(s) [${this.currentView}]`);
@@ -3101,10 +3354,19 @@ class BIAnalytics {
             // Re-analisar dados para renderizar gráficos corretamente
             setTimeout(() => this.analyzeData(), 100);
         } else {
-            this.render();
+            // AUTO-SELECIONAR todas as pessoas na inicialização para mostrar dados de cara
+            if (this.currentView === 'pessoa' && this.allPessoas && this.allPessoas.size > 0) {
+                console.log(`🚀 Auto-selecionando todas as ${this.allPessoas.size} pessoas na inicialização...`);
+                this.selectedEntities = new Set(this.allPessoas);
+                this.selectedPessoas = new Set(this.allPessoas);
+                this.render();
+                setTimeout(() => this.applyFilters(), 100);
+            } else {
+                this.render();
+            }
         }
     }
-    
+
     // Método para obter cores do tema atual
     // CENTRALIZADO em js/theme-colors-config.js
     getThemeColors() {
@@ -3112,7 +3374,7 @@ class BIAnalytics {
         if (window.getThemeColorsForBI) {
             return window.getThemeColorsForBI();
         }
-        
+
         // Fallback se theme-colors-config.js não estiver carregado
         const config = window.getCurrentThemeColors?.() || {};
         return {
@@ -3135,48 +3397,62 @@ class BIAnalytics {
             selectorText: config.selectorText || config.text || '#e5e7eb'
         };
     }
-    
+
     // Atualizar cores quando tema mudar
     refreshThemeColors() {
         this.colors = this.getThemeColors();
     }
-    
+
+    async fetchCHSData() {
+        try {
+            const response = await fetch('https://tryviacshml.github.io/api/chs/valor.json');
+            if (response.ok) {
+                const data = await response.json();
+                this.chsValue = data.value;
+                console.log('✅ CHS Data carregada:', this.chsValue);
+            }
+        } catch (error) {
+            console.error('❌ Erro ao buscar CHS:', error);
+            this.chsValue = null;
+        }
+    }
+
     // Helper para obter pessoa do ticket (com fallback)
     getTicketPessoa(ticket) {
         // Prioridade: cf_tratativa > responder_name > Agente ID
         const tratativa = ticket.cf_tratativa || ticket.cf_tratativa1684353202918;
         if (tratativa && tratativa.trim()) return tratativa;
-        
+
         const responder = ticket.responder_name;
         if (responder && responder.trim()) return responder;
-        
+
         // Fallback: resolver nome do agente pelo ID
         if (ticket.responder_id && window.resolveAgentName) {
             const agentName = window.resolveAgentName(ticket.responder_id);
             if (agentName && !agentName.startsWith('Agente ')) return agentName;
         }
-        
+
         return null;
     }
-    
+
     // Helper para obter time do ticket (com fallback)
     getTicketTime(ticket) {
         // Prioridade: cf_grupo_tratativa > group_name > Group ID
         const grupoTratativa = ticket.cf_grupo_tratativa || ticket.cf_grupo_tratativa1684353202918;
         if (grupoTratativa && grupoTratativa.trim()) return grupoTratativa;
-        
+
         const groupName = ticket.group_name;
         if (groupName && groupName.trim()) return groupName;
-        
+
         // Fallback: resolver nome do grupo pelo ID
         if (ticket.group_id && window.resolveGroupName) {
             const gName = window.resolveGroupName(ticket.group_id);
             if (gName && !gName.startsWith('Grupo ')) return gName;
         }
-        
+
         return null;
     }
-    
+
     extractEntities() {
         // Extrair todas as pessoas únicas
         // IMPORTANTE: Usar APENAS cf_tratativa e cf_grupo_tratativa (sem fallback)
@@ -3184,7 +3460,7 @@ class BIAnalytics {
         this.allPessoas.clear();
         this.allTimes.clear();
         this.pessoasByTeam = {};
-        
+
         this.ticketsData.forEach(ticket => {
             // Pessoas: APENAS cf_tratativa (sem fallback para responder_name)
             // Isso garante que só mostra pessoas que realmente trabalharam em tickets
@@ -3193,17 +3469,17 @@ class BIAnalytics {
                 const pessoas = pessoaField.split(/[,;\/]/).map(p => p.trim()).filter(p => p);
                 pessoas.forEach(p => this.allPessoas.add(p));
             }
-            
+
             // Times: APENAS cf_grupo_tratativa (sem fallback para group_name)
             // FILTRO: Apenas times válidos, exclui nomes de pessoas que foram erroneamente colocados
-            const VALID_TEAMS = ['Atendimento', 'DEV', 'Técnico', 'Produto', 'Implantação', 'Comercial', 'Melhoria', 'CS'];
+            const VALID_TEAMS = ['Atendimento', 'Acompanhamento', 'DEV', 'Técnico', 'Produto', 'Implantação', 'Comercial', 'CS'];
             const timeField = ticket.cf_grupo_tratativa;
             if (timeField) {
                 const times = timeField.split(/[,;\/]/).map(t => t.trim()).filter(t => t);
                 // Filtrar apenas times válidos (ignorar nomes de pessoas)
                 const validTimes = times.filter(t => VALID_TEAMS.includes(t));
                 validTimes.forEach(t => this.allTimes.add(t));
-                
+
                 // Mapear pessoas por time (apenas times válidos)
                 if (pessoaField) {
                     const pessoas = pessoaField.split(/[,;\/]/).map(p => p.trim()).filter(p => p);
@@ -3216,7 +3492,7 @@ class BIAnalytics {
                 }
             }
         });
-        
+
         // Aplicar whitelist de membros por time (se configurado)
         const teamConfig = window.TEAM_MEMBERS_CONFIG || {};
         Object.keys(teamConfig).forEach(team => {
@@ -3233,14 +3509,14 @@ class BIAnalytics {
                 console.log(`✅ Time "${team}" filtrado: ${filteredMembers.size} membros válidos`);
             }
         });
-        
+
         console.log(`📊 Encontrados: ${this.allPessoas.size} pessoas, ${this.allTimes.size} times`);
         console.log('👥 Pessoas por time:', Object.keys(this.pessoasByTeam).map(t => `${t}: ${this.pessoasByTeam[t].size}`));
     }
-    
+
     injectStyles() {
         if (document.getElementById('bi-analytics-styles')) return;
-        
+
         const styles = document.createElement('style');
         styles.id = 'bi-analytics-styles';
         styles.textContent = `
@@ -3421,11 +3697,11 @@ class BIAnalytics {
         `;
         document.head.appendChild(styles);
     }
-    
+
     render() {
         const container = document.getElementById('biAnalyticsContainer');
         if (!container) return;
-        
+
         container.innerHTML = `
             <!-- Header -->
             <div class="bi-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid rgba(63,63,90,0.3); margin-bottom: 1rem;">
@@ -3601,8 +3877,8 @@ class BIAnalytics {
                         </div>
                         <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; max-height: 150px; overflow-y: auto; background: ${this.colors.surface}; padding: 0.75rem; border-radius: 8px;">
                             ${Array.from(this.pessoasByTeam[this.pessoasTeamFilter] || []).sort().map(pessoa => {
-                                const isSelected = this.selectedEntities.has(pessoa);
-                                return `
+            const isSelected = this.selectedEntities.has(pessoa);
+            return `
                                     <button onclick="window.biAnalytics.togglePessoaSelection('${pessoa.replace(/'/g, "\\'")}')" style="
                                         padding: 0.4rem 0.75rem;
                                         border-radius: 20px;
@@ -3616,7 +3892,7 @@ class BIAnalytics {
                                         ${isSelected ? '✓ ' : ''}${pessoa}
                                     </button>
                                 `;
-                            }).join('')}
+        }).join('')}
                         </div>
                     </div>
                     ` : ''}
@@ -3697,12 +3973,12 @@ class BIAnalytics {
                 </div>
             `}
         `;
-        
+
         // Se é produtividade, carregar entidades e dados automaticamente
         if (this.currentView === 'produtividade') {
             setTimeout(() => this.loadProductivityEntities(), 100);
         }
-        
+
         // Se é CSAT, carregar dados do módulo
         if (this.currentView === 'csat') {
             setTimeout(async () => {
@@ -3722,7 +3998,7 @@ class BIAnalytics {
                 }
             }, 100);
         }
-        
+
         // Se é Tempo, carregar dados do módulo
         if (this.currentView === 'tempo') {
             setTimeout(async () => {
@@ -3742,7 +4018,7 @@ class BIAnalytics {
                 }
             }, 100);
         }
-        
+
         // Se é Acompanhamento, carregar dados do módulo
         if (this.currentView === 'acompanhamento') {
             setTimeout(async () => {
@@ -3763,10 +4039,10 @@ class BIAnalytics {
             }, 100);
         }
     }
-    
+
     renderEntityChips() {
         let entities;
-        
+
         if (this.currentView === 'pessoa') {
             // Aplicar pré-filtro de time se selecionado
             if (this.pessoasTeamFilter !== 'all' && this.pessoasByTeam[this.pessoasTeamFilter]) {
@@ -3777,7 +4053,7 @@ class BIAnalytics {
         } else {
             entities = Array.from(this.allTimes).sort();
         }
-        
+
         return entities.map(entity => `
             <div class="bi-entity-chip ${this.selectedEntities.has(entity) ? 'selected' : ''}"
                  onclick="window.biAnalytics.toggleEntity('${entity.replace(/'/g, "\\'")}')"
@@ -3788,24 +4064,24 @@ class BIAnalytics {
             </div>
         `).join('');
     }
-    
+
     // Definir pré-filtro de time para aba Pessoas
     setTeamPreFilter(team) {
         this.pessoasTeamFilter = team;
         console.log(`👥 Pré-filtro de time definido: ${team}`);
-        
+
         // Re-renderizar apenas a área de seleção
         this.render();
     }
-    
+
     // Definir filtro de time E aplicar automaticamente
     setTeamPreFilterAndApply(team) {
         this.pessoasTeamFilter = team;
         console.log(`👥 Filtro de time: ${team}`);
-        
+
         // Selecionar todas as pessoas do time automaticamente
         this.selectedEntities.clear();
-        
+
         if (team === 'all') {
             // Selecionar todas as pessoas
             this.allPessoas.forEach(p => this.selectedEntities.add(p));
@@ -3816,13 +4092,13 @@ class BIAnalytics {
                 teamPessoas.forEach(p => this.selectedEntities.add(p));
             }
         }
-        
+
         this.selectedPessoas = new Set(this.selectedEntities);
         console.log(`✅ ${this.selectedEntities.size} pessoas selecionadas`);
-        
+
         // Re-renderizar toda a interface para mostrar os chips
         this.render();
-        
+
         // Aplicar filtros após re-render
         setTimeout(() => {
             if (this.selectedEntities.size > 0) {
@@ -3830,7 +4106,7 @@ class BIAnalytics {
             }
         }, 50);
     }
-    
+
     // Limpar seleção e recarregar
     clearSelectionAndReload() {
         this.pessoasTeamFilter = 'all';
@@ -3838,25 +4114,25 @@ class BIAnalytics {
         this.selectedPessoas.clear();
         this.render();
     }
-    
+
     // Selecionar todas as pessoas do time atual
     selectTeamPessoas() {
         if (this.pessoasTeamFilter === 'all') return;
-        
+
         const teamPessoas = this.pessoasByTeam[this.pessoasTeamFilter];
         if (!teamPessoas) return;
-        
+
         // Limpar seleção anterior e selecionar todas do time
         this.selectedEntities.clear();
         teamPessoas.forEach(p => this.selectedEntities.add(p));
         this.selectedPessoas = new Set(this.selectedEntities);
-        
+
         console.log(`✅ ${teamPessoas.size} pessoas do time ${this.pessoasTeamFilter} selecionadas`);
-        
+
         // Aplicar filtros automaticamente
         this.applyFilters();
     }
-    
+
     // Toggle seleção de uma pessoa específica
     togglePessoaSelection(pessoa) {
         if (this.selectedEntities.has(pessoa)) {
@@ -3867,10 +4143,10 @@ class BIAnalytics {
             console.log(`➕ ${pessoa} adicionada à seleção`);
         }
         this.selectedPessoas = new Set(this.selectedEntities);
-        
+
         // Re-renderizar para atualizar visualmente os chips
         this.render();
-        
+
         // Aplicar filtros automaticamente após toggle
         setTimeout(() => {
             if (this.selectedEntities.size > 0) {
@@ -3878,29 +4154,29 @@ class BIAnalytics {
             }
         }, 50);
     }
-    
+
     // Selecionar todas as pessoas do time atual (botão "✓ Todas")
     selectAllTeamPessoas() {
         if (this.pessoasTeamFilter === 'all') return;
-        
+
         const teamPessoas = this.pessoasByTeam[this.pessoasTeamFilter];
         if (!teamPessoas) return;
-        
+
         this.selectedEntities.clear();
         teamPessoas.forEach(p => this.selectedEntities.add(p));
         this.selectedPessoas = new Set(this.selectedEntities);
-        
+
         console.log(`✅ ${teamPessoas.size} pessoas selecionadas`);
-        
+
         // Re-renderizar para atualizar visualmente os chips
         this.render();
-        
+
         // Aplicar filtros após re-render
         setTimeout(() => {
             this.applyFilters();
         }, 50);
     }
-    
+
     // Limpar seleção de pessoas do time (botão "✗ Nenhuma")
     clearTeamPessoas() {
         this.selectedEntities.clear();
@@ -3908,7 +4184,7 @@ class BIAnalytics {
         console.log(`🗑️ Seleção de pessoas limpa`);
         this.render();
     }
-    
+
     renderEmptyState() {
         return `
             <div style="text-align: center; padding: 3rem; color: ${this.colors.textMuted};">
@@ -3919,15 +4195,15 @@ class BIAnalytics {
             </div>
         `;
     }
-    
+
     renderAnalytics() {
         const metrics = this.calculateMetrics();
         const alerts = this.checkSLAAlerts(metrics);
-        
+
         // Verificar se não há dados
         const totalAssigned = (this.allAssignedTickets || []).length;
         const resolvedInPeriod = (this.resolvedInPeriod || []).length;
-        
+
         let noDataWarning = '';
         if (totalAssigned === 0) {
             // Nenhum ticket com tratativa para as pessoas selecionadas
@@ -3965,7 +4241,7 @@ class BIAnalytics {
                 </div>
             `;
         }
-        
+
         return `
             <!-- Aviso de sem dados -->
             ${noDataWarning}
@@ -4059,6 +4335,7 @@ class BIAnalytics {
                 ${createChartCard('chartSLAResolutionByEntity', '✅ % SLA Resolução por ' + (this.currentView === 'pessoa' ? 'Pessoa' : 'Time'), 300)}
                 ${createChartCard('chartSLACountByEntity', '📊 Qtd. SLA por ' + (this.currentView === 'pessoa' ? 'Pessoa' : 'Time'), 300)}
                 ${createChartCard('chartFirstResponse', '⏱️ Tempo Médio 1ª Resposta', 250)}
+                ${createChartCard('chartAvgResolutionTime', '⏱️ Tempo Médio Resolução por ' + (this.currentView === 'pessoa' ? 'Pessoa' : 'Time'), 320)}
             </div>
             
             <!-- Charts Grid - Produtividade -->
@@ -4120,7 +4397,7 @@ class BIAnalytics {
             </div>
         `;
     }
-    
+
     // Continua em bi-analytics-methods.js
 }
 

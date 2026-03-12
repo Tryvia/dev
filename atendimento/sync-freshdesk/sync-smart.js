@@ -27,10 +27,13 @@
 // Validador de campos
 const { validateAndLog, flushLogs, resetLogs } = require('./field-validator');
 
+// Carregar dotenv se disponível
+try { require('dotenv').config(); } catch(e) {}
+
 const FRESHDESK_DOMAIN = process.env.FRESHDESK_DOMAIN || 'suportetryvia';
-const FRESHDESK_API_KEY = process.env.FRESHDESK_API_KEY;
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const FRESHDESK_API_KEY = process.env.FRESHDESK_API_KEY || 's9GQtphoZqeRNz7Enl';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ifzypptlhpzuydjeympr.supabase.co';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmenlwcHRsaHB6dXlkamV5bXByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwNzQ3MjYsImV4cCI6MjA4NDY1MDcyNn0.fCmElFOhX_9NLQoIWHPjpnjwnBKMuomztt0GP8Vv0W8';
 
 // Flags de execução
 const args = process.argv.slice(2);

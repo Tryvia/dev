@@ -239,6 +239,52 @@ if (typeof BIAnalytics !== 'undefined') {
         },
 
         /**
+         * Obtém o timestamp de resolução/fechamento de forma padronizada
+         * @param {Object} ticket - Objeto do ticket
+         * @param {boolean} includeUpdatedFallback - Se true, usa updated_at para tickets fechados sem stats
+         * @returns {string|null}
+         */
+        getResolutionTimestamp(ticket, includeUpdatedFallback = true) {
+            if (!ticket) return null;
+
+            const resolvedAt =
+                ticket.stats_resolved_at ||
+                ticket.stats_closed_at ||
+                ticket.resolved_at ||
+                ticket.closed_at ||
+                (ticket.stats && (ticket.stats.resolved_at || ticket.stats.closed_at)) ||
+                null;
+
+            if (resolvedAt) return resolvedAt;
+
+            if (includeUpdatedFallback && this.isTicketClosed(ticket) && ticket.updated_at) {
+                return ticket.updated_at;
+            }
+
+            return null;
+        },
+
+        /**
+         * Calcula tempo de resolução em ms de forma padronizada
+         * @param {Object} ticket - Objeto do ticket
+         * @param {boolean} includeUpdatedFallback - Se true, usa updated_at como fallback
+         * @returns {number|null}
+         */
+        getResolutionTimeMs(ticket, includeUpdatedFallback = true) {
+            if (!ticket?.created_at) return null;
+
+            const resolvedAt = this.getResolutionTimestamp(ticket, includeUpdatedFallback);
+            if (!resolvedAt) return null;
+
+            const created = new Date(ticket.created_at);
+            const resolved = new Date(resolvedAt);
+            if (isNaN(created.getTime()) || isNaN(resolved.getTime())) return null;
+
+            const diff = resolved - created;
+            return diff > 0 ? diff : null;
+        },
+
+        /**
          * Verifica se o ticket está dentro do SLA de primeira resposta
          * @param {Object} ticket - Objeto do ticket  
          * @param {number} slaLimitHours - Limite do SLA em horas (padrão: 4)
@@ -494,8 +540,9 @@ if (typeof BIAnalytics !== 'undefined') {
                     tickets = this.filteredData.filter(t => ![2, 3, 4, 5].includes(Number(t.status)));
                     break;
                 case 'backlog':
-                    // Todos os tickets não resolvidos/fechados
-                    tickets = this.filteredData.filter(t => ![4, 5].includes(Number(t.status)));
+                    // Abertos agora: todos os tickets atribuídos que ainda não estão resolvidos/fechados
+                    // (independente do período selecionado)
+                    tickets = (this.backlogTickets || []).slice();
                     break;
                 case 'sla_violated':
                     // Usar helper normalizado para consistência
@@ -525,15 +572,25 @@ if (typeof BIAnalytics !== 'undefined') {
                     tickets = this.resolvedInheritedTickets || [];
                     break;
                 case 'entity':
-                    const entityField = this.currentView === 'pessoa' ? 'responder_name' : 'group_name';
-                    tickets = this.filteredData.filter(t => t[entityField] === filter);
+                    // Usar cf_tratativa/cf_grupo_tratativa (campos com dados reais)
+                    if (this.currentView === 'pessoa') {
+                        tickets = this.filteredData.filter(t => {
+                            const tratativa = t.cf_tratativa || '';
+                            return tratativa.split(/[,;\/]/).map(p => p.trim()).includes(filter);
+                        });
+                    } else {
+                        tickets = this.filteredData.filter(t => {
+                            const grupo = t.cf_grupo_tratativa || '';
+                            return grupo.split(/[,;\/]/).map(g => g.trim()).includes(filter);
+                        });
+                    }
                     break;
                 case 'system':
                     tickets = this.filteredData.filter(t => {
                         let sistema = null;
                         if (t.custom_fields) {
                             let cf = t.custom_fields;
-                            if (typeof cf === 'string') try { cf = JSON.parse(cf); } catch { /* JSON inválido */ }
+                            if (typeof cf === 'string') try { cf = JSON.parse(cf); } catch (e) { }
                             if (cf && typeof cf === 'object') sistema = cf.cf_teste || cf.cf_sistema;
                         }
                         return sistema === filter;
@@ -985,8 +1042,7 @@ if (typeof BIAnalytics !== 'undefined') {
             if (this.selectedEntities.size > 0) {
                 this.analyzeData();
             } else {
-                const biContent = document.getElementById('biContent');
-            if (biContent) biContent.innerHTML = this.renderEmptyState();
+                document.getElementById('biContent').innerHTML = this.renderEmptyState();
             }
         },
 
@@ -1002,8 +1058,7 @@ if (typeof BIAnalytics !== 'undefined') {
             this.selectedEntities.clear();
             this.syncSelections();
             this.updateEntityChips();
-            const biContent = document.getElementById('biContent');
-            if (biContent) biContent.innerHTML = this.renderEmptyState();
+            document.getElementById('biContent').innerHTML = this.renderEmptyState();
         },
 
         // Sincronizar seleções com o set da view atual
@@ -1258,7 +1313,7 @@ if (typeof BIAnalytics !== 'undefined') {
 
                 // Usar stats_resolved_at, stats_closed_at ou updated_at para data de resolução
                 // IMPORTANTE: updated_at é o fallback mais confiável para tickets resolvidos
-                const resolvedAt = ticket.stats_resolved_at || ticket.stats_closed_at || ticket.updated_at;
+                const resolvedAt = this.getResolutionTimestamp(ticket, true);
                 if (!resolvedAt) return false;
 
                 const resolvedDate = new Date(resolvedAt);
@@ -1290,8 +1345,7 @@ if (typeof BIAnalytics !== 'undefined') {
                 const status = Number(ticket.status);
                 const isResolvedStatus = status === 4 || status === 5;
 
-                const resolvedAt = ticket.stats_resolved_at || ticket.stats_closed_at ||
-                    (isResolvedStatus ? ticket.updated_at : null);
+                const resolvedAt = this.getResolutionTimestamp(ticket, true);
 
                 if (resolvedAt) {
                     const resolvedDate = new Date(resolvedAt);
@@ -1388,7 +1442,7 @@ if (typeof BIAnalytics !== 'undefined') {
                 if (!isResolved(t)) return true;
 
                 // Se está resolvido, só conta se foi resolvido DURANTE o período
-                const resolvedAt = t.stats_resolved_at || t.stats_closed_at || t.updated_at;
+                const resolvedAt = this.getResolutionTimestamp(t, true);
                 if (!resolvedAt) return false;
                 const resolvedDate = new Date(resolvedAt);
                 return resolvedDate >= startDate && resolvedDate <= endDate;
@@ -1765,12 +1819,10 @@ if (typeof BIAnalytics !== 'undefined') {
                         const data = entityMap.get(selectedName);
                         data.resolvedInPeriod++;
 
-                        // Tempo de resolução
-                        const resolvedAt = ticket.stats_resolved_at || ticket.stats_closed_at;
-                        if (ticket.created_at && resolvedAt) {
-                            const created = new Date(ticket.created_at);
-                            const resolved = new Date(resolvedAt);
-                            const hours = (resolved - created) / (1000 * 60 * 60);
+                        // Tempo de resolução padronizado
+                        const resolutionMs = this.getResolutionTimeMs(ticket, true);
+                        if (resolutionMs !== null) {
+                            const hours = resolutionMs / (1000 * 60 * 60);
                             if (hours > 0 && hours < 10000) {
                                 data.avgTime.push(hours);
                             }
@@ -2058,6 +2110,8 @@ if (typeof BIAnalytics !== 'undefined') {
                 pendingTickets,
                 inProgressTickets,
                 backlogTickets,
+                // Abertos agora (não resolvidos no momento, independente do período)
+                openNowTickets: (this.backlogTickets || []).length,
                 // SLA 1ª Resposta
                 slaWithin,
                 slaOutside,
@@ -2116,57 +2170,78 @@ if (typeof BIAnalytics !== 'undefined') {
                 noUser: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><line x1="4" y1="4" x2="20" y2="20" stroke-width="2.5"/></svg>'
             };
 
+            // ===== DADOS CONSOLIDADOS (igual Freshdesk / Análise por Time) =====
+            // Usar ticketsData que é a fonte de todos os tickets carregados
+            const todosTickets = this.ticketsData || window.allTicketsCache || [];
+            const totalGeral = todosTickets.length;
+            const pendentesGeral = todosTickets.filter(t => ![4, 5].includes(Number(t.status))).length;
+            const resolvidosGeral = totalGeral - pendentesGeral;
+            const taxaResolucaoGeral = totalGeral > 0 ? ((resolvidosGeral / totalGeral) * 100).toFixed(1) : 0;
+            
             const cards = [
+                // ===== LINHA 1: DADOS CONSOLIDADOS (igual Freshdesk) =====
+                {
+                    icon: svgIcons.total,
+                    value: totalGeral.toLocaleString('pt-BR'),
+                    label: 'Total de Tickets',
+                    subtitle: 'Todos os tickets no sistema',
+                    gradient: ['#06b6d4', '#0891b2'],
+                    trend: null,
+                    drilldown: null,
+                    special: true
+                },
+                {
+                    icon: svgIcons.backlog,
+                    value: pendentesGeral.toLocaleString('pt-BR'),
+                    label: 'Tickets Pendentes',
+                    subtitle: 'Status ≠ 4/5 (não resolvidos)',
+                    tooltip: 'Igual ao "Tickets Pendentes" do Freshdesk',
+                    gradient: ['#f59e0b', '#d97706'],
+                    trend: null,
+                    drilldown: "biAnalytics.showDrillDown('backlog', null, 'Tickets Pendentes')",
+                    special: true
+                },
+                {
+                    icon: svgIcons.resolved,
+                    value: resolvidosGeral.toLocaleString('pt-BR'),
+                    label: 'Tickets Resolvidos',
+                    subtitle: 'Status 4 ou 5',
+                    gradient: ['#10b981', '#059669'],
+                    trend: null,
+                    drilldown: "biAnalytics.showDrillDown('resolved', null, 'Tickets Resolvidos')",
+                    special: true
+                },
+                {
+                    icon: svgIcons.rate,
+                    value: taxaResolucaoGeral + '%',
+                    label: 'Taxa Resolução',
+                    subtitle: `${resolvidosGeral}/${totalGeral} tickets`,
+                    gradient: (() => {
+                        const rate = parseFloat(taxaResolucaoGeral);
+                        if (rate >= 80) return ['#10b981', '#059669'];
+                        if (rate >= 50) return ['#f59e0b', '#d97706'];
+                        return ['#ef4444', '#dc2626'];
+                    })(),
+                    trend: null,
+                    drilldown: null,
+                    special: true
+                },
+                // ===== LINHA 2: DADOS DO PERÍODO FILTRADO =====
                 {
                     icon: svgIcons.total,
                     value: metrics.totalTickets.toLocaleString('pt-BR'),
-                    label: 'Total de Tickets',
+                    label: 'Total no Período',
                     gradient: this.gradients[0],
                     trend: trends.totalChange,
-                    invertTrend: false,
                     drilldown: null
                 },
                 {
                     icon: svgIcons.resolved,
                     value: metrics.resolvedTickets.toLocaleString('pt-BR'),
-                    label: 'Resolvidos',
+                    label: 'Resolvidos no Período',
                     gradient: this.gradients[1],
                     trend: trends.resolvedChange,
-                    invertTrend: false,
                     drilldown: "biAnalytics.showDrillDown('resolved', null, 'Tickets Resolvidos')"
-                },
-                {
-                    icon: svgIcons.open,
-                    value: metrics.openTickets.toLocaleString('pt-BR'),
-                    label: 'Em Aberto',
-                    gradient: this.gradients[2],
-                    trend: trends.openChange,
-                    invertTrend: true,
-                    drilldown: "biAnalytics.showDrillDown('status', 2, 'Tickets Abertos')"
-                },
-                {
-                    icon: svgIcons.rate,
-                    value: this.periodFilter !== 'all' ? metrics.realResolutionRate + '%' : resolutionRate + '%',
-                    label: this.periodFilter !== 'all' ? 'Taxa Resolução Real' : 'Taxa de Resolução',
-                    subtitle: this.periodFilter !== 'all' ? `${metrics.totalResolvidos}/${metrics.totalDemanda} tickets` : null,
-                    tooltip: this.periodFilter !== 'all'
-                        ? 'Mede a capacidade de REDUZIR O BACKLOG TOTAL. Considera todos os tickets pendentes (herdados de períodos anteriores + novos que chegaram). Taxa baixa indica acúmulo de trabalho.'
-                        : 'Percentual de tickets resolvidos em relação ao total de tickets atribuídos.',
-                    formula: this.periodFilter !== 'all'
-                        ? 'Resolvidos no Período ÷ (Herdados em Aberto + Novos no Período) × 100'
-                        : 'Resolvidos ÷ Total Atribuídos × 100',
-                    dataSource: this.periodFilter !== 'all'
-                        ? 'Herdados em Aberto: tickets criados ANTES do período que ainda estão abertos. Novos: tickets criados DENTRO do período. Resolvidos: tickets fechados no período.'
-                        : 'Campos: status (4=Resolvido, 5=Fechado), cf_tratativa',
-                    gradient: (() => {
-                        const rate = this.periodFilter !== 'all' ? parseFloat(metrics.realResolutionRate) : parseFloat(resolutionRate);
-                        if (rate >= 80) return ['#10b981', '#059669'];
-                        if (rate >= 50) return ['#f59e0b', '#d97706'];
-                        return ['#ef4444', '#dc2626'];
-                    })(),
-                    trend: trends.resolutionRateChange,
-                    invertTrend: false,
-                    drilldown: null
                 },
                 {
                     icon: svgIcons.progress,
@@ -2174,17 +2249,7 @@ if (typeof BIAnalytics !== 'undefined') {
                     label: 'Em Andamento',
                     gradient: this.gradients[4],
                     trend: trends.inProgressChange,
-                    invertTrend: false,
                     drilldown: "biAnalytics.showDrillDown('in_progress', null, 'Tickets Em Andamento')"
-                },
-                {
-                    icon: svgIcons.backlog,
-                    value: metrics.backlogTickets.toLocaleString('pt-BR'),
-                    label: 'Backlog',
-                    gradient: this.gradients[5],
-                    trend: trends.backlogChange,
-                    invertTrend: true,
-                    drilldown: "biAnalytics.showDrillDown('backlog', null, 'Backlog (Não Resolvidos)')"
                 },
                 {
                     icon: svgIcons.sla,
@@ -2192,19 +2257,13 @@ if (typeof BIAnalytics !== 'undefined') {
                     label: 'SLA 1ª Resposta',
                     gradient: metrics.slaPercent >= 90 ? ['#10b981', '#059669'] : metrics.slaPercent >= 70 ? ['#f59e0b', '#d97706'] : ['#ef4444', '#dc2626'],
                     trend: trends.slaChange,
-                    invertTrend: false,
                     drilldown: null
-                },
-                {
-                    icon: svgIcons.time,
-                    value: metrics.avgResponseHours + 'h',
-                    label: 'Tempo Médio 1ª Resp',
-                    gradient: this.gradients[7],
-                    trend: trends.avgResponseChange,
-                    invertTrend: true,
-                    drilldown: null
-                },
-                {
+                }
+            ];
+            
+            // ===== LINHA 2: KPIs SECUNDÁRIOS (só se relevantes) =====
+            if (metrics.slaOutside > 0) {
+                cards.push({
                     icon: svgIcons.alert,
                     value: metrics.slaOutside.toLocaleString('pt-BR'),
                     label: 'Violações SLA',
@@ -2212,24 +2271,30 @@ if (typeof BIAnalytics !== 'undefined') {
                     trend: null,
                     invertTrend: true,
                     drilldown: "biAnalytics.showDrillDown('sla_violated', null, 'Violações de SLA')"
-                },
-                {
+                });
+            }
+            
+            if (metrics.avgBacklogAgeDays > 0) {
+                cards.push({
                     icon: svgIcons.calendar,
                     value: metrics.avgBacklogAgeDays + 'd',
                     label: 'Idade Média Backlog',
                     gradient: metrics.avgBacklogAgeDays <= 7 ? ['#10b981', '#059669'] : metrics.avgBacklogAgeDays <= 14 ? ['#f59e0b', '#d97706'] : ['#ef4444', '#dc2626'],
                     trend: null,
                     drilldown: null
-                },
-                {
+                });
+            }
+            
+            if (metrics.backlogOver7Percent > 0) {
+                cards.push({
                     icon: svgIcons.clock,
                     value: metrics.backlogOver7Percent + '%',
                     label: 'Backlog > 7 dias',
                     gradient: metrics.backlogOver7Percent <= 20 ? ['#10b981', '#059669'] : metrics.backlogOver7Percent <= 40 ? ['#f59e0b', '#d97706'] : ['#ef4444', '#dc2626'],
                     trend: null,
                     drilldown: "biAnalytics.showDrillDown('backlog_old', null, 'Backlog > 7 dias')"
-                }
-            ];
+                });
+            }
 
             // ========== KPIs HERDADOS vs NOVOS (apenas quando há filtro de período) ==========
             if (this.periodFilter !== 'all') {
@@ -2304,6 +2369,45 @@ if (typeof BIAnalytics !== 'undefined') {
                         drilldown: null
                     }
                 );
+            }
+
+            // ===== KPI CONSOLIDADO: TEMPO MÉDIO DE RESOLUÇÃO (excluindo Melhorias/Projetos) =====
+            {
+                const ignoreTypes = this.ignoreTypesForSLA || new Set();
+                const allData = this.filteredData || [];
+                const resTimes = [];
+                let ignoredCount = 0;
+                
+                allData.forEach(t => {
+                    const typeNorm = (t.type || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
+                    if (ignoreTypes.has(typeNorm)) { ignoredCount++; return; }
+                    if (![4, 5].includes(Number(t.status))) return;
+                    const resolved = t.stats_resolved_at || t.stats_closed_at || t.resolved_at || t.closed_at;
+                    if (!resolved || !t.created_at) return;
+                    const hours = (new Date(resolved) - new Date(t.created_at)) / (1000 * 60 * 60);
+                    if (hours > 0 && hours <= 720) resTimes.push(hours);
+                });
+                
+                const avgHours = resTimes.length > 0 ? resTimes.reduce((a, b) => a + b, 0) / resTimes.length : 0;
+                const formatResTime = (h) => {
+                    if (h < 1) return Math.round(h * 60) + 'min';
+                    return Math.round(h) + 'h';
+                };
+                
+                const resTimeIcon = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+                
+                cards.push({
+                    icon: resTimeIcon,
+                    value: resTimes.length > 0 ? formatResTime(avgHours) : 'N/A',
+                    label: 'Tempo Médio Resolução',
+                    subtitle: `${resTimes.length} tickets (${ignoredCount} melh/proj excluídos)`,
+                    tooltip: 'Tempo médio entre criação e resolução dos tickets, EXCLUINDO Melhorias e Projetos. Mede a velocidade real de atendimento.',
+                    formula: 'Média = Σ(Data Resolução - Data Criação) ÷ Qtd Resolvidos. Exclui outliers >30 dias.',
+                    dataSource: 'Campos: created_at, stats_resolved_at/closed_at. Exclui tipos: Melhoria*, Projeto*.',
+                    gradient: avgHours <= 24 ? ['#10b981', '#059669'] : avgHours <= 48 ? ['#f59e0b', '#d97706'] : ['#ef4444', '#dc2626'],
+                    trend: null,
+                    drilldown: null
+                });
             }
 
             // KPI condicional: Tickets sem tratativa (apenas quando TODOS os times estão selecionados)
@@ -2649,15 +2753,15 @@ if (typeof BIAnalytics !== 'undefined') {
                     data: { label: entity, value: data.total, color: colorSet.main, index, globalIndex }
                 });
 
-                // Nome e posição - estilo premium (usa cores do tema)
-                ctx.fillStyle = this.colors.text;
+                // Nome e posição - estilo premium
+                ctx.fillStyle = isHover ? '#ffffff' : 'rgba(255,255,255,0.85)';
                 ctx.font = isHover ? '600 12px system-ui' : '500 12px system-ui';
                 ctx.textAlign = 'right';
                 const displayName = entity.length > 14 ? entity.substring(0, 14) + '..' : entity;
                 ctx.fillText(`${globalIndex + 1}. ${displayName}`, padding.left - 10, y + barHeight / 2 + 4);
 
-                // Valor com badge effect (usa cores do tema)
-                ctx.fillStyle = this.colors.text;
+                // Valor com badge effect
+                ctx.fillStyle = isHover ? '#ffffff' : 'rgba(255,255,255,0.9)';
                 ctx.font = 'bold 11px system-ui';
                 ctx.textAlign = 'left';
                 ctx.fillText(data.total.toString(), padding.left + barWidth + 8, y + barHeight / 2 + 4);
@@ -3155,6 +3259,13 @@ if (typeof BIAnalytics !== 'undefined') {
             const chartWidth = width - padding.left - padding.right;
             const chartHeight = height - padding.top - padding.bottom;
 
+            // Calcular valor máximo para escala dinâmica (quando valores >100%)
+            const maxRate = Math.max(...sortedEntities.map(([, d]) => {
+                return useRealRate ? parseFloat(d.realResolutionRate || 0) : parseFloat(d.resolutionRate || 0);
+            }), 100);
+            // Arredondar para múltiplo de 50 acima do máximo
+            const maxScale = maxRate > 100 ? Math.ceil(maxRate / 50) * 50 : 100;
+
             // Ajustar dinamicamente o tamanho das barras baseado na quantidade de entidades
             const maxBarWidth = 80;
             const minBarWidth = 40; // Mínimo maior para caber o texto
@@ -3178,23 +3289,37 @@ if (typeof BIAnalytics !== 'undefined') {
             ctx.lineTo(width - padding.right, height - padding.bottom);
             ctx.stroke();
 
-            // Labels do eixo Y (0%, 50%, 100%)
+            // Labels do eixo Y - dinâmico baseado no maxScale
             ctx.fillStyle = this.colors.textMuted;
             ctx.font = '11px system-ui';
             ctx.textAlign = 'right';
 
-            [0, 50, 100].forEach(value => {
-                const y = height - padding.bottom - (value / 100) * chartHeight;
+            // Gerar labels dinâmicos: 0, metade, máximo (e 100% se diferente)
+            const yLabels = [0];
+            if (maxScale > 100) {
+                yLabels.push(100); // Sempre mostrar 100% como referência
+                if (maxScale >= 200) yLabels.push(Math.round(maxScale / 2));
+            } else {
+                yLabels.push(50);
+            }
+            yLabels.push(maxScale);
+            // Remover duplicados e ordenar
+            const uniqueLabels = [...new Set(yLabels)].sort((a, b) => a - b);
+
+            uniqueLabels.forEach(value => {
+                const y = height - padding.bottom - (value / maxScale) * chartHeight;
                 ctx.fillText(value + '%', padding.left - 10, y + 4);
 
                 // Grid lines
                 if (value > 0) {
                     ctx.strokeStyle = this.colors.border;
-                    ctx.globalAlpha = 0.2;
+                    ctx.globalAlpha = value === 100 ? 0.4 : 0.2; // Linha de 100% mais visível
                     ctx.beginPath();
+                    ctx.setLineDash(value === 100 && maxScale > 100 ? [4, 4] : []); // Tracejada em 100%
                     ctx.moveTo(padding.left + 1, y);
                     ctx.lineTo(width - padding.right, y);
                     ctx.stroke();
+                    ctx.setLineDash([]);
                     ctx.globalAlpha = 1;
                 }
             });
@@ -3213,7 +3338,8 @@ if (typeof BIAnalytics !== 'undefined') {
             sortedEntities.forEach(([entity, data], index) => {
                 // Usar taxa real quando há período selecionado
                 const rate = useRealRate ? parseFloat(data.realResolutionRate || 0) : parseFloat(data.resolutionRate);
-                const bHeight = Math.max(4, (rate / 100) * chartHeight);
+                // Usar maxScale para escala dinâmica (mantém barras dentro do gráfico)
+                const bHeight = Math.max(4, (rate / maxScale) * chartHeight);
                 const x = padding.left + gap + index * (barWidth + gap);
                 const y = height - padding.bottom - bHeight;
 
@@ -3654,24 +3780,25 @@ if (typeof BIAnalytics !== 'undefined') {
                     if ([4, 5].includes(Number(ticket.status))) {
                         e.resolved++;
 
-                        // Tempo de resolução - tentar vários campos possíveis
-                        const resolvedAt = ticket.stats_resolved_at || ticket.resolved_at ||
-                            (ticket.stats && ticket.stats.resolved_at);
-                        if (resolvedAt && ticket.created_at) {
-                            const hours = (new Date(resolvedAt) - new Date(ticket.created_at)) / (1000 * 60 * 60);
+                        // Tempo de resolução padronizado
+                        const resolutionMs = this.getResolutionTimeMs(ticket, true);
+                        if (resolutionMs !== null) {
+                            const hours = resolutionMs / (1000 * 60 * 60);
                             if (hours > 0 && hours < 720) e.resolutionTimes.push(hours);
                         }
                     }
 
-                    // SLA 1ª resposta - tentar vários campos possíveis
-                    const resp = ticket.stats_first_responded_at || ticket.first_responded_at ||
-                        ticket.stats_first_response_at || ticket.first_response_time ||
-                        (ticket.stats && (ticket.stats.first_responded_at || ticket.stats.first_response_at));
-                    if (resp && ticket.created_at) {
-                        const hours = (new Date(resp) - new Date(ticket.created_at)) / (1000 * 60 * 60);
+                    // SLA 1ª resposta em horas úteis (alinhado ao BI principal)
+                    const slaResult = this.isWithinSLA(ticket, 4);
+                    if (slaResult !== null) {
                         e.slaTotal++;
-                        if (hours <= 4) e.slaWithin++;
-                        if (hours > 0 && hours < 168) e.responseTimes.push(hours);
+                        if (slaResult === true) e.slaWithin++;
+
+                        const responseMs = this.getResponseTimeMs(ticket);
+                        if (responseMs !== null) {
+                            const hours = responseMs / (1000 * 60 * 60);
+                            if (hours > 0 && hours < 168) e.responseTimes.push(hours);
+                        }
                     }
                 });
             });
@@ -4289,9 +4416,10 @@ if (typeof BIAnalytics !== 'undefined') {
             canvas.style.cursor = 'pointer';
             canvas.onclick = (e) => {
                 const rect = canvas.getBoundingClientRect();
-                // CORREÇÃO: Usar mesma escala que setupCanvasTooltip (sem scale)
-                const mx = e.clientX - rect.left;
-                const my = e.clientY - rect.top;
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const mx = (e.clientX - rect.left) * scaleX;
+                const my = (e.clientY - rect.top) * scaleY;
 
                 for (const region of regions) {
                     if (region.contains(mx, my)) {

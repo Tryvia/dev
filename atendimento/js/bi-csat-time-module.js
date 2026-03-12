@@ -1393,7 +1393,7 @@ window.BICSATModule = {
 
     /**
      * Analisa tickets por horário comercial
-     * Horário comercial: Segunda a Sexta, 08:00 às 18:00 (América/São_Paulo)
+     * Horário comercial: Segunda a Sexta, 09:00 às 18:00 (América/São_Paulo)
      */
     analyzeBusinessHours(tickets) {
         if (!tickets || !tickets.length) {
@@ -1423,9 +1423,9 @@ window.BICSATModule = {
             byHour[hour]++;
 
             // Verificar se está dentro do horário comercial
-            // Segunda (1) a Sexta (5), 08:00 às 18:00
+            // Segunda (1) a Sexta (5), 09:00 às 18:00
             const isWeekday = day >= 1 && day <= 5;
-            const isBusinessHour = hour >= 8 && hour < 18;
+            const isBusinessHour = hour >= 9 && hour < 18;
 
             if (isWeekday && isBusinessHour) {
                 withinHours++;
@@ -1471,7 +1471,7 @@ window.BICSATModule = {
                         🏢 Horário Comercial
                     </h4>
                     <span style="font-size: 0.75rem; color: ${this.colors.textMuted};">
-                        Seg-Sex 08h-18h
+                        Seg-Sex 09h-18h
                     </span>
                 </div>
                 

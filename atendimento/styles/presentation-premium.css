@@ -482,8 +482,8 @@
 /* Grid de Preview dos Slides */
 .pres-slides-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 1.5rem;
 }
 
 /* Card de Slide Premium */
@@ -536,8 +536,9 @@
 
 .pres-slide-content {
   padding: 1rem;
-  min-height: 200px;
+  min-height: 240px;
   background: rgba(10, 10, 26, 0.3);
+  position: relative;
 }
 
 /* KPI Cards Premium */
@@ -596,8 +597,38 @@
 /* Canvas de Gráfico */
 .pres-chart-canvas {
   width: 100%;
-  height: 180px;
+  height: 220px;
   border-radius: 8px;
+}
+
+/* Indicador de Loading nos Slides */
+.pres-slide-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pres-slide-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(102, 126, 234, 0.2);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: pres-spin 0.8s linear infinite;
+}
+
+@keyframes pres-spin {
+  to { transform: rotate(360deg); }
+}
+
+.pres-slide-loading-text {
+  font-size: 0.75rem;
+  color: #94a3b8;
 }
 
 /* Modo Apresentação Fullscreen */

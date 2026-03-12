@@ -40,18 +40,10 @@ Object.assign(BIAnalytics.prototype, {
         let count = 0;
         
         this.filteredData.forEach(ticket => {
-            // Ignorar tipos configurados para SLA
-            const typeNorm = (ticket.type || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
-            if (this.ignoreTypesForSLA && this.ignoreTypesForSLA.has(typeNorm)) {
-                return;
-            }
-            const first = ticket.stats_first_responded_at || ticket.stats_first_response_at;
-            if (first && ticket.created_at) {
-                const responseTime = new Date(first) - new Date(ticket.created_at);
-                if (responseTime > 0) {
-                    totalTime += responseTime;
-                    count++;
-                }
+            const responseTime = this.getResponseTimeMs ? this.getResponseTimeMs(ticket) : null;
+            if (responseTime !== null && responseTime > 0) {
+                totalTime += responseTime;
+                count++;
             }
         });
         
@@ -70,12 +62,15 @@ Object.assign(BIAnalytics.prototype, {
         const ticketsToAnalyze = this.resolvedInPeriod || this.filteredData;
         
         ticketsToAnalyze.forEach(ticket => {
-            if (ticket.stats_resolved_at && ticket.created_at) {
-                const resolutionTime = new Date(ticket.stats_resolved_at) - new Date(ticket.created_at);
-                if (resolutionTime > 0) {
-                    totalTime += resolutionTime;
-                    count++;
-                }
+            const resolutionTime = this.getResolutionTimeMs
+                ? this.getResolutionTimeMs(ticket, true)
+                : (ticket.stats_resolved_at && ticket.created_at
+                    ? (new Date(ticket.stats_resolved_at) - new Date(ticket.created_at))
+                    : null);
+
+            if (resolutionTime && resolutionTime > 0) {
+                totalTime += resolutionTime;
+                count++;
             }
         });
         
@@ -87,24 +82,14 @@ Object.assign(BIAnalytics.prototype, {
     },
     
     calculateSLACompliance() {
-        const SLA_LIMIT = 4 * 60 * 60 * 1000; // 4 horas
         let withinSLA = 0;
         let total = 0;
         
         this.filteredData.forEach(ticket => {
-            // Ignorar tipos configurados
-            const typeNorm = (ticket.type || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
-            if (this.ignoreTypesForSLA && this.ignoreTypesForSLA.has(typeNorm)) {
-                return;
-            }
-            const first = ticket.stats_first_responded_at || ticket.stats_first_response_at;
-            if (first && ticket.created_at) {
-                const responseTime = new Date(first) - new Date(ticket.created_at);
-                total++;
-                if (responseTime <= SLA_LIMIT) {
-                    withinSLA++;
-                }
-            }
+            const slaStatus = this.isWithinSLA ? this.isWithinSLA(ticket, 4) : null;
+            if (slaStatus === null) return;
+            total++;
+            if (slaStatus) withinSLA++;
         });
         
         if (total === 0) return 100;

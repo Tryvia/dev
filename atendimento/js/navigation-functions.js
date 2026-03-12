@@ -114,7 +114,7 @@ window.showTickets = function () {
     const containers = [
         'mainContent', 'biContainer', 'presentationSetup', 'presentationContainer', 'presentation-container',
         'comparativeContainer', 'reportsSetup', 'analyticsContainer',
-        'biPessoaContainer', 'biTimeContainer', 'insightsContainer', 'glossaryContainer', 'reportsContainer'
+        'biPessoaContainer', 'biTimeContainer', 'insightsContainer', 'glossaryContainer', 'reportsContainer', 'reports-container'
     ];
 
     containers.forEach(id => {
@@ -170,7 +170,7 @@ window.showBIAnalytics = function () {
     const containers = [
         'mainContent', 'biContainer', 'presentationSetup', 'presentationContainer', 'presentation-container',
         'comparativeContainer', 'reportsSetup', 'ticketsContainer',
-        'analyticsContainer', 'biPessoaContainer', 'biTimeContainer', 'insightsContainer', 'glossaryContainer', 'reportsContainer'
+        'analyticsContainer', 'biPessoaContainer', 'biTimeContainer', 'insightsContainer', 'glossaryContainer', 'reportsContainer', 'reports-container'
     ];
 
     containers.forEach(id => {
@@ -236,7 +236,7 @@ window.showInsights = function () {
     const containers = [
         'mainContent', 'biContainer', 'presentationSetup', 'presentationContainer', 'presentation-container',
         'comparativeContainer', 'reportsSetup', 'ticketsContainer',
-        'analyticsContainer', 'biPessoaContainer', 'biTimeContainer', 'biAnalyticsContainer', 'glossaryContainer', 'reportsContainer'
+        'analyticsContainer', 'biPessoaContainer', 'biTimeContainer', 'biAnalyticsContainer', 'glossaryContainer', 'reportsContainer', 'reports-container'
     ];
 
     containers.forEach(id => {
@@ -296,7 +296,7 @@ window.showGlossary = function () {
     const containers = [
         'mainContent', 'biContainer', 'presentationSetup', 'presentationContainer', 'presentation-container',
         'comparativeContainer', 'reportsSetup', 'ticketsContainer',
-        'analyticsContainer', 'biPessoaContainer', 'biTimeContainer', 'biAnalyticsContainer', 'insightsContainer', 'reportsContainer'
+        'analyticsContainer', 'biPessoaContainer', 'biTimeContainer', 'biAnalyticsContainer', 'insightsContainer', 'reportsContainer', 'reports-container'
     ];
 
     containers.forEach(id => {
@@ -347,7 +347,7 @@ window.showGlossary = function () {
 
 // Função para mostrar Relatórios
 window.showReports = function () {
-    console.log('📋 Abrindo Relatórios...');
+    console.log('📋 Abrindo Relatórios V3...');
 
     // Esconder topbar (não precisa nesta aba)
     window.showTopbar(false);
@@ -355,7 +355,7 @@ window.showReports = function () {
     // Esconder todos os containers
     const containers = [
         'mainContent', 'biContainer', 'presentationSetup', 'presentationContainer', 'presentation-container',
-        'comparativeContainer', 'reportsSetup', 'ticketsContainer',
+        'comparativeContainer', 'reportsSetup', 'ticketsContainer', 'reportsContainer', 'reports-container',
         'analyticsContainer', 'biPessoaContainer', 'biTimeContainer', 'biAnalyticsContainer', 'insightsContainer', 'glossaryContainer'
     ];
 
@@ -372,13 +372,12 @@ window.showReports = function () {
         }
     });
 
-    // Criar ou mostrar container de Relatórios
-    let reportsContainer = document.getElementById('reportsContainer');
+    // Usar container reports-container (V3)
+    let reportsContainer = document.getElementById('reports-container');
     if (!reportsContainer) {
-        reportsContainer = document.createElement('div');
-        reportsContainer.id = 'reportsContainer';
-        reportsContainer.className = 'reports-container';
-        reportsContainer.style.cssText = 'position: relative; background: #1e1e2e; overflow: auto; width: 100%; height: auto; min-height: 100%;';
+        reportsContainer = document.createElement('section');
+        reportsContainer.id = 'reports-container';
+        reportsContainer.style.cssText = 'position: relative; background: var(--bg-primary, #0a0a1a); overflow: auto; width: 100%; min-height: 100vh;';
         const mainContainer = document.querySelector('.main-wrapper') || document.querySelector('.main-content') || document.body;
         if (mainContainer) {
             mainContainer.appendChild(reportsContainer);
@@ -395,13 +394,13 @@ window.showReports = function () {
     const menuItem = document.querySelector('[onclick="showReports()"]');
     if (menuItem) menuItem.classList.add('active');
 
-    // Inicializar Relatórios
-    if (window.reportsModule) {
-        console.log('✅ Reports Module encontrado, inicializando...');
-        window.reportsModule.initialize();
+    // Inicializar Relatórios V3 (single source of truth)
+    if (window.reportsModuleV3 && typeof window.reportsModuleV3.render === 'function') {
+        console.log('✅ Reports Module V3 encontrado, renderizando...');
+        window.reportsModuleV3.render();
     } else {
-        console.warn('⚠️ Reports Module não encontrado.');
-        reportsContainer.innerHTML = '<div style="padding: 2rem; color: #ef4444;">Erro: Módulo de Relatórios não carregado.</div>';
+        console.warn('⚠️ Reports Module V3 não encontrado.');
+        reportsContainer.innerHTML = '<div style="padding: 2rem; color: #ef4444;">Erro: Reports Module V3 não carregado.</div>';
     }
 };
 

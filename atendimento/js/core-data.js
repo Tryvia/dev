@@ -98,9 +98,9 @@
       const tableCompanies = window.SUPABASE_TABLE_COMPANIES || 'companies';
       
       const [a, g, c] = await Promise.all([
-        client.from(tableAgents).select('id,name').limit(10000),
-        client.from(tableGroups).select('id,name').limit(10000),
-        client.from(tableCompanies).select('id,name').limit(100000)
+        client.from(tableAgents).select('id,name').limit(500),
+        client.from(tableGroups).select('id,name').limit(100),
+        client.from(tableCompanies).select('id,name').limit(5000)
       ]);
       window.FD_LOOKUPS.agents.clear();
       (a.data || []).forEach(row => window.FD_LOOKUPS.agents.set(row.id, row.name));

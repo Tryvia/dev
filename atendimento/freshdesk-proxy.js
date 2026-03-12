@@ -905,6 +905,98 @@ app.get('/api/surveys', async (req, res) => {
   }
 });
 
+// ========================================
+// WEBHOOK HANDLER - Recebe eventos do Freshdesk
+// ========================================
+
+// Webhook para receber atualizações de tickets em tempo real
+app.post('/webhook/freshdesk', async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    const payload = req.body;
+    
+    console.log('\n📨 WEBHOOK RECEBIDO');
+    console.log(`   Tipo: ${payload.event || 'ticket_update'}`);
+    
+    let ticketData = payload.ticket || payload.freshdesk_webhook || payload;
+    
+    if (!ticketData || !ticketData.id) {
+      console.log('   ⚠️ Payload sem dados de ticket válidos');
+      return res.status(200).json({ status: 'ignored' });
+    }
+    
+    console.log(`   Ticket ID: #${ticketData.id}`);
+    
+    // Transformar e salvar no Supabase
+    const cf = ticketData.custom_fields || {};
+    const transformed = {
+      id: ticketData.id,
+      subject: ticketData.subject,
+      status: ticketData.status,
+      priority: ticketData.priority,
+      source: ticketData.source,
+      type: ticketData.type,
+      updated_at: ticketData.updated_at,
+      created_at: ticketData.created_at,
+      due_by: ticketData.due_by,
+      fr_due_by: ticketData.fr_due_by,
+      responder_id: ticketData.responder_id,
+      group_id: ticketData.group_id,
+      company_id: ticketData.company_id,
+      requester_id: ticketData.requester_id,
+      tags: ticketData.tags || [],
+      is_escalated: ticketData.is_escalated || false,
+      fr_escalated: ticketData.fr_escalated || false,
+      cf_tratativa: cf.cf_tratativa || cf.cf_tratativa1684353202918 || null,
+      cf_grupo_tratativa: cf.cf_grupo_tratativa || cf.cf_grupo_tratativa1684353283756 || null,
+      cf_sistema: cf.cf_sistema || null,
+      cf_acompanhamento_atendimento: cf.cf_analista || null,
+      synced_at: new Date().toISOString()
+    };
+    
+    const response = await supabaseRequest('POST', 'tickets', [transformed]);
+    
+    const duration = Date.now() - startTime;
+    console.log(`   ✅ Ticket #${ticketData.id} sincronizado em ${duration}ms`);
+    
+    res.status(200).json({ status: 'success', ticket_id: ticketData.id, duration_ms: duration });
+    
+  } catch (error) {
+    console.error('   ❌ Erro no webhook:', error.message);
+    res.status(200).json({ status: 'error', message: error.message });
+  }
+});
+
+// Webhook para ticket deletado
+app.post('/webhook/freshdesk/delete', async (req, res) => {
+  try {
+    const { ticket_id } = req.body;
+    
+    if (!ticket_id) {
+      return res.status(400).json({ error: 'ticket_id required' });
+    }
+    
+    console.log(`\n🗑️ WEBHOOK DELETE - Ticket #${ticket_id}`);
+    
+    await supabaseRequest('PATCH', `tickets?id=eq.${ticket_id}`, {
+      status: 5,
+      synced_at: new Date().toISOString()
+    });
+    
+    console.log(`   ✅ Ticket #${ticket_id} marcado como fechado`);
+    res.json({ status: 'success', ticket_id });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Health check do webhook
+app.get('/webhook/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log('🚀 Proxy Freshdesk iniciado!');

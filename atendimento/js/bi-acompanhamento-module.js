@@ -252,6 +252,152 @@ window.BIAcompanhamentoModule = {
         // Status 4 = Resolvido, 5 = Fechado
         return status === 4 || status === 5;
     },
+
+    /**
+     * Retorna helper de SLA do BI principal, quando disponível
+     */
+    getBIAnalyticsSLAHelper() {
+        return (window.biAnalytics && typeof window.biAnalytics.getResponseTimeMs === 'function')
+            ? window.biAnalytics
+            : null;
+    },
+
+    /**
+     * Fallback para cálculo de horas úteis (Seg-Sex, 09:00-18:00)
+     */
+    calculateBusinessHoursFallback(start, end) {
+        if (!(start instanceof Date) || !(end instanceof Date)) return 0;
+        if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) return 0;
+
+        const startHour = 9;
+        const endHour = 18;
+        let totalMs = 0;
+        let current = new Date(start);
+
+        if (current.getDay() === 0) {
+            current.setDate(current.getDate() + 1);
+            current.setHours(startHour, 0, 0, 0);
+        } else if (current.getDay() === 6) {
+            current.setDate(current.getDate() + 2);
+            current.setHours(startHour, 0, 0, 0);
+        } else if (current.getHours() < startHour) {
+            current.setHours(startHour, 0, 0, 0);
+        } else if (current.getHours() >= endHour) {
+            current.setDate(current.getDate() + 1);
+            current.setHours(startHour, 0, 0, 0);
+            if (current.getDay() === 6) current.setDate(current.getDate() + 2);
+            if (current.getDay() === 0) current.setDate(current.getDate() + 1);
+        }
+
+        while (current < end) {
+            if (current.toDateString() === end.toDateString()) {
+                if (end.getHours() < startHour) break;
+
+                const effectiveEnd = new Date(end);
+                if (effectiveEnd.getHours() >= endHour) {
+                    effectiveEnd.setHours(endHour, 0, 0, 0);
+                }
+
+                if (current < effectiveEnd) totalMs += (effectiveEnd - current);
+                break;
+            }
+
+            const endOfDay = new Date(current);
+            endOfDay.setHours(endHour, 0, 0, 0);
+            if (current < endOfDay) totalMs += (endOfDay - current);
+
+            current.setDate(current.getDate() + 1);
+            current.setHours(startHour, 0, 0, 0);
+            if (current.getDay() === 6) current.setDate(current.getDate() + 2);
+            if (current.getDay() === 0) current.setDate(current.getDate() + 1);
+        }
+
+        return totalMs;
+    },
+
+    /**
+     * Obtém timestamp da 1ª resposta em múltiplos formatos
+     */
+    getFirstResponseTimestamp(ticket) {
+        return ticket.stats_first_responded_at ||
+            ticket.stats_first_response_at ||
+            ticket.first_responded_at ||
+            ticket.first_response_time ||
+            (ticket.stats && (ticket.stats.first_responded_at || ticket.stats.first_response_at)) ||
+            null;
+    },
+
+    /**
+     * Verifica se ticket deve ser ignorado no SLA (tipos excluídos)
+     */
+    isTicketIgnoredForSLA(ticket) {
+        const typeNorm = (ticket.type || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
+        const helper = this.getBIAnalyticsSLAHelper();
+        return !!(helper && helper.ignoreTypesForSLA && helper.ignoreTypesForSLA.has(typeNorm));
+    },
+
+    /**
+     * Retorna tempo de 1ª resposta em horas úteis (ms), ou null se não aplicável
+     */
+    getResponseTimeBusinessMs(ticket) {
+        if (this.isTicketIgnoredForSLA(ticket)) return null;
+
+        const helper = this.getBIAnalyticsSLAHelper();
+        if (helper) return helper.getResponseTimeMs(ticket);
+
+        const firstResponse = this.getFirstResponseTimestamp(ticket);
+        if (!firstResponse || !ticket.created_at) return null;
+        return this.calculateBusinessHoursFallback(new Date(ticket.created_at), new Date(firstResponse));
+    },
+
+    /**
+     * Obtém timestamp de resolução/fechamento de forma padronizada
+     */
+    getResolutionTimestamp(ticket, includeUpdatedFallback = true) {
+        const helper = this.getBIAnalyticsSLAHelper();
+        if (helper && typeof helper.getResolutionTimestamp === 'function') {
+            return helper.getResolutionTimestamp(ticket, includeUpdatedFallback);
+        }
+
+        if (!ticket) return null;
+        const resolvedAt =
+            ticket.stats_resolved_at ||
+            ticket.stats_closed_at ||
+            ticket.resolved_at ||
+            ticket.closed_at ||
+            (ticket.stats && (ticket.stats.resolved_at || ticket.stats.closed_at)) ||
+            null;
+
+        if (resolvedAt) return resolvedAt;
+
+        if (includeUpdatedFallback && this.isTicketResolved(ticket) && ticket.updated_at) {
+            return ticket.updated_at;
+        }
+
+        return null;
+    },
+
+    /**
+     * Retorna tempo de resolução em horas (ou null)
+     */
+    getResolutionTimeHours(ticket, includeUpdatedFallback = true) {
+        const helper = this.getBIAnalyticsSLAHelper();
+        if (helper && typeof helper.getResolutionTimeMs === 'function') {
+            const ms = helper.getResolutionTimeMs(ticket, includeUpdatedFallback);
+            return ms !== null ? (ms / (1000 * 60 * 60)) : null;
+        }
+
+        if (!ticket?.created_at) return null;
+        const resolvedAt = this.getResolutionTimestamp(ticket, includeUpdatedFallback);
+        if (!resolvedAt) return null;
+
+        const created = new Date(ticket.created_at);
+        const resolved = new Date(resolvedAt);
+        if (isNaN(created.getTime()) || isNaN(resolved.getTime())) return null;
+
+        const diffHours = (resolved - created) / (1000 * 60 * 60);
+        return diffHours > 0 ? diffHours : null;
+    },
     
     /**
      * Filtra tickets por período
@@ -613,11 +759,10 @@ window.BIAcompanhamentoModule = {
                 if (isResolved) {
                     stats.resolved++;
                     
-                    // Tempo de resolução
-                    const resolvedAt = ticket.stats_resolved_at || ticket.resolved_at;
-                    if (resolvedAt && ticket.created_at) {
-                        const hours = (new Date(resolvedAt) - new Date(ticket.created_at)) / (1000*60*60);
-                        if (hours > 0 && hours < 720) stats.resolutionTimes.push(hours);
+                    // Tempo de resolução padronizado
+                    const resolutionHours = this.getResolutionTimeHours(ticket, true);
+                    if (resolutionHours !== null && resolutionHours < 720) {
+                        stats.resolutionTimes.push(resolutionHours);
                     }
                 } else {
                     stats.open++;
@@ -633,10 +778,10 @@ window.BIAcompanhamentoModule = {
                     stats.byMonth[monthKey] = (stats.byMonth[monthKey] || 0) + 1;
                 }
                 
-                // SLA 1ª resposta
-                const resp = ticket.stats_first_responded_at || ticket.first_responded_at;
-                if (resp && ticket.created_at) {
-                    const hours = (new Date(resp) - new Date(ticket.created_at)) / (1000*60*60);
+                // SLA 1ª resposta em horas úteis (alinhado ao BI principal)
+                const responseMs = this.getResponseTimeBusinessMs(ticket);
+                if (responseMs !== null) {
+                    const hours = responseMs / (1000*60*60);
                     stats.slaTotal++;
                     if (hours <= 4) stats.slaWithin++;
                     if (hours > 0 && hours < 168) stats.responseTimes.push(hours);
@@ -647,7 +792,7 @@ window.BIAcompanhamentoModule = {
                     subject: ticket.subject,
                     status: ticket.status,
                     created_at: ticket.created_at,
-                    resolved_at: ticket.stats_resolved_at || ticket.resolved_at
+                    resolved_at: this.getResolutionTimestamp(ticket, true)
                 });
             }
             
@@ -728,6 +873,7 @@ window.BIAcompanhamentoModule = {
             ticketsComTag: ticketsComTagDoTime,
             totalResolved: ticketsResolvidosComTag,
             totalOpen: totalOpen,
+            totalPending: Number(statusCounts[3] || 0),
             totalPeople: results.length,
             avgPercentResolved: results.length > 0 
                 ? Math.round(results.reduce((sum, r) => sum + r.percentResolved, 0) / results.length)
@@ -2913,17 +3059,17 @@ window.BIAcompanhamentoModule = {
                     </div>
                     <div style="background: #1a1a2e; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                            <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Tickets Abertos</div>
+                            <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Abertos Agora</div>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.6"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                         </div>
                         <div style="font-size: 2rem; font-weight: 700; color: #3b82f6; line-height: 1;">${totals.totalOpen}</div>
                     </div>
                     <div style="background: #1a1a2e; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                            <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Tickets Pendentes</div>
+                            <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Status Pendente (3)</div>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" opacity="0.6"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         </div>
-                        <div style="font-size: 2rem; font-weight: 700; color: #a1a1aa; line-height: 1;">${Math.max(0, ticketsComTag - totals.totalResolved - totals.totalOpen)}</div>
+                        <div style="font-size: 2rem; font-weight: 700; color: #a1a1aa; line-height: 1;">${totals.totalPending}</div>
                     </div>
                     <div style="background: #1a1a2e; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
@@ -2945,7 +3091,7 @@ window.BIAcompanhamentoModule = {
                     </div>
                     <div style="background: #1a1a2e; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                            <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">SLA 1a Resolução <span style="color:#52525b">(Dentro)</span></div>
+                            <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Taxa de Resolução</div>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" opacity="0.6"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
                         </div>
                         <div style="font-size: 2.5rem; font-weight: 700; color: ${totals.avgPercentResolved >= 80 ? '#10b981' : totals.avgPercentResolved >= 60 ? '#f59e0b' : '#ef4444'}; line-height: 1;">${totals.avgPercentResolved}%</div>
@@ -2957,7 +3103,7 @@ window.BIAcompanhamentoModule = {
                     <div style="background: linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(180,83,9,0.1) 100%); padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(239,68,68,0.25);">
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                            <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Em Aberto</div>
+                            <div style="color: #71717a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Abertos Agora (%)</div>
                         </div>
                         <div style="font-size: 2rem; font-weight: 700; color: #fbbf24; line-height: 1;">${totals.totalOpen} <span style="font-size: 0.9rem; font-weight: 500; color: #f59e0b;">${ticketsComTag > 0 ? ((totals.totalOpen / ticketsComTag) * 100).toFixed(1) : 0}%</span></div>
                     </div>

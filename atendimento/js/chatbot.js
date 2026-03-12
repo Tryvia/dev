@@ -2194,23 +2194,25 @@
             },
 
             status: {
-                2: { name: 'Aberto', color: '#ef4444', desc: 'Não iniciado', icon: '🔴' },
-                3: { name: 'Pendente', color: '#f59e0b', desc: 'Aguardando algo', icon: '🟡' },
-                4: { name: 'Resolvido', color: '#10b981', desc: 'Solução aplicada', icon: '✅' },
-                5: { name: 'Fechado', color: '#6b7280', desc: 'Encerrado', icon: '✔️' },
-                6: { name: 'Em Homologação', color: '#8b5cf6', desc: 'Teste em HML', icon: '🧪' },
-                7: { name: 'Aguardando Cliente', color: '#f59e0b', desc: 'Esperando retorno', icon: '⏸️' },
-                8: { name: 'Em Tratativa', color: '#06b6d4', desc: 'Sendo trabalhado', icon: '🔄' },
-                10: { name: 'Em Análise', color: '#06b6d4', desc: 'Investigando', icon: '🔍' },
-                11: { name: 'Interno', color: '#64748b', desc: 'Ticket interno', icon: '🏠' },
-                12: { name: 'Aguardando Publicar HML', color: '#3b82f6', desc: 'Esperando deploy HML', icon: '📦' },
-                13: { name: 'Aguardando Publicar PROD', color: '#8b5cf6', desc: 'Esperando deploy PROD', icon: '🚀' },
-                14: { name: 'MVP', color: '#ec4899', desc: 'Projeto MVP', icon: '⭐' },
-                15: { name: 'Validação-Atendimento', color: '#f97316', desc: 'Validando', icon: '✍️' },
-                16: { name: 'Aguardando Parceiros', color: '#a855f7', desc: 'Depende de terceiros', icon: '🤝' },
-                17: { name: 'Pausado', color: '#64748b', desc: 'Temporariamente parado', icon: '⏸️' },
-                18: { name: 'Validação-CS', color: '#f97316', desc: 'CS validando', icon: '✍️' },
-                19: { name: 'Levantamento de Esforço', color: '#6366f1', desc: 'Estimando esforço', icon: '📊' }
+                2: { name: 'Aberto', color: '#3b82f6', desc: 'Status inicial similar ao Em Análise — ticket recém-aberto aguardando tratamento', icon: '🔵' },
+                3: { name: 'Pendente', color: '#f59e0b', desc: 'Ticket pendente de alguma ação ou informação', icon: '⏳' },
+                4: { name: 'Resolvido', color: '#10b981', desc: 'Ticket finalizado (equivalente a Fechado)', icon: '✅' },
+                5: { name: 'Fechado', color: '#6b7280', desc: 'Ticket encerrado (equivalente a Resolvido)', icon: '✔️' },
+                6: { name: 'Em Homologação', color: '#8b5cf6', desc: 'Em fase de testes no ambiente de homologação (staging)', icon: '🧪' },
+                7: { name: 'Aguardando Cliente', color: '#f59e0b', desc: 'Aguardando retorno ou informação do cliente', icon: '⏸️' },
+                8: { name: 'Em Tratativa', color: '#06b6d4', desc: 'Ticket sendo ativamente trabalhado neste momento', icon: '🔄' },
+                10: { name: 'Em Análise', color: '#06b6d4', desc: 'Status padrão inicial — pode estar em análise com qualquer time', icon: '🔍' },
+                11: { name: 'Interno', color: '#64748b', desc: 'Solicitação interna de algum time ou da empresa', icon: '🏠' },
+                12: { name: 'Aguardando Publicar HML', color: '#3b82f6', desc: 'Aguardando publicação no ambiente de homologação (staging)', icon: '📦' },
+                13: { name: 'Aguardando Publicar PROD', color: '#8b5cf6', desc: 'Aguardando publicação no ambiente de produção', icon: '🚀' },
+                14: { name: 'MVP', color: '#ec4899', desc: 'Cliente em período de teste em algum sistema', icon: '⭐' },
+                15: { name: 'Validação-Atendimento', color: '#f97316', desc: 'Aguardando o time de Atendimento validar uma questão', icon: '✍️' },
+                16: { name: 'Aguardando Parceiros', color: '#a855f7', desc: 'Aguardando retorno de parceiros externos (outra empresa)', icon: '🤝' },
+                17: { name: 'Pausado', color: '#64748b', desc: 'Ticket pausado temporariamente por motivos diversos', icon: '⏸️' },
+                18: { name: 'Validação-CS', color: '#f97316', desc: 'Aguardando validação do time de CS (Customer Success)', icon: '✍️' },
+                19: { name: 'Levantamento de Esforço', color: '#6366f1', desc: 'Time de DEV levantando horas para melhoria ou correção de bug', icon: '📊' },
+                20: { name: 'Em Fila DEV', color: '#ef4444', desc: 'Na fila dos desenvolvedores aguardando tratamento', icon: '👨‍💻' },
+                21: { name: 'Em Produção', color: '#10b981', desc: 'Atualização/correção já publicada em produção', icon: '🟢' }
             },
 
             priority: {
@@ -3681,28 +3683,30 @@ NUNCA diga "coluna não especificada" - se for métrica, não precisa de coluna!
 | STATUS | status | Ver tabela completa abaixo |
 
 📋 MAPA COMPLETO DE STATUS:
-- 2: Aberto (não iniciado)
-- 3: Pendente (aguardando algo)
-- 4: Resolvido ✅
-- 5: Fechado ✅
-- 6: Em Homologação
-- 7: Aguardando Cliente
-- 8: Em Tratativa (sendo trabalhado)
-- 10: Em Análise
-- 11: Interno
-- 12: Aguardando Publicar HML
-- 13: Aguardando Publicar PROD
-- 14: MVP
-- 15: Validação-Atendimento
-- 16: Aguardando Parceiros
-- 17: Pausado
-- 18: Validação-CS
-- 19: Levantamento de Esforço
+- 2: Aberto (status inicial, similar ao Em Análise)
+- 3: Pendente (pendente de alguma ação ou informação)
+- 4: Resolvido ✅ (equivalente a Fechado)
+- 5: Fechado ✅ (equivalente a Resolvido)
+- 6: Em Homologação (em fase de testes no staging)
+- 7: Aguardando Cliente (aguardando retorno do cliente)
+- 8: Em Tratativa (sendo ativamente trabalhado neste momento)
+- 10: Em Análise (status padrão inicial, qualquer time)
+- 11: Interno (solicitação interna de time ou empresa)
+- 12: Aguardando Publicar HML (aguardando deploy no staging)
+- 13: Aguardando Publicar PROD (aguardando deploy em produção)
+- 14: MVP (cliente em período de teste em algum sistema)
+- 15: Validação-Atendimento (time de Atendimento validando)
+- 16: Aguardando Parceiros (retorno de parceiros externos)
+- 17: Pausado (pausado por motivos diversos)
+- 18: Validação-CS (time de CS validando)
+- 19: Levantamento de Esforço (time DEV estimando horas)
+- 20: Em Fila DEV (na fila dos desenvolvedores)
+- 21: Em Produção (já publicado em produção)
 
 AGRUPAMENTO PARA CÁLCULOS:
 - FECHADOS: status 4 e 5 (usados para taxa de resolução)
-- ABERTOS: status 2
-- EM ANDAMENTO: status 3, 6, 7, 8, 10, 12, 13, 15, 16, 17, 18, 19
+- ABERTOS: status 2 e 10 (tickets iniciais aguardando tratamento)
+- EM ANDAMENTO: status 3, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21
 - O SLA considera APENAS tickets que já tiveram primeira resposta
 
 📊 COMO O SISTEMA CALCULA:
