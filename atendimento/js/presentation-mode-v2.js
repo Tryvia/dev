@@ -2998,11 +2998,16 @@ class PresentationModeV2 {
 
         data.forEach(t => {
             const person = this.getField(t, 'cf_tratativa') || 'Sem tratativa';
+            
+            // Obter primeira resposta - verificar múltiplos campos possíveis
+            const firstResponseAt = t.stats_first_responded_at || t.first_responded_at || t.stats?.first_responded_at;
+            if (!firstResponseAt) return; // Pular tickets sem dados de SLA
+            
             if (!entitySLA[person]) entitySLA[person] = { within: 0, total: 0 };
             entitySLA[person].total++;
             const created = new Date(t.created_at);
-            const firstResponse = t.first_responded_at ? new Date(t.first_responded_at) : null;
-            if (firstResponse && (firstResponse - created) <= SLA) {
+            const firstResponse = new Date(firstResponseAt);
+            if ((firstResponse - created) <= SLA) {
                 entitySLA[person].within++;
             }
         });
@@ -3099,12 +3104,17 @@ class PresentationModeV2 {
         days.forEach(d => dayData[d] = { within: 0, total: 0 });
 
         data.forEach(t => {
-            const dateKey = t.created_at.split('T')[0];
+            const dateKey = t.created_at?.split('T')[0];
             if (!dayData[dateKey]) return;
+            
+            // Obter primeira resposta - verificar múltiplos campos possíveis
+            const firstResponseAt = t.stats_first_responded_at || t.first_responded_at || t.stats?.first_responded_at;
+            if (!firstResponseAt) return; // Pular tickets sem dados de SLA
+            
             dayData[dateKey].total++;
             const created = new Date(t.created_at);
-            const firstResponse = t.first_responded_at ? new Date(t.first_responded_at) : null;
-            if (firstResponse && (firstResponse - created) <= SLA) {
+            const firstResponse = new Date(firstResponseAt);
+            if ((firstResponse - created) <= SLA) {
                 dayData[dateKey].within++;
             }
         });

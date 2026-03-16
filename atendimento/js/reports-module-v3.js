@@ -3368,35 +3368,82 @@ class ReportsModuleV3 {
                 const projection30d = Math.round(avgDaily * 30);
                 const maxDayVolume = Math.max(...Object.values(dailyVolume), 0);
 
-                // KPIs de tendências
-                drawCard(margin, cardW, 'Media Diaria', avgDaily.toFixed(1), '#3b82f6');
-                drawCard(margin + cardW + 5, cardW, 'Variacao Semanal', (trend >= 0 ? '+' : '') + trend.toFixed(1) + '%', trend > 10 ? '#ef4444' : trend < -10 ? '#10b981' : '#f59e0b');
-                drawCard(margin + (cardW + 5) * 2, cardW, 'Projecao 30d', projection30d, '#8b5cf6');
-                drawCard(margin + (cardW + 5) * 3, cardW, 'Pico Diario', maxDayVolume, '#ef4444');
-                y += 30;
-
                 // Volume por dia da semana
                 const dayOfWeek = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
                 data.forEach(t => { dayOfWeek[new Date(t.created_at).getDay()]++; });
                 const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+                const busiestDay = Object.entries(dayOfWeek).sort((a, b) => b[1] - a[1])[0];
+
+                // RESUMO DE TENDÊNCIA
+                const trendStatus = trend > 10 ? 'CRESCENTE' : trend < -10 ? 'DECRESCENTE' : 'ESTAVEL';
+                const trendColor = trend > 10 ? '#ef4444' : trend < -10 ? '#10b981' : '#f59e0b';
                 
-                drawSectionTitle('Volume por Dia da Semana');
-                const dayItems = Object.entries(dayOfWeek).map(([d, v]) => ({
-                    label: dayNames[d],
-                    value: v,
-                    color: v === Math.max(...Object.values(dayOfWeek)) ? '#ef4444' : v === Math.min(...Object.values(dayOfWeek)) ? '#10b981' : '#3b82f6'
-                }));
-                drawBarChart(dayItems, Math.max(...dayItems.map(i => i.value), 1));
-                y += 10;
+                checkPageBreak(35);
+                pdf.setFillColor(...this._hexToRgbArray(trendColor + '20'));
+                pdf.roundedRect(margin, y, contentWidth, 30, 5, 5, 'F');
+                pdf.setDrawColor(...this._hexToRgbArray(trendColor));
+                pdf.roundedRect(margin, y, contentWidth, 30, 5, 5, 'S');
+                
+                // Ícone de tendência
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(16);
+                pdf.setTextColor(...this._hexToRgbArray(trendColor));
+                pdf.text(trend > 10 ? '↑' : trend < -10 ? '↓' : '→', margin + 15, y + 17);
+                
+                // Texto de tendência
+                pdf.setFontSize(12);
+                pdf.text('Tendencia: ' + trendStatus + ' (' + (trend >= 0 ? '+' : '') + trend.toFixed(1) + '%)', margin + 30, y + 12);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8);
+                pdf.setTextColor(100, 100, 100);
+                const trendMsg = trendStatus === 'ESTAVEL' ? 'O volume de tickets esta estavel, sem grandes variacoes.' :
+                                 trend > 0 ? 'O volume esta aumentando! Verifique problemas ou campanhas.' :
+                                 'O volume esta diminuindo, pode indicar melhoria no produto.';
+                pdf.text(trendMsg, margin + 30, y + 20);
+                y += 38;
+
+                // KPIs de tendências
+                drawCard(margin, cardW, 'Media Diaria', avgDaily.toFixed(1), '#3b82f6');
+                drawCard(margin + cardW + 5, cardW, 'Variacao Semanal', (trend >= 0 ? '+' : '') + trend.toFixed(1) + '%', trendColor);
+                drawCard(margin + (cardW + 5) * 2, cardW, 'Projecao 30d', projection30d, '#8b5cf6');
+                drawCard(margin + (cardW + 5) * 3, cardW, 'Pico Diario', maxDayVolume, '#ef4444');
+                y += 30;
+
+                // Padrão semanal (tabela)
+                drawSectionTitle('Padrao Semanal de Tickets');
+                const dayRows = dayNames.map((name, i) => {
+                    const vol = dayOfWeek[i];
+                    const maxVol = Math.max(...Object.values(dayOfWeek));
+                    const pct = maxVol > 0 ? ((vol / maxVol) * 100).toFixed(0) : 0;
+                    const isBusiest = vol === maxVol;
+                    return [name, vol, pct + '%', isBusiest ? 'PICO' : vol === Math.min(...Object.values(dayOfWeek)) ? 'MENOR' : '-'];
+                });
+                drawTable(['DIA', 'TICKETS', '% DO PICO', 'STATUS'], dayRows, [40, 35, 40, 40]);
+                y += 5;
 
                 // Evolução diária (últimos 14 dias)
-                drawSectionTitle('Evolucao Diaria (ultimos dias)');
+                drawSectionTitle('Evolucao Diaria (ultimos 14 dias)');
                 const recentVolume = sortedDays.slice(-14).map(d => ({
                     label: d.substring(5),
                     value: dailyVolume[d],
                     color: '#3b82f6'
                 }));
                 drawBarChart(recentVolume, Math.max(...recentVolume.map(i => i.value), 1));
+                y += 5;
+
+                // Legenda explicativa
+                checkPageBreak(20);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(8);
+                pdf.setTextColor(100, 100, 100);
+                pdf.text('Como Usar:', margin, y);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(7);
+                y += 4;
+                pdf.text('Tendencia Crescente: prepare a equipe para aumento de demanda.', margin, y);
+                y += 4;
+                pdf.text('Padrao Semanal: use para escalar equipe nos dias de pico.', margin, y);
+                y += 6;
 
             // ========== RELATÓRIO: BACKLOG ==========
             } else if (this.selectedReport === 'backlog') {
@@ -3405,6 +3452,7 @@ class ReportsModuleV3 {
                 
                 const aging = { '0-3d': 0, '4-7d': 0, '8-14d': 0, '15-30d': 0, '>30d': 0 };
                 let totalAge = 0;
+                const urgentPending = [];
                 pendingTickets.forEach(t => {
                     const days = Math.floor((now - new Date(t.created_at)) / (1000 * 60 * 60 * 24));
                     totalAge += days;
@@ -3413,44 +3461,91 @@ class ReportsModuleV3 {
                     else if (days <= 14) aging['8-14d']++;
                     else if (days <= 30) aging['15-30d']++;
                     else aging['>30d']++;
+                    if (t.priority === 4) urgentPending.push(t);
                 });
                 const avgAge = pendingTickets.length > 0 ? totalAge / pendingTickets.length : 0;
                 const critical = aging['8-14d'] + aging['15-30d'] + aging['>30d'];
+
+                // Calcular dias para zerar backlog
+                const recentResolved = data.filter(t => {
+                    if (![4, 5].includes(Number(t.status))) return false;
+                    const r = t.stats_resolved_at || t.stats_closed_at;
+                    if (!r) return false;
+                    const daysAgo = (now - new Date(r)) / (1000 * 60 * 60 * 24);
+                    return daysAgo <= 7;
+                }).length;
+                const dailyRate = recentResolved / 7;
+                const daysToClean = dailyRate > 0 ? Math.ceil(pendingTickets.length / dailyRate) : null;
+
+                // SAÚDE DO BACKLOG
+                const backlogHealth = avgAge <= 3 ? 'SAUDAVEL' : avgAge <= 7 ? 'ATENCAO' : avgAge <= 14 ? 'PREOCUPANTE' : 'CRITICO';
+                const healthColor = avgAge <= 3 ? '#10b981' : avgAge <= 7 ? '#f59e0b' : avgAge <= 14 ? '#ef4444' : '#dc2626';
+                
+                checkPageBreak(35);
+                pdf.setFillColor(...this._hexToRgbArray(healthColor + '20'));
+                pdf.roundedRect(margin, y, contentWidth, 30, 5, 5, 'F');
+                pdf.setDrawColor(...this._hexToRgbArray(healthColor));
+                pdf.roundedRect(margin, y, contentWidth, 30, 5, 5, 'S');
+                
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(12);
+                pdf.setTextColor(...this._hexToRgbArray(healthColor));
+                pdf.text('Saude do Backlog: ' + backlogHealth, margin + 10, y + 12);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(9);
+                pdf.setTextColor(100, 100, 100);
+                pdf.text(pendingTickets.length + ' tickets pendentes | Idade media: ' + avgAge.toFixed(1) + ' dias', margin + 10, y + 20);
+                if (daysToClean) {
+                    pdf.text('Estimativa para zerar: ' + daysToClean + ' dias (ritmo atual)', margin + 10, y + 26);
+                }
+                y += 38;
 
                 // KPIs de backlog
                 drawCard(margin, cardW, 'Idade Media', avgAge.toFixed(1) + 'd', '#8b5cf6');
                 drawCard(margin + cardW + 5, cardW, 'Criticos >7d', critical, '#ef4444');
                 drawCard(margin + (cardW + 5) * 2, cardW, 'Muito Antigos', aging['>30d'], '#dc2626');
-                drawCard(margin + (cardW + 5) * 3, cardW, 'Total Pendente', pendingTickets.length, '#f59e0b');
+                drawCard(margin + (cardW + 5) * 3, cardW, 'Est. p/ Zerar', daysToClean ? daysToClean + 'd' : 'N/A', '#10b981');
                 y += 30;
 
-                // Distribuição por aging
+                // Distribuição por aging (tabela)
                 drawSectionTitle('Distribuicao por Idade (Aging)');
-                const agingColors = ['#10b981', '#84cc16', '#f59e0b', '#ef4444', '#dc2626'];
-                const agingItems = Object.entries(aging).map(([label, value], i) => ({
-                    label,
-                    value,
-                    color: agingColors[i]
-                }));
-                drawBarChart(agingItems, Math.max(...agingItems.map(i => i.value), 1));
-                y += 10;
+                const agingRows = Object.entries(aging).map(([label, value]) => {
+                    const pct = pendingTickets.length > 0 ? ((value / pendingTickets.length) * 100).toFixed(0) : 0;
+                    const status = label === '0-3d' ? 'OK' : label === '4-7d' ? 'NORMAL' : label === '8-14d' ? 'ALERTA' : 'CRITICO';
+                    return [label, value, pct + '%', status];
+                });
+                drawTable(['FAIXA', 'QTD', '% DO TOTAL', 'STATUS'], agingRows, [40, 35, 40, 40]);
+                y += 5;
 
                 // Tickets críticos
                 if (critical > 0) {
-                    drawSectionTitle('Tickets Criticos (>7 dias)');
+                    drawSectionTitle('Fila de Prioridade - Tickets Criticos (' + critical + ')');
                     const criticalTickets = pendingTickets
                         .map(t => ({ ...t, days: Math.floor((now - new Date(t.created_at)) / (1000 * 60 * 60 * 24)) }))
                         .filter(t => t.days > 7)
                         .sort((a, b) => b.days - a.days)
-                        .slice(0, 15);
+                        .slice(0, 12);
                     const critRows = criticalTickets.map(t => [
                         '#' + t.id,
-                        (t.subject || '').substring(0, 28),
+                        (t.subject || '').substring(0, 25),
                         t.days + 'd',
                         this.priorityMap[t.priority]?.label || '-',
-                        this.getResponsavel(t)?.substring(0, 12) || '-'
+                        this.getResponsavel(t)?.substring(0, 10) || '-'
                     ]);
-                    drawTable(['ID', 'ASSUNTO', 'IDADE', 'PRIOR', 'RESP'], critRows, [20, 60, 20, 25, 40]);
+                    drawTable(['ID', 'ASSUNTO', 'IDADE', 'PRIOR', 'RESP'], critRows, [20, 55, 20, 28, 35]);
+                }
+
+                // Urgentes pendentes
+                if (urgentPending.length > 0) {
+                    y += 5;
+                    checkPageBreak(20);
+                    pdf.setFillColor(239, 68, 68, 0.1);
+                    pdf.roundedRect(margin, y, contentWidth, 15, 3, 3, 'F');
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(239, 68, 68);
+                    pdf.text('ATENCAO: ' + urgentPending.length + ' ticket(s) URGENTE(S) pendente(s)!', margin + 5, y + 10);
+                    y += 18;
                 }
 
             // ========== RELATÓRIO: EXECUTIVO (padrão) ==========
@@ -3460,6 +3555,38 @@ class ReportsModuleV3 {
                 const slaTotal = data.filter(t => t.fr_due_by).length;
                 const slaRate = slaTotal > 0 ? ((slaOk / slaTotal) * 100).toFixed(1) : '100';
 
+                // Determinar saúde do atendimento
+                const healthScore = (parseFloat(resRate) * 0.4) + (parseFloat(slaRate) * 0.6);
+                const health = healthScore >= 85 ? 'EXCELENTE' : healthScore >= 70 ? 'BOM' : healthScore >= 50 ? 'REGULAR' : 'CRITICO';
+                const healthColor = healthScore >= 85 ? '#10b981' : healthScore >= 70 ? '#3b82f6' : healthScore >= 50 ? '#f59e0b' : '#ef4444';
+
+                // RESUMO EXECUTIVO / HEALTH CHECK
+                checkPageBreak(35);
+                pdf.setFillColor(...this._hexToRgbArray(healthColor + '20'));
+                pdf.roundedRect(margin, y, contentWidth, 32, 5, 5, 'F');
+                pdf.setDrawColor(...this._hexToRgbArray(healthColor));
+                pdf.roundedRect(margin, y, contentWidth, 32, 5, 5, 'S');
+                
+                // Ícone de saúde
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(14);
+                pdf.setTextColor(...this._hexToRgbArray(healthColor));
+                pdf.text(health === 'EXCELENTE' ? '★' : health === 'BOM' ? '✓' : health === 'REGULAR' ? '!' : '✗', margin + 12, y + 18);
+                
+                // Texto de saúde
+                pdf.setFontSize(12);
+                pdf.text('Saude do Atendimento: ' + health, margin + 25, y + 12);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8);
+                pdf.setTextColor(100, 100, 100);
+                const healthMsg = health === 'EXCELENTE' ? 'Excelente! Operacao funcionando de forma otima.' :
+                                  health === 'BOM' ? 'Bom desempenho, com pequenos pontos de atencao.' :
+                                  health === 'REGULAR' ? 'Atencao necessaria em alguns indicadores.' :
+                                  'Situacao critica! Acao imediata necessaria.';
+                pdf.text(healthMsg, margin + 25, y + 20);
+                pdf.text('Score: ' + healthScore.toFixed(0) + '/100 (Resolucao: ' + resRate + '% | SLA: ' + slaRate + '%)', margin + 25, y + 27);
+                y += 40;
+
                 // KPIs executivos
                 drawCard(margin, cardW, 'Total Tickets', total, '#3b82f6');
                 drawCard(margin + cardW + 5, cardW, 'Taxa Resolucao', resRate + '%', parseFloat(resRate) >= 80 ? '#10b981' : '#f59e0b');
@@ -3467,15 +3594,16 @@ class ReportsModuleV3 {
                 drawCard(margin + (cardW + 5) * 3, cardW, 'Pendentes', pending, '#f59e0b');
                 y += 30;
 
-                // Status distribution
+                // Status distribution (tabela)
                 drawSectionTitle('Distribuicao por Status');
                 const statusCounts = {};
                 data.forEach(t => { statusCounts[this.statusMap[t.status]?.label || 'Outro'] = (statusCounts[this.statusMap[t.status]?.label || 'Outro'] || 0) + 1; });
-                const statusItems = Object.entries(statusCounts).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([label, value]) => ({
-                    label, value, color: this.statusMap[Object.keys(this.statusMap).find(k => this.statusMap[k].label === label)]?.color || '#6b7280'
-                }));
-                drawBarChart(statusItems, Math.max(...statusItems.map(i => i.value), 1));
-                y += 10;
+                const statusRows = Object.entries(statusCounts).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([label, value]) => {
+                    const pct = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
+                    return [label, value, pct + '%'];
+                });
+                drawTable(['STATUS', 'QTD', '%'], statusRows, [70, 45, 45]);
+                y += 5;
 
                 // Top problemas (keywords)
                 drawSectionTitle('Principais Problemas Detectados');
@@ -3485,12 +3613,31 @@ class ReportsModuleV3 {
                     const text = ((t.subject || '') + ' ' + (t.description_text || '')).toLowerCase();
                     keywordList.forEach(kw => { if (text.includes(kw)) keywords[kw] = (keywords[kw] || 0) + 1; });
                 });
-                const topProblems = Object.entries(keywords).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([label, value]) => ({
-                    label, value, color: value > 10 ? '#ef4444' : value > 5 ? '#f59e0b' : '#3b82f6'
-                }));
+                const topProblems = Object.entries(keywords).sort((a, b) => b[1] - a[1]).slice(0, 6);
                 if (topProblems.length > 0) {
-                    drawBarChart(topProblems, Math.max(...topProblems.map(i => i.value), 1));
+                    const probRows = topProblems.map(([kw, count]) => [kw.toUpperCase(), count, count > 10 ? 'CRITICO' : count > 5 ? 'ALERTA' : 'BAIXO']);
+                    drawTable(['PROBLEMA', 'OCORRENCIAS', 'NIVEL'], probRows, [60, 45, 45]);
+                } else {
+                    checkPageBreak(15);
+                    pdf.setFillColor(16, 185, 129, 0.1);
+                    pdf.roundedRect(margin, y, contentWidth, 12, 3, 3, 'F');
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(16, 185, 129);
+                    pdf.text('Nenhum problema recorrente detectado nos tickets.', margin + 5, y + 8);
+                    y += 15;
                 }
+
+                // Resumo de prioridades
+                y += 5;
+                drawSectionTitle('Distribuicao por Prioridade');
+                const prioCounts = {};
+                data.forEach(t => { prioCounts[this.priorityMap[t.priority]?.label || 'Media'] = (prioCounts[this.priorityMap[t.priority]?.label || 'Media'] || 0) + 1; });
+                const prioRows = Object.entries(prioCounts).map(([label, value]) => {
+                    const pct = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
+                    return [label, value, pct + '%'];
+                });
+                drawTable(['PRIORIDADE', 'QTD', '%'], prioRows, [70, 45, 45]);
             }
 
             // Draw final footer
