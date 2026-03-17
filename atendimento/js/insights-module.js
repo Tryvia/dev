@@ -53,8 +53,36 @@ class InsightsModule {
             'novo': ['novo', 'criar', 'adicionar', 'implementar', 'feature', 'melhoria']
         };
 
-        // Design
-        this.colors = {
+        // Design - Cores dinâmicas baseadas no tema
+        this.colors = this.getThemeColors();
+    }
+
+    /**
+     * Obtém cores baseadas no tema atual
+     */
+    getThemeColors() {
+        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+        const isCyan = theme === 'tryvia-cyan';
+        
+        if (isCyan) {
+            return {
+                primary: '#0099cc',
+                secondary: '#059669',
+                accent: '#d97706',
+                danger: '#dc2626',
+                warning: '#ea580c',
+                info: '#0891b2',
+                dark: '#f5f7fa',
+                surface: '#ffffff',
+                surfaceLight: '#f8fafc',
+                border: '#e2e8f0',
+                text: '#1e293b',
+                textMuted: '#64748b'
+            };
+        }
+        
+        // Tema dark (padrão)
+        return {
             primary: '#3b82f6',
             secondary: '#10b981',
             accent: '#f59e0b',
@@ -70,15 +98,69 @@ class InsightsModule {
         };
     }
 
+    /**
+     * Atualiza cores quando o tema muda
+     */
+    refreshColors() {
+        this.colors = this.getThemeColors();
+    }
+
+    /**
+     * Obtém tickets filtrados pelo período atual do BI Analytics
+     * Se não houver filtro ativo, usa os últimos 30 dias por padrão
+     */
+    getFilteredTickets() {
+        const allTickets = window.allTicketsCache || [];
+        
+        // Tentar obter período do BI Analytics
+        if (window.biAnalytics && window.biAnalytics.filteredData && window.biAnalytics.filteredData.length > 0) {
+            console.log('💡 Usando dados filtrados do BI Analytics:', window.biAnalytics.filteredData.length, 'tickets');
+            return window.biAnalytics.filteredData;
+        }
+        
+        // Tentar obter período customizado
+        let startDate, endDate;
+        
+        if (window.biAnalytics && window.biAnalytics.customDateRange) {
+            startDate = window.biAnalytics.customDateRange.start ? new Date(window.biAnalytics.customDateRange.start) : null;
+            endDate = window.biAnalytics.customDateRange.end ? new Date(window.biAnalytics.customDateRange.end) : null;
+        }
+        
+        // Se não há período definido, usar últimos 30 dias
+        if (!startDate || !endDate) {
+            endDate = new Date();
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+        }
+        
+        // Ajustar para início/fim do dia
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+        
+        // Filtrar tickets pelo período
+        const filtered = allTickets.filter(ticket => {
+            const createdAt = new Date(ticket.created_at);
+            return createdAt >= startDate && createdAt <= endDate;
+        });
+        
+        console.log(`💡 Insights: Filtrado ${filtered.length} de ${allTickets.length} tickets (${startDate.toLocaleDateString('pt-BR')} - ${endDate.toLocaleDateString('pt-BR')})`);
+        
+        return filtered;
+    }
+
     initialize() {
         console.log('💡 Inicializando módulo de Insights...');
+
+        // Atualizar cores baseado no tema atual
+        this.refreshColors();
 
         if (!window.allTicketsCache || window.allTicketsCache.length === 0) {
             this.showNoDataMessage();
             return;
         }
 
-        this.ticketsData = window.allTicketsCache;
+        // Usar dados filtrados por período se disponível, senão usar todos
+        this.ticketsData = this.getFilteredTickets();
         this.injectStyles();
 
         // Verificar se já temos análise em cache
@@ -407,6 +489,9 @@ class InsightsModule {
         if (content) content.style.display = 'none';
 
         try {
+            // Recarregar dados filtrados pelo período atual
+            this.ticketsData = this.getFilteredTickets();
+            
             // Executar análises em paralelo usando setTimeout para não bloquear UI
             await new Promise(resolve => setTimeout(resolve, 100));
 

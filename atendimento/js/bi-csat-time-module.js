@@ -89,18 +89,51 @@ window.BICSATModule = {
     feedbackPage: 1,
     feedbacksPerPage: 10,
 
-    // Cores para gráficos
-    colors: {
-        satisfied: '#10b981',    // Verde
-        neutral: '#f59e0b',      // Amarelo
-        unsatisfied: '#ef4444',  // Vermelho
-        primary: '#6366f1',
-        secondary: '#8b5cf6',
-        background: '#1e1e2e',
-        surface: '#27272a',
-        text: '#e4e4e7',
-        textMuted: '#a1a1aa',
-        border: '#3f3f46'
+    // Cores para gráficos - serão atualizadas pelo getThemeColors()
+    colors: null,
+
+    /**
+     * Obtém cores baseadas no tema atual
+     */
+    getThemeColors() {
+        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+        const isCyan = theme === 'tryvia-cyan';
+        
+        if (isCyan) {
+            return {
+                satisfied: '#059669',    // Verde mais escuro para fundo claro
+                neutral: '#d97706',      // Amarelo mais escuro
+                unsatisfied: '#dc2626',  // Vermelho mais escuro
+                primary: '#4f46e5',
+                secondary: '#7c3aed',
+                background: '#ffffff',
+                surface: '#f8fafc',
+                text: '#1e293b',
+                textMuted: '#64748b',
+                border: '#e2e8f0'
+            };
+        }
+        
+        // Tema dark (padrão)
+        return {
+            satisfied: '#10b981',    // Verde
+            neutral: '#f59e0b',      // Amarelo
+            unsatisfied: '#ef4444',  // Vermelho
+            primary: '#6366f1',
+            secondary: '#8b5cf6',
+            background: '#1e1e2e',
+            surface: '#27272a',
+            text: '#e4e4e7',
+            textMuted: '#a1a1aa',
+            border: '#3f3f46'
+        };
+    },
+
+    /**
+     * Inicializa/atualiza cores baseado no tema
+     */
+    refreshColors() {
+        this.colors = this.getThemeColors();
     },
 
     /**
@@ -108,7 +141,7 @@ window.BICSATModule = {
      */
     async loadCSATData(forceRefresh = false) {
         if (!forceRefresh && this._csatCache && this._cacheTime && (Date.now() - this._cacheTime < this._cacheDuration)) {
-            console.log('📦 CSAT: Usando cache');
+            console.log(' CSAT: Usando cache');
             return this._csatCache;
         }
 
@@ -876,6 +909,9 @@ window.BICSATModule = {
      * Renderiza seção completa de CSAT
      */
     async renderCSATSection() {
+        // Atualizar cores baseado no tema atual
+        this.refreshColors();
+        
         const allRatings = await this.loadCSATData();
         const periodRatings = this.filterByPeriod(allRatings, this.csatPeriodFilter, 'created_at', 'csat');
         const agents = await this.loadAgentsData();
@@ -1053,7 +1089,13 @@ window.BICSATModule = {
                             <h3 style="color: #e4e4e7; margin: 0; font-size: 1rem; font-weight: 600;">Tendência CSAT${agentLabel} (Últimos 12 meses)</h3>
                         </div>
                         <div style="height: 220px; display: flex; align-items: flex-end; gap: 8px; padding: 1rem 0; position: relative;">
-                            ${monthlyData.map(m => {
+                            ${(() => {
+            const isCyan = document.documentElement.getAttribute('data-theme') === 'tryvia-cyan';
+            const tooltipBg = isCyan ? '#1e293b' : '#1e1e2e';
+            const tooltipText = '#ffffff';
+            const tooltipMuted = isCyan ? '#cbd5e1' : '#a1a1aa';
+            const tooltipBorder = isCyan ? '#334155' : '#3f3f46';
+            return monthlyData.map(m => {
             const barColor = m.csat >= 85 ? this.colors.satisfied :
                 m.csat >= 70 ? this.colors.neutral : this.colors.unsatisfied;
             return `
@@ -1063,22 +1105,23 @@ window.BICSATModule = {
                                         <div class="csat-tooltip" style="
                                             position: absolute;
                                             bottom: calc(${Math.max(10, m.csat * 1.8)}px + 30px);
-                                            background: #1e1e2e;
-                                            color: #fff;
-                                            padding: 6px 10px;
-                                            border-radius: 6px;
-                                            font-size: 0.75rem;
+                                            background: ${tooltipBg};
+                                            color: ${tooltipText};
+                                            padding: 8px 12px;
+                                            border-radius: 8px;
+                                            font-size: 0.8rem;
                                             white-space: nowrap;
                                             opacity: 0;
                                             visibility: hidden;
                                             transition: all 0.2s;
                                             z-index: 100;
-                                            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                                            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+                                            border: 1px solid ${tooltipBorder};
                                             pointer-events: none;
                                         ">
-                                            <strong>${m.month}</strong><br>
-                                            CSAT: ${m.csat}%<br>
-                                            ${m.total} avaliações
+                                            <strong style="color: ${tooltipText};">${m.month}</strong><br>
+                                            <span style="color: ${tooltipText};">CSAT: ${m.csat}%</span><br>
+                                            <span style="color: ${tooltipMuted};">${m.total} avaliações</span>
                                         </div>
                                         <div style="
                                             width: 100%;
@@ -1092,7 +1135,8 @@ window.BICSATModule = {
                                         </div>
                                     </div>
                                 `;
-        }).join('')}
+        }).join('');
+        })()}
                         </div>
                     </div>
                     

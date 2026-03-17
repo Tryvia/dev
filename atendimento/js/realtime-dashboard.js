@@ -16,13 +16,15 @@
     tables: ['tickets', 'ticket_conversations', 'satisfaction_ratings'],
     // Intervalo mínimo entre atualizações (ms) - debounce
     updateDebounce: 2000,
-    // Mostrar notificações toast
-    showToasts: true,
+    // Mostrar notificações toast (carrega do localStorage)
+    showToasts: localStorage.getItem('realtime_showToasts') !== 'false',
     // Som de notificação
     playSound: false,
     // Auto-reconectar
     autoReconnect: true,
-    reconnectInterval: 5000
+    reconnectInterval: 5000,
+    // Domínio Freshdesk para abrir tickets
+    freshdeskDomain: 'novaabordarh'
   };
 
   // ============================================
@@ -317,8 +319,12 @@
 
   /**
    * Mostra toast notification
+   * @param {string} message - Mensagem HTML
+   * @param {string} type - Tipo: info, success, warning, error, ticket
+   * @param {number} duration - Duração em ms
+   * @param {number|null} ticketId - ID do ticket para abrir ao clicar
    */
-  function showToast(message, type = 'info', duration = 4000) {
+  function showToast(message, type = 'info', duration = 4000, ticketId = null) {
     if (!CONFIG.showToasts) return;
 
     const icons = {
@@ -375,14 +381,27 @@
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     `;
 
+    // Se tem ticketId, torna clicável
+    if (ticketId) {
+      toast.style.cursor = 'pointer';
+      toast.onclick = (e) => {
+        if (e.target.tagName !== 'BUTTON') {
+          window.open(`https://${CONFIG.freshdeskDomain}.freshdesk.com/a/tickets/${ticketId}`, '_blank');
+          toast.remove();
+        }
+      };
+    }
+
     toast.innerHTML = `
       <span style="font-size: 20px;">${icons[type] || icons.info}</span>
       <div style="flex: 1;">
         <div style="color: #e4e4e7; font-size: 13px; line-height: 1.4;">${message}</div>
-        <div style="color: #71717a; font-size: 11px; margin-top: 4px;">${formatTime(new Date())}</div>
+        <div style="color: #71717a; font-size: 11px; margin-top: 4px;">
+          ${formatTime(new Date())}${ticketId ? ' • <span style="color:#667eea;">Clique para abrir</span>' : ''}
+        </div>
       </div>
       <button onclick="this.parentElement.remove()" 
-              style="background: none; border: none; color: #71717a; cursor: pointer; font-size: 16px; padding: 0;"
+              style="background: none; border: none; color: #71717a; cursor: pointer; font-size: 16px; padding: 0; z-index: 1;"
               aria-label="Fechar notificação">×</button>
     `;
 
@@ -457,12 +476,12 @@
     if (!updateThrottleTimer) {
       updateThrottleTimer = setTimeout(() => {
         if (pendingUpdates.length === 1) {
-          // Apenas 1 atualização: mostra normal
+          // Apenas 1 atualização: mostra normal com link para o ticket
           const u = pendingUpdates[0];
-          showToast(`<strong>Ticket #${u.id} Atualizado</strong><br>${u.changes.join(', ')}`, 'info');
+          showToast(`<strong>Ticket #${u.id} Atualizado</strong><br>${u.changes.join(', ')}`, 'info', 4000, u.id);
         } else if (pendingUpdates.length > 1) {
-          // Múltiplas: mostra resumo
-          showToast(`<strong>${pendingUpdates.length} tickets atualizados</strong><br>Clique para ver detalhes no log`, 'info');
+          // Múltiplas: mostra resumo (sem link específico)
+          showToast(`<strong>${pendingUpdates.length} tickets atualizados</strong><br>Veja detalhes no log (clique em Realtime)`, 'info');
         }
         pendingUpdates = [];
         updateThrottleTimer = null;
@@ -488,7 +507,9 @@
 
     showToast(
       `<strong>Nova Resposta - Ticket #${conversation.ticket_id}</strong><br>${conversation.incoming ? 'Cliente respondeu' : 'Equipe respondeu'}`,
-      'conversation'
+      'conversation',
+      4000,
+      conversation.ticket_id
     );
 
     addToLog(`Nova conversa no ticket #${conversation.ticket_id}`, 'info');
@@ -743,6 +764,10 @@
     setConfig: (key, value) => {
       if (key in CONFIG) {
         CONFIG[key] = value;
+        // Salva preferência no localStorage para persistir
+        if (key === 'showToasts') {
+          localStorage.setItem('realtime_showToasts', value.toString());
+        }
         console.log(`⚙️ Realtime config: ${key} = ${value}`);
       }
     },

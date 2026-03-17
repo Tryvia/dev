@@ -1052,3 +1052,113 @@
   border: 1px solid #e2e8f0 !important;
   color: #1e293b !important;
 }
+
+/* ========================================
+   CORREÇÃO: Date Range no Tema Cyan
+   Problema: texto escuro com fundo escuro
+   ======================================== */
+
+/* Container do date range */
+[data-theme="tryvia-cyan"] .pres-date-range {
+  background: transparent !important;
+}
+
+/* Inputs de data - fundo claro, texto escuro */
+[data-theme="tryvia-cyan"] .pres-date-input,
+[data-theme="tryvia-cyan"] .pres-sidebar input[type="date"],
+[data-theme="tryvia-cyan"] .pres-filter-section input[type="date"] {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-date-input:focus,
+[data-theme="tryvia-cyan"] .pres-sidebar input[type="date"]:focus {
+  border-color: #00e4ff !important;
+  box-shadow: 0 0 0 3px rgba(0, 228, 255, 0.15) !important;
+}
+
+/* Texto separador "→" entre as datas */
+[data-theme="tryvia-cyan"] .pres-date-range > span {
+  color: #64748b !important;
+}
+
+/* Sidebar do modo apresentação - fundo claro */
+[data-theme="tryvia-cyan"] .pres-sidebar {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-sidebar h3,
+[data-theme="tryvia-cyan"] .pres-sidebar .pres-filter-label {
+  color: #1e293b !important;
+}
+
+/* Filter sections */
+[data-theme="tryvia-cyan"] .pres-filter-section {
+  color: #1e293b !important;
+}
+
+/* Period buttons */
+[data-theme="tryvia-cyan"] .pres-period-btn {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-period-btn:hover {
+  background: #f0f9ff !important;
+  border-color: #00e4ff !important;
+  color: #0369a1 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-period-btn.active {
+  background: linear-gradient(135deg, #00e4ff, #0099cc) !important;
+  border-color: transparent !important;
+  color: #0c4a6e !important;
+}
+
+/* Mode buttons */
+[data-theme="tryvia-cyan"] .pres-mode-btn {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-mode-btn.active {
+  background: linear-gradient(135deg, #00e4ff, #0099cc) !important;
+  border-color: transparent !important;
+  color: #0c4a6e !important;
+}
+
+/* Status box */
+[data-theme="tryvia-cyan"] .pres-status-box {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-status-label {
+  color: #64748b !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-status-value {
+  color: #1e293b !important;
+}
+
+/* People list */
+[data-theme="tryvia-cyan"] .pres-people-list {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-person-item {
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-person-item:hover {
+  background: #e0f7ff !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-person-item.selected {
+  background: rgba(0, 228, 255, 0.15) !important;
+}

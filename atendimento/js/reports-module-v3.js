@@ -836,7 +836,7 @@ class ReportsModuleV3 {
         document.body.appendChild(modal);
     }
 
-    generateReport() {
+    async generateReport() {
         // Read filters from UI first
         const periodSelect = document.getElementById('reportFilterPeriod');
         const teamSelect = document.getElementById('reportFilterTeam');
@@ -901,34 +901,45 @@ class ReportsModuleV3 {
             return;
         }
 
+        // Carregar métricas avançadas (time entries, empresas, etc)
+        let enhancedMetrics = null;
+        if (window.ReportsEnhancedMetrics) {
+            try {
+                enhancedMetrics = await window.ReportsEnhancedMetrics.getEnhancedMetrics(data);
+                console.log('📊 Métricas avançadas carregadas:', enhancedMetrics);
+            } catch (e) {
+                console.warn('⚠️ Erro ao carregar métricas avançadas:', e);
+            }
+        }
+
         // Generate based on report type
         switch (this.selectedReport) {
             case 'executive':
-                container.innerHTML = this.generateExecutiveReport(data, colors, report);
+                container.innerHTML = this.generateExecutiveReport(data, colors, report, enhancedMetrics);
                 break;
             case 'performance':
-                container.innerHTML = this.generatePerformanceReport(data, colors, report);
+                container.innerHTML = this.generatePerformanceReport(data, colors, report, enhancedMetrics);
                 break;
             case 'sla':
-                container.innerHTML = this.generateSLAReport(data, colors, report);
+                container.innerHTML = this.generateSLAReport(data, colors, report, enhancedMetrics);
                 break;
             case 'trends':
-                container.innerHTML = this.generateTrendsReport(data, colors, report);
+                container.innerHTML = this.generateTrendsReport(data, colors, report, enhancedMetrics);
                 break;
             case 'backlog':
-                container.innerHTML = this.generateBacklogReport(data, colors, report);
+                container.innerHTML = this.generateBacklogReport(data, colors, report, enhancedMetrics);
                 break;
             case 'resolution_time':
-                container.innerHTML = this.generateResolutionTimeReport(data, colors, report);
+                container.innerHTML = this.generateResolutionTimeReport(data, colors, report, enhancedMetrics);
                 break;
         }
 
         // Render charts after DOM update
-        setTimeout(() => this.renderCharts(), 100);
+        setTimeout(() => this.renderCharts(enhancedMetrics), 100);
     }
 
     // ========== RELATÓRIO EXECUTIVO COM INSIGHTS INTELIGENTES ==========
-    generateExecutiveReport(data, colors, report) {
+    generateExecutiveReport(data, colors, report, enhancedMetrics = null) {
         const mode = this.getDataMode();
         
         // Usar motor de insights
@@ -1116,6 +1127,18 @@ class ReportsModuleV3 {
             
             <!-- EXECUTIVO: Removido tabelas de times e tickets (estão em outros relatórios específicos) -->
 
+            <!-- MÉTRICAS AVANÇADAS -->
+            ${enhancedMetrics && window.ReportsEnhancedSections ? 
+                window.ReportsEnhancedSections.renderAllSections(enhancedMetrics, colors, {
+                    velocity: true,
+                    companies: true,
+                    escalations: true,
+                    sources: true,
+                    timeEntries: false,
+                    resolutionSLA: false,
+                    heatmap: false
+                }) : ''}
+
             <!-- Explicação Didática -->
             <div style="background: linear-gradient(135deg, ${colors.border}50, ${colors.surface}); border: 1px dashed ${colors.border}; border-radius: 12px; padding: 1.25rem; margin-top: 2rem;">
                 <h4 style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: ${colors.textMuted};">
@@ -1136,7 +1159,7 @@ class ReportsModuleV3 {
     }
 
     // ========== RELATÓRIO DE PERFORMANCE COM INSIGHTS ==========
-    generatePerformanceReport(data, colors, report) {
+    generatePerformanceReport(data, colors, report, enhancedMetrics = null) {
         const mode = this.getDataMode();
         
         // Usar motor de insights
@@ -1412,12 +1435,24 @@ class ReportsModuleV3 {
             }).join('')}
                 </div>
             </div>
+
+            <!-- MÉTRICAS AVANÇADAS: Time Entries -->
+            ${enhancedMetrics && window.ReportsEnhancedSections ? 
+                window.ReportsEnhancedSections.renderAllSections(enhancedMetrics, colors, {
+                    velocity: false,
+                    companies: false,
+                    escalations: false,
+                    sources: false,
+                    timeEntries: true,
+                    resolutionSLA: false,
+                    heatmap: false
+                }) : ''}
         </div>
         `;
     }
 
     // ========== RELATÓRIO DE SLA COM INSIGHTS ==========
-    generateSLAReport(data, colors, report) {
+    generateSLAReport(data, colors, report, enhancedMetrics = null) {
         // Usar motor de insights
         const engine = window.ReportsInsightsEngine;
         const analysis = engine ? engine.analyzeSLA(data) : null;
@@ -1654,6 +1689,18 @@ class ReportsModuleV3 {
             </div>
             `}
 
+            <!-- MÉTRICAS AVANÇADAS: SLA de Resolução por Prioridade -->
+            ${enhancedMetrics && window.ReportsEnhancedSections ? 
+                window.ReportsEnhancedSections.renderAllSections(enhancedMetrics, colors, {
+                    velocity: false,
+                    companies: false,
+                    escalations: false,
+                    sources: false,
+                    timeEntries: false,
+                    resolutionSLA: true,
+                    heatmap: false
+                }) : ''}
+
             <!-- Explicação Didática -->
             <div style="background: linear-gradient(135deg, ${colors.border}50, ${colors.surface}); border: 1px dashed ${colors.border}; border-radius: 12px; padding: 1.25rem; margin-top: 2rem;">
                 <h4 style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: ${colors.textMuted};">
@@ -1671,7 +1718,7 @@ class ReportsModuleV3 {
     }
 
     // ========== RELATÓRIO DE TENDÊNCIAS COM INSIGHTS ==========
-    generateTrendsReport(data, colors, report) {
+    generateTrendsReport(data, colors, report, enhancedMetrics = null) {
         // Usar motor de insights
         const engine = window.ReportsInsightsEngine;
         const analysis = engine ? engine.analyzeTrends(data) : null;
@@ -1863,7 +1910,7 @@ class ReportsModuleV3 {
     }
 
     // ========== RELATÓRIO DE BACKLOG COM INSIGHTS ==========
-    generateBacklogReport(data, colors, report) {
+    generateBacklogReport(data, colors, report, enhancedMetrics = null) {
         // Usar motor de insights
         const engine = window.ReportsInsightsEngine;
         const analysis = engine ? engine.analyzeBacklog(data) : null;
@@ -2118,7 +2165,7 @@ class ReportsModuleV3 {
 
     // ========== RELATÓRIO DE TEMPO DE RESOLUÇÃO ==========
     // Exclui Melhorias e Projetos - foco em atendimento real
-    generateResolutionTimeReport(data, colors, report) {
+    generateResolutionTimeReport(data, colors, report, enhancedMetrics = null) {
         const mode = this.getDataMode();
         
         // Tipos a ignorar (Melhorias e Projetos)
@@ -3159,40 +3206,44 @@ class ReportsModuleV3 {
                 checkPageBreak(25);
                 const destW = (contentWidth - 10) / 3;
                 if (topByVolume) {
-                    pdf.setFillColor(255, 215, 0, 0.1);
+                    pdf.setFillColor(79, 70, 229); // Roxo sólido
                     pdf.roundedRect(margin, y, destW, 22, 3, 3, 'F');
                     pdf.setFont('helvetica', 'bold');
                     pdf.setFontSize(10);
-                    pdf.setTextColor(255, 215, 0);
+                    pdf.setTextColor(255, 255, 255); // Texto branco
                     pdf.text('Maior Volume', margin + 5, y + 8);
                     pdf.setFont('helvetica', 'normal');
                     pdf.setFontSize(9);
-                    pdf.setTextColor(60, 60, 60);
+                    pdf.setTextColor(255, 255, 255); // Texto branco
                     pdf.text(topByVolume.name.substring(0, 15), margin + 5, y + 15);
-                    pdf.text(topByVolume.total + ' tickets', margin + 5, y + 20);
+                    pdf.text(topByVolume.total + ' tickets | ' + topByVolume.rate.toFixed(0) + '% taxa', margin + 5, y + 20);
                 }
                 if (topByRate) {
-                    pdf.setFillColor(16, 185, 129, 0.1);
+                    pdf.setFillColor(16, 185, 129); // Verde sólido
                     pdf.roundedRect(margin + destW + 5, y, destW, 22, 3, 3, 'F');
                     pdf.setFont('helvetica', 'bold');
-                    pdf.setTextColor(16, 185, 129);
+                    pdf.setFontSize(10);
+                    pdf.setTextColor(255, 255, 255); // Texto branco
                     pdf.text('Melhor Eficiencia', margin + destW + 10, y + 8);
                     pdf.setFont('helvetica', 'normal');
-                    pdf.setTextColor(60, 60, 60);
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(255, 255, 255); // Texto branco
                     pdf.text(topByRate.name.substring(0, 15), margin + destW + 10, y + 15);
-                    pdf.text(topByRate.rate.toFixed(0) + '% resolucao', margin + destW + 10, y + 20);
+                    pdf.text(topByRate.rate.toFixed(0) + '% taxa | ' + topByRate.total + ' tickets', margin + destW + 10, y + 20);
                 }
                 if (topBySpeed) {
-                    pdf.setFillColor(59, 130, 246, 0.1);
+                    pdf.setFillColor(245, 158, 11); // Laranja sólido
                     pdf.roundedRect(margin + (destW + 5) * 2, y, destW, 22, 3, 3, 'F');
                     pdf.setFont('helvetica', 'bold');
-                    pdf.setTextColor(59, 130, 246);
+                    pdf.setFontSize(10);
+                    pdf.setTextColor(255, 255, 255); // Texto branco
                     pdf.text('Mais Rapido', margin + (destW + 5) * 2 + 5, y + 8);
                     pdf.setFont('helvetica', 'normal');
-                    pdf.setTextColor(60, 60, 60);
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(255, 255, 255); // Texto branco
                     pdf.text(topBySpeed.name.substring(0, 15), margin + (destW + 5) * 2 + 5, y + 15);
                     const spTime = topBySpeed.avgHours < 24 ? topBySpeed.avgHours.toFixed(1) + 'h' : (topBySpeed.avgHours / 24).toFixed(1) + 'd';
-                    pdf.text(spTime + ' media', margin + (destW + 5) * 2 + 5, y + 20);
+                    pdf.text(spTime + ' media | ' + topBySpeed.total + ' tickets', margin + (destW + 5) * 2 + 5, y + 20);
                 }
                 y += 30;
 
@@ -3263,36 +3314,35 @@ class ReportsModuleV3 {
                 const slaHealth = slaRate >= 90 ? 'EXCELENTE' : slaRate >= 70 ? 'BOM' : slaRate >= 50 ? 'REGULAR' : 'CRITICO';
                 const healthColor = slaRate >= 90 ? '#10b981' : slaRate >= 70 ? '#3b82f6' : slaRate >= 50 ? '#f59e0b' : '#ef4444';
                 
-                checkPageBreak(35);
-                pdf.setFillColor(...this._hexToRgbArray(healthColor + '20'));
-                pdf.roundedRect(margin, y, contentWidth, 30, 5, 5, 'F');
-                pdf.setDrawColor(...this._hexToRgbArray(healthColor));
-                pdf.roundedRect(margin, y, contentWidth, 30, 5, 5, 'S');
-                
-                // Círculo com porcentagem
-                const circleX = margin + 20;
-                const circleY = y + 15;
+                checkPageBreak(40);
                 pdf.setFillColor(...this._hexToRgbArray(healthColor));
-                pdf.circle(circleX, circleY, 10, 'F');
-                pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(10);
-                pdf.setTextColor(255, 255, 255);
-                pdf.text(slaRate.toFixed(0) + '%', circleX, circleY + 3, { align: 'center' });
+                pdf.roundedRect(margin, y, contentWidth, 34, 5, 5, 'F');
                 
-                // Texto de saúde
+                // Círculo branco com porcentagem
+                const circleX = margin + 20;
+                const circleY = y + 17;
+                pdf.setFillColor(255, 255, 255);
+                pdf.circle(circleX, circleY, 12, 'F');
                 pdf.setFont('helvetica', 'bold');
                 pdf.setFontSize(12);
                 pdf.setTextColor(...this._hexToRgbArray(healthColor));
-                pdf.text('Conformidade SLA: ' + slaHealth, margin + 35, y + 12);
+                pdf.text(slaRate.toFixed(0) + '%', circleX - 6, circleY + 4);
+                
+                // Texto - BRANCO
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(13);
+                pdf.setTextColor(255, 255, 255);
+                pdf.text('Conformidade SLA: ' + slaHealth, margin + 38, y + 12);
                 pdf.setFont('helvetica', 'normal');
                 pdf.setFontSize(9);
-                pdf.setTextColor(100, 100, 100);
                 const healthMsg = slaHealth === 'EXCELENTE' ? 'Parabens! O SLA esta sendo cumprido de forma exemplar.' :
                                   slaHealth === 'BOM' ? 'O SLA esta bom, mas ha espaco para melhorias.' :
                                   slaHealth === 'REGULAR' ? 'Atencao! O SLA precisa de melhorias significativas.' :
                                   'CRITICO: O SLA esta muito abaixo do esperado!';
-                pdf.text(healthMsg, margin + 35, y + 20);
-                y += 38;
+                pdf.text(healthMsg, margin + 38, y + 21);
+                pdf.setFontSize(8);
+                pdf.text(slaOk + ' dentro do prazo | ' + violations.length + ' violacoes | ' + slaTotal + ' tickets com SLA', margin + 38, y + 29);
+                y += 42;
 
                 // KPIs de SLA (2x2)
                 const halfW = (contentWidth - 5) / 2;
@@ -3378,29 +3428,31 @@ class ReportsModuleV3 {
                 const trendStatus = trend > 10 ? 'CRESCENTE' : trend < -10 ? 'DECRESCENTE' : 'ESTAVEL';
                 const trendColor = trend > 10 ? '#ef4444' : trend < -10 ? '#10b981' : '#f59e0b';
                 
-                checkPageBreak(35);
-                pdf.setFillColor(...this._hexToRgbArray(trendColor + '20'));
-                pdf.roundedRect(margin, y, contentWidth, 30, 5, 5, 'F');
-                pdf.setDrawColor(...this._hexToRgbArray(trendColor));
-                pdf.roundedRect(margin, y, contentWidth, 30, 5, 5, 'S');
+                checkPageBreak(40);
+                pdf.setFillColor(...this._hexToRgbArray(trendColor));
+                pdf.roundedRect(margin, y, contentWidth, 34, 5, 5, 'F');
                 
-                // Ícone de tendência
+                // Círculo branco com ícone
+                pdf.setFillColor(255, 255, 255);
+                pdf.circle(margin + 18, y + 17, 10, 'F');
                 pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(16);
+                pdf.setFontSize(14);
                 pdf.setTextColor(...this._hexToRgbArray(trendColor));
-                pdf.text(trend > 10 ? '↑' : trend < -10 ? '↓' : '→', margin + 15, y + 17);
+                pdf.text(trend > 10 ? '+' : trend < -10 ? '-' : '=', margin + 14, y + 20);
                 
-                // Texto de tendência
-                pdf.setFontSize(12);
-                pdf.text('Tendencia: ' + trendStatus + ' (' + (trend >= 0 ? '+' : '') + trend.toFixed(1) + '%)', margin + 30, y + 12);
+                // Texto - BRANCO
+                pdf.setFontSize(13);
+                pdf.setTextColor(255, 255, 255);
+                pdf.text('Tendencia: ' + trendStatus + ' (' + (trend >= 0 ? '+' : '') + trend.toFixed(1) + '%)', margin + 35, y + 12);
                 pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(8);
-                pdf.setTextColor(100, 100, 100);
+                pdf.setFontSize(9);
                 const trendMsg = trendStatus === 'ESTAVEL' ? 'O volume de tickets esta estavel, sem grandes variacoes.' :
                                  trend > 0 ? 'O volume esta aumentando! Verifique problemas ou campanhas.' :
                                  'O volume esta diminuindo, pode indicar melhoria no produto.';
-                pdf.text(trendMsg, margin + 30, y + 20);
-                y += 38;
+                pdf.text(trendMsg, margin + 35, y + 21);
+                pdf.setFontSize(8);
+                pdf.text('Media: ' + avgDaily.toFixed(1) + ' tickets/dia | Projecao 30d: ' + projection30d + ' | Pico: ' + maxDayVolume + ' tickets', margin + 35, y + 29);
+                y += 42;
 
                 // KPIs de tendências
                 drawCard(margin, cardW, 'Media Diaria', avgDaily.toFixed(1), '#3b82f6');
@@ -3481,24 +3533,29 @@ class ReportsModuleV3 {
                 const backlogHealth = avgAge <= 3 ? 'SAUDAVEL' : avgAge <= 7 ? 'ATENCAO' : avgAge <= 14 ? 'PREOCUPANTE' : 'CRITICO';
                 const healthColor = avgAge <= 3 ? '#10b981' : avgAge <= 7 ? '#f59e0b' : avgAge <= 14 ? '#ef4444' : '#dc2626';
                 
-                checkPageBreak(35);
-                pdf.setFillColor(...this._hexToRgbArray(healthColor + '20'));
-                pdf.roundedRect(margin, y, contentWidth, 30, 5, 5, 'F');
-                pdf.setDrawColor(...this._hexToRgbArray(healthColor));
-                pdf.roundedRect(margin, y, contentWidth, 30, 5, 5, 'S');
+                checkPageBreak(40);
+                pdf.setFillColor(...this._hexToRgbArray(healthColor));
+                pdf.roundedRect(margin, y, contentWidth, 34, 5, 5, 'F');
                 
+                // Círculo branco com número
+                pdf.setFillColor(255, 255, 255);
+                pdf.circle(margin + 18, y + 17, 10, 'F');
                 pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(12);
+                pdf.setFontSize(10);
                 pdf.setTextColor(...this._hexToRgbArray(healthColor));
-                pdf.text('Saude do Backlog: ' + backlogHealth, margin + 10, y + 12);
+                pdf.text(pendingTickets.length.toString(), margin + 12, y + 20);
+                
+                // Texto - BRANCO
+                pdf.setFontSize(13);
+                pdf.setTextColor(255, 255, 255);
+                pdf.text('Saude do Backlog: ' + backlogHealth, margin + 35, y + 12);
                 pdf.setFont('helvetica', 'normal');
                 pdf.setFontSize(9);
-                pdf.setTextColor(100, 100, 100);
-                pdf.text(pendingTickets.length + ' tickets pendentes | Idade media: ' + avgAge.toFixed(1) + ' dias', margin + 10, y + 20);
-                if (daysToClean) {
-                    pdf.text('Estimativa para zerar: ' + daysToClean + ' dias (ritmo atual)', margin + 10, y + 26);
-                }
-                y += 38;
+                pdf.text(pendingTickets.length + ' tickets pendentes | Idade media: ' + avgAge.toFixed(1) + ' dias', margin + 35, y + 21);
+                pdf.setFontSize(8);
+                const cleanMsg = daysToClean ? 'Estimativa para zerar: ' + daysToClean + ' dias | ' : '';
+                pdf.text(cleanMsg + critical + ' criticos (>7d) | ' + aging['>30d'] + ' muito antigos (>30d)', margin + 35, y + 29);
+                y += 42;
 
                 // KPIs de backlog
                 drawCard(margin, cardW, 'Idade Media', avgAge.toFixed(1) + 'd', '#8b5cf6');
@@ -3561,31 +3618,32 @@ class ReportsModuleV3 {
                 const healthColor = healthScore >= 85 ? '#10b981' : healthScore >= 70 ? '#3b82f6' : healthScore >= 50 ? '#f59e0b' : '#ef4444';
 
                 // RESUMO EXECUTIVO / HEALTH CHECK
-                checkPageBreak(35);
-                pdf.setFillColor(...this._hexToRgbArray(healthColor + '20'));
-                pdf.roundedRect(margin, y, contentWidth, 32, 5, 5, 'F');
-                pdf.setDrawColor(...this._hexToRgbArray(healthColor));
-                pdf.roundedRect(margin, y, contentWidth, 32, 5, 5, 'S');
+                checkPageBreak(40);
+                pdf.setFillColor(...this._hexToRgbArray(healthColor));
+                pdf.roundedRect(margin, y, contentWidth, 36, 5, 5, 'F');
                 
-                // Ícone de saúde
+                // Ícone de saúde (círculo branco)
+                pdf.setFillColor(255, 255, 255);
+                pdf.circle(margin + 18, y + 18, 10, 'F');
                 pdf.setFont('helvetica', 'bold');
                 pdf.setFontSize(14);
                 pdf.setTextColor(...this._hexToRgbArray(healthColor));
-                pdf.text(health === 'EXCELENTE' ? '★' : health === 'BOM' ? '✓' : health === 'REGULAR' ? '!' : '✗', margin + 12, y + 18);
+                pdf.text(healthScore.toFixed(0), margin + 13, y + 21);
                 
-                // Texto de saúde
-                pdf.setFontSize(12);
-                pdf.text('Saude do Atendimento: ' + health, margin + 25, y + 12);
+                // Texto de saúde - BRANCO
+                pdf.setFontSize(13);
+                pdf.setTextColor(255, 255, 255);
+                pdf.text('Saude do Atendimento: ' + health, margin + 35, y + 12);
                 pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(8);
-                pdf.setTextColor(100, 100, 100);
+                pdf.setFontSize(9);
                 const healthMsg = health === 'EXCELENTE' ? 'Excelente! Operacao funcionando de forma otima.' :
                                   health === 'BOM' ? 'Bom desempenho, com pequenos pontos de atencao.' :
                                   health === 'REGULAR' ? 'Atencao necessaria em alguns indicadores.' :
                                   'Situacao critica! Acao imediata necessaria.';
-                pdf.text(healthMsg, margin + 25, y + 20);
-                pdf.text('Score: ' + healthScore.toFixed(0) + '/100 (Resolucao: ' + resRate + '% | SLA: ' + slaRate + '%)', margin + 25, y + 27);
-                y += 40;
+                pdf.text(healthMsg, margin + 35, y + 21);
+                pdf.setFontSize(8);
+                pdf.text('Score: ' + healthScore.toFixed(0) + '/100 | Resolucao: ' + resRate + '% | SLA: ' + slaRate + '% | ' + resolved + ' resolvidos de ' + total, margin + 35, y + 30);
+                y += 44;
 
                 // KPIs executivos
                 drawCard(margin, cardW, 'Total Tickets', total, '#3b82f6');

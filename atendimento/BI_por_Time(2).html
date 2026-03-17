@@ -4509,12 +4509,12 @@
         }
         reportsContainer.style.display = 'block';
 
-        // Renderizar o módulo de relatórios V3 (novo)
+        // Renderizar o mï¿½dulo de relatï¿½rios V3 (novo)
         if (window.reportsModuleV3 && typeof window.reportsModuleV3.render === 'function') {
           window.reportsModuleV3.render();
         } else {
-          console.error('Reports Module V3 não encontrado.');
-          reportsContainer.innerHTML = '<div style="padding: 2rem; color: #ef4444;">Erro: Reports Module V3 não carregado.</div>';
+          console.error('Reports Module V3 nï¿½o encontrado.');
+          reportsContainer.innerHTML = '<div style="padding: 2rem; color: #ef4444;">Erro: Reports Module V3 nï¿½o carregado.</div>';
         }
 
         // Update sidebar active state
@@ -8532,6 +8532,10 @@
     <!-- Reports Insights Engine -->
     <script src="js/reports-insights-engine.js?v=20260312"></script>
 
+    <!-- Reports Enhanced Metrics -->
+    <script src="js/reports-enhanced-metrics.js?v=20260316"></script>
+    <script src="js/reports-enhanced-sections.js?v=20260316"></script>
+
     <!-- Reports Module V3 -->
     <script src="js/reports-module-v3.js?v=20260303T1600"></script>
 
@@ -8546,6 +8550,12 @@
 
     <!-- BI Acompanhamento Module (Tags) -->
     <script src="js/bi-acompanhamento-module.js?v=20260309T1230"></script>
+
+    <!-- BI Consolidado Module (Cruzamento Tratativa + Tags) -->
+    <script src="js/bi-consolidado-module.js?v=20260316T1445"></script>
+
+    <!-- BI Productivity Matrix - Matriz de Produtividade -->
+    <script src="js/bi-productivity-matrix.js?v=20260317T1630"></script>
 
     <!-- Logger - Sistema de Logging Estruturado -->
     <script src="js/logger.js?v=20260224T1500"></script>

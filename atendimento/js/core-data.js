@@ -90,8 +90,15 @@
   // Fallback: carregar lookups do Supabase
   window.loadLookupsFromSupabase = async function() {
     try {
-      const client = typeof initSupabase === 'function' ? await initSupabase() : null;
-      if (!client) return;
+      // Usar cliente Supabase global ou SupabaseLoader
+      let client = window.supabaseClient;
+      if (!client && window.SupabaseLoader?.getClient) {
+        client = await window.SupabaseLoader.getClient();
+      }
+      if (!client) {
+        console.warn('⚠️ Cliente Supabase não disponível para carregar lookups');
+        return;
+      }
       
       const tableAgents = window.SUPABASE_TABLE_AGENTS || 'agents';
       const tableGroups = window.SUPABASE_TABLE_GROUPS || 'groups';
@@ -117,7 +124,11 @@
   // Persistir lookups atuais no Supabase
   window.syncLookupsFromProxyToSupabase = async function() {
     try {
-      const client = typeof initSupabase === 'function' ? await initSupabase() : null;
+      // Usar cliente Supabase global ou SupabaseLoader
+      let client = window.supabaseClient;
+      if (!client && window.SupabaseLoader?.getClient) {
+        client = await window.SupabaseLoader.getClient();
+      }
       if (!client) return;
       
       const tableAgents = window.SUPABASE_TABLE_AGENTS || 'agents';

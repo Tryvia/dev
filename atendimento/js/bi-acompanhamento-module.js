@@ -902,7 +902,7 @@ window.BIAcompanhamentoModule = {
             byHour
         };
         
-        return { people: results, totals, filteredCount: filteredTickets.length, ticketsComTag: ticketsComTagDoTime, globalMetrics };
+        return { people: results, totals, filteredCount: filteredTickets.length, ticketsComTag: ticketsComTagDoTime, globalMetrics, filteredTickets };
     },
     
     /**
@@ -1750,7 +1750,7 @@ window.BIAcompanhamentoModule = {
     },
     
     /**
-     * Tooltip para gráfico de pizza expandido
+     * Tooltip para gráfico de pizza expandido com clique para ver tickets
      */
     setupExpandedPieTooltip(canvas, globalMetrics, width, height) {
         const tooltip = document.getElementById('acompExpandedTooltip');
@@ -1764,9 +1764,21 @@ window.BIAcompanhamentoModule = {
             15: 'Pausado', 16: 'On Hold', 17: 'Em Progresso',
             18: 'Escalado', 19: 'Reaberto', 20: 'Novo'
         };
+        const statusColors = {
+            'Aberto': '#ef4444', 'Pendente': '#f59e0b', 'Resolvido': '#10b981', 'Fechado': '#10b981',
+            'Aguardando Cliente': '#a855f7', 'Em análise': '#3b82f6', 'Aguardando Parceiros': '#ec4899',
+            'Em Homologação': '#6366f1', 'Validação': '#14b8a6', 'Levantamento': '#06b6d4',
+            'Em Fila Dev': '#f97316', 'Pausado': '#78716c', 'On Hold': '#71717a',
+            'Em Progresso': '#3b82f6', 'Reaberto': '#eab308', 'Novo': '#22c55e'
+        };
         
         const data = Object.entries(globalMetrics?.statusCounts || {})
-            .map(([status, count]) => ({ label: statusLabels[status] || `Status ${status}`, value: count }))
+            .map(([status, count]) => ({ 
+                statusCode: parseInt(status),
+                label: statusLabels[status] || `Status ${status}`, 
+                value: count,
+                color: statusColors[statusLabels[status]] || '#667eea'
+            }))
             .sort((a, b) => b.value - a.value);
         
         const total = data.reduce((a, b) => a + b.value, 0);
@@ -1774,33 +1786,102 @@ window.BIAcompanhamentoModule = {
         const cy = height / 2;
         const radius = Math.min(cx, cy) - 60;
         
-        canvas.onmousemove = (e) => {
+        const findSlice = (e) => {
             const x = e.offsetX - cx;
             const y = e.offsetY - cy;
             const dist = Math.sqrt(x*x + y*y);
-            
             if (dist <= radius && dist > 0) {
                 let angle = Math.atan2(y, x) + Math.PI / 2;
                 if (angle < 0) angle += Math.PI * 2;
-                
                 let cumulative = 0;
                 for (const d of data) {
                     const sliceAngle = (d.value / total) * Math.PI * 2;
-                    if (angle >= cumulative && angle < cumulative + sliceAngle) {
-                        const pct = ((d.value / total) * 100).toFixed(1);
-                        tooltip.innerHTML = `<strong>${d.label}</strong><br>${d.value} tickets (${pct}%)`;
-                        tooltip.style.display = 'block';
-                        tooltip.style.left = Math.min(e.offsetX + 15, width - 200) + 'px';
-                        tooltip.style.top = Math.max(e.offsetY - 60, 10) + 'px';
-                        return;
-                    }
+                    if (angle >= cumulative && angle < cumulative + sliceAngle) return d;
                     cumulative += sliceAngle;
                 }
             }
-            tooltip.style.display = 'none';
+            return null;
         };
         
-        canvas.onmouseleave = () => { tooltip.style.display = 'none'; };
+        canvas.onmousemove = (e) => {
+            const d = findSlice(e);
+            if (d) {
+                const pct = ((d.value / total) * 100).toFixed(1);
+                tooltip.innerHTML = `<strong>${d.label}</strong><br>${d.value} tickets (${pct}%)<div style="margin-top:6px;color:#8b5cf6;font-size:0.8rem;"> Clique para ver tickets</div>`;
+                tooltip.style.display = 'block';
+                tooltip.style.left = Math.min(e.offsetX + 15, width - 200) + 'px';
+                tooltip.style.top = Math.max(e.offsetY - 60, 10) + 'px';
+                canvas.style.cursor = 'pointer';
+            } else {
+                tooltip.style.display = 'none';
+                canvas.style.cursor = 'default';
+            }
+        };
+        
+        canvas.onmouseleave = () => { tooltip.style.display = 'none'; canvas.style.cursor = 'default'; };
+        
+        canvas.onclick = (e) => {
+            const d = findSlice(e);
+            if (d) this.showTicketsListByStatus(d.statusCode, d.label, d.color);
+        };
+    },
+    
+    /**
+     * Mostra lista de tickets filtrados por status
+     */
+    showTicketsListByStatus(statusCode, statusLabel, color) {
+        const tickets = (this._lastFilteredTickets || []).filter(t => t.status === statusCode);
+        const modalContent = document.querySelector('#acompExpandedChartModal > div');
+        if (!modalContent) return;
+        
+        let panel = document.getElementById('acompExpandedTicketsPanel');
+        if (panel) panel.remove();
+        
+        panel = document.createElement('div');
+        panel.id = 'acompExpandedTicketsPanel';
+        panel.style.cssText = 'position:absolute;top:0;right:0;width:420px;height:100%;background:linear-gradient(135deg,#1e293b,#0f172a);border-left:1px solid rgba(255,255,255,0.1);display:flex;flex-direction:column;animation:slideInRight 0.3s ease;z-index:10;';
+        
+        if (!document.getElementById('acompTicketsPanelStyles')) {
+            const s = document.createElement('style');
+            s.id = 'acompTicketsPanelStyles';
+            s.textContent = '@keyframes slideInRight{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}.acomp-ticket-row:hover{background:rgba(139,92,246,0.15)!important}';
+            document.head.appendChild(s);
+        }
+        
+        const pColors = {1:'#10b981',2:'#3b82f6',3:'#f59e0b',4:'#ef4444'};
+        const pNames = {1:'Baixa',2:'Média',3:'Alta',4:'Urgente'};
+        
+        panel.innerHTML = `
+            <div style="padding:1rem 1.25rem;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <h3 style="margin:0;color:white;font-size:1rem;display:flex;align-items:center;gap:8px;">
+                        <span style="width:12px;height:12px;border-radius:3px;background:${color};"></span>${statusLabel}
+                    </h3>
+                    <p style="margin:4px 0 0;color:#94a3b8;font-size:0.8rem;">${tickets.length} ticket${tickets.length!==1?'s':''}</p>
+                </div>
+                <button onclick="document.getElementById('acompExpandedTicketsPanel').remove()" style="background:rgba(255,255,255,0.1);border:none;color:#94a3b8;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:1rem;">✕</button>
+            </div>
+            <div style="flex:1;overflow-y:auto;padding:0.5rem;">
+                ${tickets.length===0?'<div style="text-align:center;padding:2rem;color:#64748b;">Nenhum ticket</div>':tickets.slice(0,100).map(t=>`
+                    <div class="acomp-ticket-row" onclick="window.open('https://novaabordarh.freshdesk.com/a/tickets/${t.id}','_blank')" style="padding:0.75rem;margin-bottom:0.5rem;background:rgba(255,255,255,0.03);border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.05);transition:all 0.2s;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                            <div style="flex:1;min-width:0;">
+                                <div style="color:#8b5cf6;font-size:0.75rem;margin-bottom:2px;">#${t.id}</div>
+                                <div style="color:#e2e8f0;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${(t.subject||'Sem assunto').substring(0,50)}</div>
+                            </div>
+                            <span style="background:${pColors[t.priority]||'#64748b'}22;color:${pColors[t.priority]||'#64748b'};padding:2px 6px;border-radius:4px;font-size:0.65rem;font-weight:600;">${pNames[t.priority]||'N/A'}</span>
+                        </div>
+                        <div style="display:flex;gap:12px;margin-top:6px;font-size:0.7rem;color:#64748b;">
+                            <span> 👤 ${t.responder_name||t.agent_name||'N/A'}</span>
+                            <span> 📅 ${t.created_at?new Date(t.created_at).toLocaleDateString('pt-BR'):'N/A'}</span>
+                        </div>
+                    </div>
+                `).join('')}
+                ${tickets.length>100?'<div style="text-align:center;padding:1rem;color:#64748b;font-size:0.8rem;">Mostrando 100 de '+tickets.length+'</div>':''}
+            </div>
+        `;
+        modalContent.style.position = 'relative';
+        modalContent.appendChild(panel);
     },
     
     // Funções de renderização expandida
@@ -3028,7 +3109,10 @@ window.BIAcompanhamentoModule = {
         }
         
         // Calcular estatísticas
-        const { people, totals, filteredCount, ticketsComTag, globalMetrics } = this.calculateStats(tickets);
+        const { people, totals, filteredCount, ticketsComTag, globalMetrics, filteredTickets } = this.calculateStats(tickets);
+        
+        // Salvar tickets filtrados para uso no clique do gráfico
+        this._lastFilteredTickets = filteredTickets;
         
         container.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 1.5rem;">
@@ -3473,11 +3557,23 @@ window.BIAcompanhamentoModule = {
             15: 'Pausado', 16: 'On Hold', 17: 'Em Progresso',
             18: 'Escalado', 19: 'Reaberto', 20: 'Novo'
         };
+        const statusColors = {
+            'Aberto': '#ef4444', 'Pendente': '#f59e0b', 'Resolvido': '#10b981', 'Fechado': '#10b981',
+            'Aguardando Cliente': '#a855f7', 'Em análise': '#3b82f6', 'Aguardando Parceiros': '#ec4899',
+            'Em Homologação': '#6366f1', 'Validação': '#14b8a6', 'Levantamento': '#06b6d4',
+            'Em Fila Dev': '#f97316', 'Pausado': '#78716c', 'On Hold': '#71717a',
+            'Em Progresso': '#3b82f6', 'Reaberto': '#eab308', 'Novo': '#22c55e'
+        };
         const statusData = Object.entries(globalMetrics?.statusCounts || {})
-            .map(([status, count]) => ({ label: statusLabels[status] || `Status ${status}`, value: count }))
+            .map(([status, count]) => ({ 
+                statusCode: parseInt(status),
+                label: statusLabels[status] || `Status ${status}`, 
+                value: count,
+                color: statusColors[statusLabels[status]] || '#667eea'
+            }))
             .sort((a, b) => b.value - a.value);
         const totalStatus = statusData.reduce((a, b) => a + b.value, 0);
-        this.setupPieChartTooltip('acompChartStatus', statusData, totalStatus);
+        this.setupPieChartTooltip('acompChartStatus', statusData, totalStatus, true);
         
         // Tooltip para Evolução Temporal
         const months = Object.entries(globalMetrics?.byMonth || {}).sort((a, b) => a[0].localeCompare(b[0]));
@@ -3485,9 +3581,9 @@ window.BIAcompanhamentoModule = {
     },
     
     /**
-     * Configura tooltip para gráfico de pizza
+     * Configura tooltip para gráfico de pizza com clique opcional
      */
-    setupPieChartTooltip(chartId, data, total) {
+    setupPieChartTooltip(chartId, data, total, enableClick = false) {
         const canvas = document.getElementById(chartId);
         const tooltip = document.getElementById(chartId + 'Tooltip');
         if (!canvas || !tooltip || !data.length) return;
@@ -3497,33 +3593,112 @@ window.BIAcompanhamentoModule = {
         const cy = rect.height / 2;
         const radius = Math.min(cx, cy) - 20;
         
-        canvas.onmousemove = (e) => {
+        const findSlice = (e) => {
             const x = e.offsetX - cx;
             const y = e.offsetY - cy;
             const dist = Math.sqrt(x*x + y*y);
-            
             if (dist <= radius && dist > 0) {
                 let angle = Math.atan2(y, x) + Math.PI / 2;
                 if (angle < 0) angle += Math.PI * 2;
-                
                 let cumulative = 0;
                 for (const d of data) {
                     const sliceAngle = (d.value / total) * Math.PI * 2;
-                    if (angle >= cumulative && angle < cumulative + sliceAngle) {
-                        const pct = ((d.value / total) * 100).toFixed(1);
-                        tooltip.innerHTML = `<strong>${d.label}</strong><br>${d.value} tickets (${pct}%)`;
-                        tooltip.style.display = 'block';
-                        tooltip.style.left = Math.min(e.offsetX + 10, rect.width - 150) + 'px';
-                        tooltip.style.top = Math.max(e.offsetY - 50, 10) + 'px';
-                        return;
-                    }
+                    if (angle >= cumulative && angle < cumulative + sliceAngle) return d;
                     cumulative += sliceAngle;
                 }
             }
-            tooltip.style.display = 'none';
+            return null;
         };
         
-        canvas.onmouseleave = () => { tooltip.style.display = 'none'; };
+        canvas.onmousemove = (e) => {
+            const d = findSlice(e);
+            if (d) {
+                const pct = ((d.value / total) * 100).toFixed(1);
+                const clickHint = enableClick ? '<div style="margin-top:4px;color:#8b5cf6;font-size:0.75rem;">🖱️ Clique para ver tickets</div>' : '';
+                tooltip.innerHTML = `<strong>${d.label}</strong><br>${d.value} tickets (${pct}%)${clickHint}`;
+                tooltip.style.display = 'block';
+                tooltip.style.left = Math.min(e.offsetX + 10, rect.width - 150) + 'px';
+                tooltip.style.top = Math.max(e.offsetY - 50, 10) + 'px';
+                canvas.style.cursor = enableClick ? 'pointer' : 'default';
+            } else {
+                tooltip.style.display = 'none';
+                canvas.style.cursor = 'default';
+            }
+        };
+        
+        canvas.onmouseleave = () => { tooltip.style.display = 'none'; canvas.style.cursor = 'default'; };
+        
+        if (enableClick) {
+            canvas.onclick = (e) => {
+                const d = findSlice(e);
+                if (d && d.statusCode !== undefined) {
+                    this.showTicketsListInModal(d.statusCode, d.label, d.color || '#667eea');
+                }
+            };
+        }
+    },
+    
+    /**
+     * Mostra lista de tickets em modal (gráfico normal)
+     */
+    showTicketsListInModal(statusCode, statusLabel, color) {
+        const tickets = (this._lastFilteredTickets || []).filter(t => t.status === statusCode);
+        
+        // Remover modal existente
+        let modal = document.getElementById('acompTicketsListModal');
+        if (modal) modal.remove();
+        
+        modal = document.createElement('div');
+        modal.id = 'acompTicketsListModal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000;animation:fadeIn 0.2s ease;';
+        
+        if (!document.getElementById('acompModalStyles')) {
+            const s = document.createElement('style');
+            s.id = 'acompModalStyles';
+            s.textContent = '@keyframes fadeIn{from{opacity:0}to{opacity:1}}.acomp-modal-ticket:hover{background:rgba(139,92,246,0.15)!important}';
+            document.head.appendChild(s);
+        }
+        
+        const pColors = {1:'#10b981',2:'#3b82f6',3:'#f59e0b',4:'#ef4444'};
+        const pNames = {1:'Baixa',2:'Média',3:'Alta',4:'Urgente'};
+        
+        modal.innerHTML = `
+            <div style="background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;width:500px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1);">
+                <div style="padding:1rem 1.25rem;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <h3 style="margin:0;color:white;font-size:1.1rem;display:flex;align-items:center;gap:8px;">
+                            <span style="width:14px;height:14px;border-radius:4px;background:${color};"></span>${statusLabel}
+                        </h3>
+                        <p style="margin:4px 0 0;color:#94a3b8;font-size:0.85rem;">${tickets.length} ticket${tickets.length!==1?'s':''}</p>
+                    </div>
+                    <button onclick="document.getElementById('acompTicketsListModal').remove()" style="background:rgba(255,255,255,0.1);border:none;color:#94a3b8;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:1.2rem;">✕</button>
+                </div>
+                <div style="flex:1;overflow-y:auto;padding:0.75rem;">
+                    ${tickets.length===0?'<div style="text-align:center;padding:2rem;color:#64748b;">Nenhum ticket encontrado</div>':tickets.slice(0,100).map(t=>`
+                        <div class="acomp-modal-ticket" onclick="window.open('https://novaabordarh.freshdesk.com/a/tickets/${t.id}','_blank')" style="padding:0.75rem;margin-bottom:0.5rem;background:rgba(255,255,255,0.03);border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.05);transition:all 0.2s;">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                                <div style="flex:1;min-width:0;">
+                                    <div style="color:#8b5cf6;font-size:0.8rem;margin-bottom:2px;">#${t.id}</div>
+                                    <div style="color:#e2e8f0;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${(t.subject||'Sem assunto').substring(0,50)}</div>
+                                </div>
+                                <span style="background:${pColors[t.priority]||'#64748b'}22;color:${pColors[t.priority]||'#64748b'};padding:3px 8px;border-radius:4px;font-size:0.7rem;font-weight:600;">${pNames[t.priority]||'N/A'}</span>
+                            </div>
+                            <div style="display:flex;gap:12px;margin-top:6px;font-size:0.75rem;color:#64748b;">
+                                <span>👤 ${t.responder_name||t.agent_name||'N/A'}</span>
+                                <span>📅 ${t.created_at?new Date(t.created_at).toLocaleDateString('pt-BR'):'N/A'}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                    ${tickets.length>100?'<div style="text-align:center;padding:1rem;color:#64748b;font-size:0.85rem;">Mostrando 100 de '+tickets.length+'</div>':''}
+                </div>
+            </div>
+        `;
+        
+        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+        document.addEventListener('keydown', function escHandler(e) {
+            if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', escHandler); }
+        });
+        document.body.appendChild(modal);
     },
     
     /**

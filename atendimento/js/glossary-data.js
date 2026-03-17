@@ -5202,6 +5202,45 @@ window.GLOSSARY_DATA = {
         ]
     },
 
+    biConsolidado: {
+        title: '🔄 BI Consolidado — Visão Total',
+        description: 'Combina Tratativa + Acompanhamento sem duplicação',
+        items: [
+            {
+                name: 'Visão Geral',
+                formula: 'União(cf_tratativa, cf_acompanhamento) - duplicados',
+                where: 'BI Analytics → Aba Consolidado',
+                interpretation: 'Soma Tratativa + Acompanhamento contando cada ticket 1x por pessoa.',
+                icon: '🔄',
+                details: `<strong>Fontes:</strong> cf_tratativa + cf_acompanhamento_atendimento<br><br><strong>Métricas:</strong> Total Atribuído, Resolvidos, Taxa, Produtividade/Dia<br><br><strong>Arquivo:</strong> bi-consolidado-module.js`
+            },
+            {
+                name: 'Deduplicação',
+                formula: 'Set(ticketIds) por pessoa',
+                where: 'calculateConsolidatedStats()',
+                interpretation: 'Ticket em ambas fontes conta apenas 1x.',
+                icon: '🔗',
+                details: `<strong>Regra:</strong> Se pessoa aparece em cf_tratativa E cf_acompanhamento do mesmo ticket, conta 1x.<br><br><strong>Rastreamento:</strong> fromTratativa, fromAcompanhamento, fromBoth`
+            },
+            {
+                name: 'Métricas',
+                formula: 'totalAtribuido, resolved, resolutionRate, productivityPerDay',
+                where: 'Cards KPI e Tabela de Ranking',
+                interpretation: 'Calculadas sobre conjunto consolidado.',
+                icon: '📈',
+                details: `<strong>Taxa:</strong> (resolved/total)*100<br><strong>Prod/Dia:</strong> total/dias/pessoas<br><strong>Cores:</strong> ≥70% verde, 40-69% amarelo, <40% vermelho`
+            },
+            {
+                name: 'Análise de Cruzamento',
+                formula: 'Apenas Tratativa | Apenas Acomp | Ambos | Nenhum',
+                where: 'Seção Análise de Cruzamento',
+                interpretation: 'Mostra origem dos tickets por fonte.',
+                icon: '📊',
+                details: `Identifica tickets com apenas uma fonte vs ambas vs nenhuma pessoa válida.`
+            }
+        ]
+    },
+
     chatbotIA: {
         title: '🤖 Chatbot IA Tryviano',
         description: 'Assistente inteligente com Agent Loop, RAG e memória de decisões',

@@ -790,3 +790,257 @@ body {
 }
 
 /* Modular CSS files are loaded separately in the HTML */
+
+/* ========================================
+   CORREÇÕES DE CONTRASTE - CSAT & INSIGHTS
+   Problemas: barras e textos invisíveis
+   ======================================== */
+
+/* === CSAT - Tema Cyan: Forçar fundo claro nos cards === */
+[data-theme="tryvia-cyan"] .bi-csat-section .bi-card,
+[data-theme="tryvia-cyan"] .bi-time-section .bi-card,
+[data-theme="tryvia-cyan"] [class*="csat"] .bi-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="tryvia-cyan"] .bi-csat-section h3,
+[data-theme="tryvia-cyan"] .bi-csat-section h2,
+[data-theme="tryvia-cyan"] .bi-time-section h3,
+[data-theme="tryvia-cyan"] .bi-time-section h2 {
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .bi-csat-section [style*="color: #71717a"],
+[data-theme="tryvia-cyan"] .bi-csat-section [style*="color:#71717a"],
+[data-theme="tryvia-cyan"] .bi-csat-section [style*="color: #e4e4e7"],
+[data-theme="tryvia-cyan"] .bi-csat-section [style*="color:#e4e4e7"],
+[data-theme="tryvia-cyan"] .bi-time-section [style*="color: #71717a"],
+[data-theme="tryvia-cyan"] .bi-time-section [style*="color:#71717a"],
+[data-theme="tryvia-cyan"] .bi-time-section [style*="color: #e4e4e7"],
+[data-theme="tryvia-cyan"] .bi-time-section [style*="color:#e4e4e7"] {
+  color: #475569 !important;
+}
+
+/* CSAT Tooltip - Tema Cyan */
+[data-theme="tryvia-cyan"] .csat-tooltip {
+  background: #1e293b !important;
+  color: #ffffff !important;
+}
+
+/* === CSAT - Barras do gráfico de tendência === */
+/* Garantir que as barras tenham contraste adequado */
+[data-theme="tryvia-cyan"] .csat-bar-container > div:first-of-type:not(.csat-tooltip) {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* === Tendências Badge/Label - Tema Cyan === */
+[data-theme="tryvia-cyan"] [style*="background: #18181b"],
+[data-theme="tryvia-cyan"] [style*="background:#18181b"],
+[data-theme="tryvia-cyan"] [style*="background: rgb(24"],
+[data-theme="tryvia-cyan"] [style*="background:rgb(24"] {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+/* === Insights Page - Tema Cyan === */
+[data-theme="tryvia-cyan"] .insights-page,
+[data-theme="tryvia-cyan"] #insightsContainer,
+[data-theme="tryvia-cyan"] .insights-container {
+  background: #f5f7fa !important;
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .insights-header {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+[data-theme="tryvia-cyan"] .insights-header h1,
+[data-theme="tryvia-cyan"] .insights-title {
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .insights-section,
+[data-theme="tryvia-cyan"] .ai-section {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 1.5rem !important;
+  margin-bottom: 1rem !important;
+}
+
+[data-theme="tryvia-cyan"] .insights-section h2,
+[data-theme="tryvia-cyan"] .insights-section h3,
+[data-theme="tryvia-cyan"] .section-title {
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .insights-section p,
+[data-theme="tryvia-cyan"] .insights-section span,
+[data-theme="tryvia-cyan"] .insights-section div {
+  color: #475569 !important;
+}
+
+/* Insights Cards */
+[data-theme="tryvia-cyan"] .insights-card,
+[data-theme="tryvia-cyan"] .recommendation-card,
+[data-theme="tryvia-cyan"] .pattern-card,
+[data-theme="tryvia-cyan"] .trend-card {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+/* AI Status Banner */
+[data-theme="tryvia-cyan"] .ai-status-banner {
+  background: #f0f9ff !important;
+  border: 1px solid #00e4ff !important;
+  color: #0369a1 !important;
+}
+
+[data-theme="tryvia-cyan"] .ai-status-banner.ready {
+  background: #f0fdf4 !important;
+  border-color: #10b981 !important;
+  color: #047857 !important;
+}
+
+/* Insights Buttons */
+[data-theme="tryvia-cyan"] .insights-btn {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .insights-btn.primary {
+  background: linear-gradient(135deg, #00e4ff, #0099cc) !important;
+  border: none !important;
+  color: #0c4a6e !important;
+}
+
+[data-theme="tryvia-cyan"] .insights-btn.ai {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1) !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+/* Tendências section */
+[data-theme="tryvia-cyan"] .trend-item,
+[data-theme="tryvia-cyan"] [class*="trend"] {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+/* Sentiment Cards */
+[data-theme="tryvia-cyan"] .sentiment-card {
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="tryvia-cyan"] .sentiment-card.negative {
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+[data-theme="tryvia-cyan"] .sentiment-card.neutral {
+  background: rgba(245, 158, 11, 0.1) !important;
+}
+
+[data-theme="tryvia-cyan"] .sentiment-card.positive {
+  background: rgba(16, 185, 129, 0.1) !important;
+}
+
+/* === Presentation Mode - Data Range Fix (Tema Cyan) === */
+[data-theme="tryvia-cyan"] .pres-date-range,
+[data-theme="tryvia-cyan"] .pres-date-input,
+[data-theme="tryvia-cyan"] .pres-sidebar input[type="date"],
+[data-theme="tryvia-cyan"] input[type="date"] {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="tryvia-cyan"] .pres-date-range span {
+  color: #475569 !important;
+}
+
+/* Fix para elementos com fundo hsl escuro no tema cyan */
+[data-theme="tryvia-cyan"] [style*="hsl(215"]:not(.sidebar):not(#sidebar):not(.pessoa-selector-container) {
+  background: #ffffff !important;
+  color: #1e293b !important;
+}
+
+/* === CSAT Bars - Garantir visibilidade em ambos os temas === */
+/* Adicionar borda sutil às barras para melhor visibilidade */
+.csat-bar-container > div:not(.csat-tooltip) {
+  min-width: 8px !important;
+}
+
+/* Tema Dark - Garantir que barras vermelhas sejam visíveis */
+[data-theme="dark"] .bi-csat-section,
+[data-theme="dark"] .bi-time-section {
+  background: transparent !important;
+}
+
+/* Força cores das barras CSAT no tema dark */
+[data-theme="dark"] [style*="background: #ef4444"],
+[data-theme="dark"] [style*="background:#ef4444"] {
+  background: #ef4444 !important;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4) !important;
+}
+
+[data-theme="dark"] [style*="background: #10b981"],
+[data-theme="dark"] [style*="background:#10b981"] {
+  background: #10b981 !important;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4) !important;
+}
+
+[data-theme="dark"] [style*="background: #f59e0b"],
+[data-theme="dark"] [style*="background:#f59e0b"] {
+  background: #f59e0b !important;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4) !important;
+}
+
+/* === Loading States === */
+[data-theme="tryvia-cyan"] .insights-loading,
+[data-theme="tryvia-cyan"] .loading-spinner {
+  color: #475569 !important;
+}
+
+[data-theme="tryvia-cyan"] .loading-spinner {
+  border-color: #e2e8f0 !important;
+  border-top-color: #00e4ff !important;
+}
+
+/* === Word Cloud e análises === */
+[data-theme="tryvia-cyan"] .word-cloud,
+[data-theme="tryvia-cyan"] .frequent-problems,
+[data-theme="tryvia-cyan"] .similar-tickets {
+  background: #ffffff !important;
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .word-item,
+[data-theme="tryvia-cyan"] .problem-item {
+  background: #f0f9ff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0369a1 !important;
+}
+
+/* === Resumo Geral Cards === */
+[data-theme="tryvia-cyan"] .summary-card,
+[data-theme="tryvia-cyan"] .summary-grid > div {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="tryvia-cyan"] .summary-value {
+  color: #1e293b !important;
+}
+
+[data-theme="tryvia-cyan"] .summary-label {
+  color: #64748b !important;
+}

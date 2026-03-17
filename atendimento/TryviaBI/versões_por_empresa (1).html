@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise de Versões por Empresa de Transporte</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f9fafb;
+            color: #374151;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .title {
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 24px;
+            color: #1f2937;
+        }
+        
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .btn-active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        
+        .btn-inactive {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+        
+        .btn-inactive:hover {
+            background-color: #d1d5db;
+        }
+        
+        .chart-container {
+            height: 400px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 32px;
+        }
+        
+        .stat-card {
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-card.blue { background-color: #dbeafe; }
+        .stat-card.green { background-color: #d1fae5; }
+        .stat-card.yellow { background-color: #fef3c7; }
+        .stat-card.purple { background-color: #e9d5ff; }
+        
+        .stat-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .company-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        
+        .company-btn {
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #f9fafb;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .company-btn:hover {
+            background: #e5e7eb;
+        }
+        
+        .company-btn.selected {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-top: 32px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #d1d5db;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #d1d5db;
+        }
+        
+        th {
+            background-color: #f9fafb;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        
+        .detail-section {
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+        
+        .detail-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        @media (max-width: 768px) {
+            .detail-charts {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .subtitle {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        
+        .no-selection {
+            text-align: center;
+            color: #6b7280;
+            padding: 32px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 class="title">Análise Detalhada de Versões por Empresa</h1>
+            
+            <div class="button-group">
+                <button class="btn btn-active" onclick="changeView('versions')" id="btn-versions">
+                    Distribuição de Versões
+                </button>
+                <button class="btn btn-inactive" onclick="changeView('companies')" id="btn-companies">
+                    Empresas por Dispositivos
+                </button>
+                <button class="btn btn-inactive" onclick="changeView('details')" id="btn-details">
+                    Detalhes por Empresa
+                </button>
+            </div>
+
+            <!-- Gráfico de Versões -->
+            <div id="versions-view">
+                <h3 class="subtitle">Distribuição Global de Versões</h3>
+                <div class="chart-container">
+                    <canvas id="versionsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfico de Empresas -->
+            <div id="companies-view" class="hidden">
+                <h3 class="subtitle">Empresas por Total de Dispositivos</h3>
+                <div class="chart-container">
+                    <canvas id="companiesChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Detalhes por Empresa -->
+            <div id="details-view" class="hidden">
+                <h3 class="subtitle">Selecione uma empresa para ver detalhes:</h3>
+                <div class="company-grid" id="companyGrid">
+                    <!-- Preenchido via JavaScript -->
+                </div>
+                
+                <div id="company-details" class="hidden detail-section">
+                    <h4 id="company-title" class="subtitle"></h4>
+                    
+                    <div class="detail-charts">
+                        <div class="chart-container">
+                            <canvas id="companyBarChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="companyPieChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="companyTable">
+                            <thead>
+                                <tr>
+                                    <th>Versão</th>
+                                    <th style="text-align: center;">Dispositivos</th>
+                                    <th style="text-align: center;">% da Empresa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="companyTableBody">
+                                <!-- Preenchido via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+                        <div class="stat-card blue">
+                            <div class="stat-title">Total de Dispositivos</div>
+                            <div class="stat-value" id="company-total-devices">0</div>
+                        </div>
+                        <div class="stat-card green">
+                            <div class="stat-title">Versões Diferentes</div>
+                            <div class="stat-value" id="company-versions-count">0</div>
+                        </div>
+                        <div class="stat-card yellow">
+                            <div class="stat-title">Versão Principal</div>
+                            <div class="stat-value" id="company-main-version">-</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="no-company-selected" class="no-selection">
+                    Clique em uma empresa acima para ver o detalhamento das versões em formato gráfico
+                </div>
+            </div>
+
+            <!-- Tabela Top 10 Versões -->
+            <div class="table-container">
+                <h3 class="subtitle">Top 10 Versões Mais Utilizadas</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Versão</th>
+                            <th style="text-align: center;">Dispositivos</th>
+                            <th style="text-align: center;">% do Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topVersionsTable">
+                        <!-- Preenchido via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Estatísticas Resumidas -->
+            <div class="stats-grid">
+                <div class="stat-card blue">
+                    <div class="stat-title">Total de Empresas</div>
+                    <div class="stat-value" id="total-companies">0</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-title">Total de Dispositivos</div>
+                    <div class="stat-value" id="total-devices">0</div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="stat-title">Versões Diferentes</div>
+                    <div class="stat-value" id="total-versions">0</div>
+                </div>
+                <div class="stat-card purple">
+                    <div class="stat-title">Versão Mais Usada</div>
+                    <div class="stat-value" id="most-used-version">-</div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 24px; font-size: 14px; color: #6b7280;">
+                <p>Dados extraídos do documento "quantidade de versoes por empresa.pdf"</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados completos de todas as empresas
+        const companiesData = [
+            {
+                name: 'ANDORINHA',
+                totalDevices: 110,
+                versions: [
+                    { version: 'v1', count: 4 },
+                    { version: 'v1.1.2', count: 2 },
+                    { version: 'v1.1.3', count: 1 },
+                    { version: 'v2.6', count: 85 },
+                    { version: 'v4.1.1', count: 1 },
+                    { version: 'v4.2.7', count: 16 },
+                    { version: 'v4.2.8 ab PROD', count: 1 }
+                ]
+            },
+            {
+                name: 'UNIÃO',
+                totalDevices: 16,
+                versions: [
+                    { version: 'v1.1.6', count: 1 },
+                    { version: 'v4.0.7', count: 1 },
+                    { version: 'v4.1.1', count: 9 },
+                    { version: 'v4.2.7', count: 5 }
+                ]
+            },
+            {
+                name: 'UNIÃO SANTA CRUZ',
+                totalDevices: 45,
+                versions: [
+                    { version: 'v4.2.7', count: 38 },
+                    { version: 'v2.6 Pulsos Prod', count: 7 }
+                ]
+            },
+            {
+                name: 'PLANALTO',
+                totalDevices: 82,
+                versions: [
+                    { version: 'v1', count: 6 },
+                    { version: 'v1.1.1', count: 1 },
+                    { version: 'v1.1.2', count: 3 },
+                    { version: 'v1.1.3', count: 3 },
+                    { version: 'v4.1.1', count: 7 },
+                    { version: 'v4.2.2', count: 1 },
+                    { version: 'v4.2.7', count: 19 },
+                    { version: 'v4.2.8', count: 1 },
+                    { version: 'v2.4 Pulsos Prod', count: 3 },
+                    { version: 'v2.6 Pulsos Prod', count: 39 }
+                ]
+            },
+            {
+                name: 'JBL TURISMO',
+                totalDevices: 16,
+                versions: [
+                    { version: 'v4.2.7.v PROD', count: 15 },
+                    { version: 'v4.1.1', count: 1 }
+                ]
+            },
+            {
+                name: 'VIAÇÃO CRUZEIRO',
+                totalDevices: 1,
+                versions: [
+                    { version: 'v3.0 Pulsos PROD', count: 1 }
+                ]
+            },
+            {
+                name: 'VIAÇÃO PROGRESSO',
+                totalDevices: 67,
+                versions: [
+                    { version: 'v3.2.4', count: 1 },
+                    { version: 'v3.2.9', count: 1 },
+                    { version: 'v4.0.7', count: 1 },
+                    { version: 'v4.1.1', count: 54 },
+                    { version: 'v4.1.6', count: 9 },
+                    { version: 'v4.1.8', count: 1 }
+                ]
+            },
+            {
+                name: 'SAMPAIO',
+                totalDevices: 46,
+                versions: [
+                    { version: 'v1.1.6', count: 1 },
+                    { version: 'v1 p PROD', count: 2 },
+                    { version: 'v2.4', count: 1 },
+                    { version: 'v2.6', count: 40 },
+                    { version: 'v4.2.8', count: 2 }
+                ]
+            },
+            {
+                name: 'REAL EXPRESSO',
+                totalDevices: 132,
+                versions: [
+                    { version: 'v1.1.6', count: 5 },
+                    { version: 'v1 p PROD', count: 3 },
+                    { version: 'v2.6', count: 114 },
+                    { version: 'v4.2.7', count: 1 },
+                    { version: 'v4.2.8', count: 9 }
+                ]
+            },
+            {
+                name: 'RAPIDO FEDERAL',
+                totalDevices: 101,
+                versions: [
+                    { version: 'v1.1.6', count: 1 },
+                    { version: 'v1 p PROD', count: 5 },
+                    { version: 'v2.6', count: 87 },
+                    { version: 'v4.2.8', count: 8 }
+                ]
+            },
+            {
+                name: 'EXPRESSO GUANABARA',
+                totalDevices: 327,
+                versions: [
+                    { version: 'v1', count: 17 },
+                    { version: 'v2.6', count: 298 },
+                    { version: 'v4.1.1', count: 7 },
+                    { version: 'v4.2.8', count: 5 }
+                ]
+            },
+            {
+                name: 'BRISA',
+                totalDevices: 17,
+                versions: [
+                    { version: 'v1 p PROD', count: 3 },
+                    { version: 'v2.6 Pulsos Prod', count: 12 },
+                    { version: 'v4.2.8', count: 2 }
+                ]
+            },
+            {
+                name: 'UTIL',
+                totalDevices: 139,
+                versions: [
+                    { version: 'v1.1.6', count: 2 },
+                    { version: 'v1 p PROD', count: 1 },
+                    { version: 'v2.6', count: 125 },
+                    { version: 'v3.1', count: 2 },
+                    { version: 'v4.2.8', count: 9 }
+                ]
+            },
+            {
+                name: 'VIACAO MOTTA',
+                totalDevices: 102,
+                versions: [
+                    { version: 'v1', count: 6 },
+                    { version: 'v1.1.2', count: 6 },
+                    { version: 'v1.1.3', count: 3 },
+                    { version: 'v2.6 Pulsos Prod', count: 78 },
+                    { version: 'v4.2.7', count: 9 }
+                ]
+            },
+            {
+                name: 'REUNIDAS TRANSPORTES',
+                totalDevices: 74,
+                versions: [
+                    { version: 'v1.1.2', count: 27 },
+                    { version: 'v1.1.1', count: 7 },
+                    { version: 'v1.1.3', count: 26 },
+                    { version: 'v4.1.1', count: 6 },
+                    { version: 'v4.2.7', count: 8 }
+                ]
+            },
+            {
+                name: 'VIOP',
+                totalDevices: 254,
+                versions: [
+                    { version: 'v3.1 Pulsos PROD', count: 14 },
+                    { version: 'v2.6 Pulsos Prod', count: 102 },
+                    { version: 'v4.1.1', count: 15 },
+                    { version: 'v4.2.8 h PROD', count: 43 },
+                    { version: 'v1', count: 10 },
+                    { version: 'v1.1.2', count: 7 },
+                    { version: 'v1.1.3', count: 7 },
+                    { version: 'v1.1.6', count: 4 },
+                    { version: 'v1.7', count: 1 },
+                    { version: 'v4.2.2', count: 2 },
+                    { version: 'v4.2.7', count: 6 },
+                    { version: 'v4.2.8', count: 43 }
+                ]
+            },
+            {
+                name: 'UNESUL',
+                totalDevices: 122,
+                versions: [
+                    { version: 'v1', count: 2 },
+                    { version: 'v1.1.3', count: 2 },
+                    { version: 'v1.7', count: 6 },
+                    { version: 'v4.2.7', count: 19 },
+                    { version: 'v3.1 Pulsos PROD', count: 10 },
+                    { version: 'v4.1.1', count: 57 },
+                    { version: 'v2.6 Pulsos Prod', count: 21 },
+                    { version: 'v4.2.8 h PROD', count: 5 }
+                ]
+            },
+            {
+                name: 'PRINCESA DOS CAMPOS',
+                totalDevices: 18,
+                versions: [
+                    { version: 'v4.2.7', count: 3 },
+                    { version: 'v2.6 Pulsos Prod', count: 11 },
+                    { version: 'v3.1', count: 2 },
+                    { version: 'v4.1.1', count: 1 },
+                    { version: 'v4.2.0', count: 1 }
+                ]
+            },
+            {
+                name: 'CANTELLE',
+                totalDevices: 15,
+                versions: [
+                    { version: 'v2.6 Pulsos Prod', count: 13 },
+                    { version: 'v1', count: 1 },
+                    { version: 'v4.2.7', count: 1 }
+                ]
+            },
+            {
+                name: 'TTL',
+                totalDevices: 16,
+                versions: [
+                    { version: 'v3.1 Pulsos PROD', count: 2 },
+                    { version: 'v2.6', count: 1 },
+                    { version: 'v4.1.1', count: 1 },
+                    { version: 'v4.2.0', count: 1 },
+                    { version: 'v4.2.7', count: 11 }
+                ]
+            },
+            {
+                name: 'SUZANTUR',
+                totalDevices: 240,
+                versions: [
+                    { version: 'v1.1.2', count: 2 },
+                    { version: 'v1', count: 6 },
+                    { version: 'v2.6 Pulsos Prod', count: 181 },
+                    { version: 'v4.1.1', count: 1 },
+                    { version: 'v4.2.7', count: 44 }
+                ]
+            },
+            {
+                name: 'EXPRESSO SÃO JOSÉ',
+                totalDevices: 11,
+                versions: [
+                    { version: 'v1.1.3', count: 1 },
+                    { version: 'v2.6', count: 3 },
+                    { version: 'v3.1 Pulsos PROD', count: 6 },
+                    { version: 'v4.2.7', count: 1 }
+                ]
+            },
+            {
+                name: 'LIDERANÇA TURISMO',
+                totalDevices: 43,
+                versions: [
+                    { version: 'v7.7', count: 42 },
+                    { version: 'v4.2.7', count: 1 }
+                ]
+            },
+            {
+                name: 'EMTRAM',
+                totalDevices: 151,
+                versions: [
+                    { version: 'v1', count: 14 },
+                    { version: 'v1.1.1', count: 7 },
+                    { version: 'v1.1.2', count: 25 },
+                    { version: 'v1.1.3', count: 3 },
+                    { version: 'v2.6', count: 95 },
+                    { version: 'v4.2.7', count: 7 }
+                ]
+            },
+            {
+                name: 'PÁSSARO VERDE',
+                totalDevices: 9,
+                versions: [
+                    { version: 'v2.6 Pulsos Prod', count: 9 }
+                ]
+            },
+            {
+                name: 'BRASIL BUS',
+                totalDevices: 14,
+                versions: [
+                    { version: 'v4.2.7', count: 13 },
+                    { version: 'v7.7', count: 1 }
+                ]
+            },
+            {
+                name: 'EVOLUÇÃO TRANSPORTES',
+                totalDevices: 4,
+                versions: [
+                    { version: 'v2.6 Pulsos Prod', count: 2 },
+                    { version: 'v1', count: 2 }
+                ]
+            },
+            {
+                name: 'RIODOCE',
+                totalDevices: 126,
+                versions: [
+                    { version: 'v1.1.2', count: 1 },
+                    { version: 'v1.1.3', count: 4 },
+                    { version: 'v1.1.6', count: 1 },
+                    { version: 'v1.7', count: 2 },
+                    { version: 'v2.8 Pulsos PROD', count: 2 },
+                    { version: 'v2.6 Pulsos Prod', count: 107 },
+                    { version: 'v4.2.7', count: 9 }
+                ]
+            },
+            {
+                name: 'BOA ESPERANÇA',
+                totalDevices: 39,
+                versions: [
+                    { version: 'v1 p PROD', count: 37 },
+                    { version: 'v4.2.7', count: 2 }
+                ]
+            },
+            {
+                name: 'REUNIDAS PAULISTA',
+                totalDevices: 74,
+                versions: [
+                    { version: 'v1', count: 1 },
+                    { version: 'v1.1.3', count: 1 },
+                    { version: 'v3.1 Pulsos PROD', count: 34 },
+                    { version: 'v4.2.7', count: 38 }
+                ]
+            },
+            {
+                name: 'CIDADE SOL',
+                totalDevices: 4,
+                versions: [
+                    { version: 'v1.1.3', count: 1 },
+                    { version: 'v1.1.6', count: 2 },
+                    { version: 'v2.6', count: 1 }
+                ]
+            },
+            {
+                name: 'ROTA TRANSPORTES',
+                totalDevices: 57,
+                versions: [
+                    { version: 'v2.6 Pulsos Prod', count: 43 },
+                    { version: 'v1.1.6', count: 3 },
+                    { version: 'v1', count: 8 },
+                    { version: 'v1.1.2', count: 1 },
+                    { version: 'v1.1.3', count: 1 },
+                    { version: 'v3.1', count: 1 }
+                ]
+            },
+            {
+                name: 'EVT TRANSPORTES',
+                totalDevices: 10,
+                versions: [
+                    { version: 'v1 n PROD', count: 4 },
+                    { version: 'v1.1.2', count: 2 },
+                    { version: 'v1.1.3', count: 3 },
+                    { version: 'v4.2.7', count: 1 }
+                ]
+            },
+            {
+                name: 'AUTO VIAÇÃO ARCA',
+                totalDevices: 17,
+                versions: [
+                    { version: 'v1 p PROD', count: 9 },
+                    { version: 'v3.1 Pulsos PROD', count: 6 },
+                    { version: 'v4.2.7', count: 2 }
+                ]
+            },
+            {
+                name: 'EXPRESSO PENHA',
+                totalDevices: 5,
+                versions: [
+                    { version: 'v3.1 Pulsos PROD', count: 3 },
+                    { version: 'v1 n PROD', count: 2 }
+                ]
+            },
+            {
+                name: 'ULTRA TRANSPORTES',
+                totalDevices: 5,
+                versions: [
+                    { version: 'v3.1 Pulsos PROD', count: 5 }
+                ]
+            },
+            {
+                name: 'VIAÇÃO CATARINA',
+                totalDevices: 2,
+                versions: [
+                    { version: 'v3.0 Pulsos PROD', count: 1 },
+                    { version: 'v4.2.7', count: 1 }
+                ]
+            },
+            {
+                name: 'RIO URUGUAI',
+                totalDevices: 2,
+                versions: [
+                    { version: 'v3.1 Pulsos PROD', count: 2 }
+                ]
+            }
+        ];
+
+        let currentView = 'versions';
+        let selectedCompany = null;
+        let charts = {};
+
+        // Função para trocar visualizações
+        function changeView(view) {
+            // Atualizar botões
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.className = 'btn btn-inactive';
+            });
+            document.getElementById(`btn-${view}`).className = 'btn btn-active';
+
+            // Esconder todas as views
+            document.getElementById('versions-view').classList.add('hidden');
+            document.getElementById('companies-view').classList.add('hidden');
+            document.getElementById('details-view').classList.add('hidden');
+
+            // Mostrar view selecionada
+            document.getElementById(`${view}-view`).classList.remove('hidden');
+
+            currentView = view;
+
+            // Renderizar gráfico apropriado
+            if (view === 'versions') {
+                renderVersionsChart();
+            } else if (view === 'companies') {
+                renderCompaniesChart();
+            } else if (view === 'details') {
+                renderCompanyGrid();
+            }
+        }
+
+        // Função para calcular distribuição de versões
+        function getVersionDistribution() {
+            const versionMap = {};
+            companiesData.forEach(company => {
+                company.versions.forEach(version => {
+                    if (!versionMap[version.version]) {
+                        versionMap[version.version] = 0;
+                    }
+                    versionMap[version.version] += version.count;
+                });
+            });
+            
+            return Object.entries(versionMap)
+                .map(([version, count]) => ({ version, count }))
+                .sort((a, b) => b.count - a.count);
+        }
+
+        // Gráfico de distribuição de versões
+        function renderVersionsChart() {
+            const ctx = document.getElementById('versionsChart').getContext('2d');
+            
+            if (charts.versions) {
+                charts.versions.destroy();
+            }
+
+            const versionDistribution = getVersionDistribution().slice(0, 15);
+            
+            charts.versions = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: versionDistribution.map(v => v.version),
+                    datasets: [{
+                        label: 'Número de Dispositivos',
+                        data: versionDistribution.map(v => v.count),
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#1e40af',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Gráfico de empresas por dispositivos
+        function renderCompaniesChart() {
+            const ctx = document.getElementById('companiesChart').getContext('2d');
+            
+            if (charts.companies) {
+                charts.companies.destroy();
+            }
+
+            const sortedCompanies = [...companiesData].sort((a, b) => b.totalDevices - a.totalDevices);
+            
+            charts.companies = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedCompanies.map(c => c.name),
+                    datasets: [{
+                        label: 'Total de Dispositivos',
+                        data: sortedCompanies.map(c => c.totalDevices),
+                        backgroundColor: '#10b981',
+                        borderColor: '#047857',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Renderizar grade de empresas
+        function renderCompanyGrid() {
+            const grid = document.getElementById('companyGrid');
+            grid.innerHTML = '';
+            
+            companiesData.forEach(company => {
+                const btn = document.createElement('button');
+                btn.className = 'company-btn';
+                btn.textContent = company.name;
+                btn.onclick = () => selectCompany(company);
+                grid.appendChild(btn);
+            });
+        }
+
+        // Selecionar empresa
+        function selectCompany(company) {
+            selectedCompany = company;
+            
+            // Atualizar botões
+            document.querySelectorAll('.company-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+
+            // Mostrar detalhes
+            document.getElementById('company-details').classList.remove('hidden');
+            document.getElementById('no-company-selected').classList.add('hidden');
+            
+            // Atualizar título
+            document.getElementById('company-title').textContent = `${company.name} - Distribuição de Versões`;
+            
+            // Renderizar gráficos da empresa
+            renderCompanyCharts(company);
+            
+            // Atualizar tabela
+            updateCompanyTable(company);
+            
+            // Atualizar estatísticas
+            updateCompanyStats(company);
+        }
+
+        // Gráficos da empresa
+        function renderCompanyCharts(company) {
+            // Gráfico de barras
+            const barCtx = document.getElementById('companyBarChart').getContext('2d');
+            if (charts.companyBar) charts.companyBar.destroy();
+            
+            const sortedVersions = [...company.versions].sort((a, b) => b.count - a.count);
+            
+            charts.companyBar = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: sortedVersions.map(v => v.version),
+                    datasets: [{
+                        label: 'Dispositivos',
+                        data: sortedVersions.map(v => v.count),
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#1e40af',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 0
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de pizza
+            const pieCtx = document.getElementById('companyPieChart').getContext('2d');
+            if (charts.companyPie) charts.companyPie.destroy();
+            
+            const colors = [
+                '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+                '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1'
+            ];
+            
+            charts.companyPie = new Chart(pieCtx, {
+                type: 'pie',
+                data: {
+                    labels: company.versions.map(v => v.version),
+                    datasets: [{
+                        data: company.versions.map(v => v.count),
+                        backgroundColor: colors.slice(0, company.versions.length),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Atualizar tabela da empresa
+        function updateCompanyTable(company) {
+            const tbody = document.getElementById('companyTableBody');
+            tbody.innerHTML = '';
+            
+            const sortedVersions = [...company.versions].sort((a, b) => b.count - a.count);
+            
+            sortedVersions.forEach((version, index) => {
+                const row = tbody.insertRow();
+                row.className = index % 2 === 0 ? '' : 'bg-gray-50';
+                
+                row.insertCell(0).textContent = version.version;
+                row.insertCell(1).textContent = version.count;
+                row.insertCell(1).style.textAlign = 'center';
+                row.insertCell(2).textContent = `${((version.count / company.totalDevices) * 100).toFixed(1)}%`;
+                row.insertCell(2).style.textAlign = 'center';
+            });
+        }
+
+        // Atualizar estatísticas da empresa
+        function updateCompanyStats(company) {
+            const mainVersion = [...company.versions].sort((a, b) => b.count - a.count)[0];
+            
+            document.getElementById('company-total-devices').textContent = company.totalDevices;
+            document.getElementById('company-versions-count').textContent = company.versions.length;
+            document.getElementById('company-main-version').textContent = mainVersion.version;
+        }
+
+        // Inicialização
+        function init() {
+            const versionDistribution = getVersionDistribution();
+            const totalDevices = companiesData.reduce((sum, c) => sum + c.totalDevices, 0);
+            
+            // Estatísticas globais
+            document.getElementById('total-companies').textContent = companiesData.length;
+            document.getElementById('total-devices').textContent = totalDevices;
+            document.getElementById('total-versions').textContent = versionDistribution.length;
+            document.getElementById('most-used-version').textContent = versionDistribution[0]?.version || '-';
+
+            // Tabela top 10 versões
+            const tbody = document.getElementById('topVersionsTable');
+            versionDistribution.slice(0, 10).forEach((version, index) => {
+                const row = tbody.insertRow();
+                row.className = index % 2 === 0 ? '' : 'bg-gray-50';
+                
+                row.insertCell(0).textContent = version.version;
+                row.insertCell(1).textContent = version.count;
+                row.insertCell(1).style.textAlign = 'center';
+                row.insertCell(2).textContent = `${((version.count / totalDevices) * 100).toFixed(1)}%`;
+                row.insertCell(2).style.textAlign = 'center';
+            });
+
+            // Renderizar gráfico inicial
+            renderVersionsChart();
+        }
+
+        // Inicializar quando a página carregar
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

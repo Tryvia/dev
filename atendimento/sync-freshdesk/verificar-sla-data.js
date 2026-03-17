@@ -8,65 +8,35 @@ const supabaseHeaders = {
     'Content-Type': 'application/json'
 };
 
-async function verificarDadosSLA() {
-    console.log('\n🔍 VERIFICAÇÃO DE DADOS DE SLA\n');
+async function verificarGrupos() {
+    console.log('\n🔍 VERIFICAÇÃO DE GRUPOS/TIMES NO SUPABASE\n');
     console.log('='.repeat(60));
 
-    // Últimos 30 dias
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    // Total de tickets nos últimos 30 dias
-    const url = `${SUPABASE_URL}/rest/v1/tickets?select=id,created_at,stats_first_responded_at,stats_resolved_at,status&created_at=gte.${thirtyDaysAgo.toISOString()}&order=created_at.desc&limit=1000`;
+    // Verificar tabela groups
+    const urlGroups = `${SUPABASE_URL}/rest/v1/groups?select=id,name&limit=50`;
+    const respGroups = await fetch(urlGroups, { headers: supabaseHeaders });
     
-    const response = await fetch(url, { headers: supabaseHeaders });
-    if (!response.ok) {
-        console.error('Erro:', response.statusText);
-        return;
-    }
-    
-    const recentTickets = await response.json();
-
-    const total = recentTickets.length;
-    const comFirstResponse = recentTickets.filter(t => t.stats_first_responded_at).length;
-    const semFirstResponse = total - comFirstResponse;
-    const comResolved = recentTickets.filter(t => t.stats_resolved_at).length;
-
-    console.log(`\n📊 Tickets dos ultimos 30 dias: ${total}`);
-    console.log(`   ✓ Com stats_first_responded_at: ${comFirstResponse} (${total > 0 ? ((comFirstResponse/total)*100).toFixed(1) : 0}%)`);
-    console.log(`   ✗ Sem stats_first_responded_at: ${semFirstResponse} (${total > 0 ? ((semFirstResponse/total)*100).toFixed(1) : 0}%)`);
-    console.log(`   📋 Com stats_resolved_at: ${comResolved}`);
-
-    // Amostra de tickets sem first_response
-    const amostraSem = recentTickets.filter(t => !t.stats_first_responded_at).slice(0, 5);
-    console.log('\n📝 Amostra de tickets SEM first_responded_at:');
-    amostraSem.forEach(t => {
-        console.log(`   #${t.id} - Status: ${t.status} - Criado: ${t.created_at?.split('T')[0]}`);
-    });
-
-    // Amostra de tickets com first_response
-    const amostraCom = recentTickets.filter(t => t.stats_first_responded_at).slice(0, 5);
-    console.log('\n📝 Amostra de tickets COM first_responded_at:');
-    if (amostraCom.length === 0) {
-        console.log('   Nenhum ticket encontrado com esse campo!');
+    if (!respGroups.ok) {
+        console.log('❌ Tabela "groups" nao existe ou erro:', respGroups.status);
     } else {
-        amostraCom.forEach(t => {
-            console.log(`   #${t.id} - First Response: ${t.stats_first_responded_at?.split('T')[0]}`);
-        });
+        const groups = await respGroups.json();
+        console.log(`\n📊 Grupos na tabela "groups": ${groups.length}`);
+        groups.forEach(g => console.log(`   ${g.id} => ${g.name}`));
     }
 
+    // Verificar group_id nos tickets
+    const urlTickets = `${SUPABASE_URL}/rest/v1/tickets?select=group_id&limit=1000`;
+    const respTickets = await fetch(urlTickets, { headers: supabaseHeaders });
+    const tickets = await respTickets.json();
+    
+    const groupIds = new Set();
+    tickets.forEach(t => { if (t.group_id) groupIds.add(t.group_id); });
+    
+    console.log(`\n📊 Group IDs unicos nos tickets: ${groupIds.size}`);
+    groupIds.forEach(id => console.log(`   ${id}`));
+    
     console.log('\n' + '='.repeat(60));
-    
-    if (comFirstResponse === 0) {
-        console.log('⚠️  PROBLEMA: Nenhum ticket tem dados de SLA!');
-        console.log('   Isso explica porque o grafico Tendencia SLA esta vazio.');
-        console.log('\n💡 Solucao: Executar sincronizacao para atualizar campo stats');
-    } else if (comFirstResponse < total * 0.5) {
-        console.log('⚠️  ALERTA: Menos de 50% dos tickets tem dados de SLA.');
-    } else {
-        console.log('✓ Dados de SLA parecem OK!');
-    }
     console.log('');
 }
 
-verificarDadosSLA().catch(console.error);
+verificarGrupos().catch(console.error);

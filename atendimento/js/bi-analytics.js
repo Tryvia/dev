@@ -17,6 +17,126 @@ window._biExpandState = {
     chartId: null
 };
 
+/**
+ * Mostra lista de tickets filtrados por status no modal expandido
+ * @param {string} status - Status simplificado (Resolvido, Aberto, Pendente, etc.)
+ * @param {string} color - Cor do status
+ * @param {Object} bi - Instância do biAnalytics
+ */
+window.showTicketsListByStatus = function(status, color, bi) {
+    // Filtrar tickets pelo status
+    const tickets = bi.filteredData.filter(ticket => {
+        if (window.FRESHDESK_STATUS) {
+            const cat = window.FRESHDESK_STATUS.getSimplifiedCategory(ticket.status);
+            return cat === status;
+        } else {
+            if (status === 'Resolvido') return ticket.status === 4 || ticket.status === 5;
+            if (status === 'Aberto') return ticket.status === 2;
+            if (status === 'Pendente') return ticket.status === 3 || ticket.status === 17;
+            if (status === 'Aguardando') return ticket.status === 7 || ticket.status === 16;
+            return true; // Em Progresso - outros
+        }
+    });
+
+    // Criar painel de lista dentro do modal existente
+    const modalContent = document.querySelector('#chartExpandModal > div');
+    if (!modalContent) return;
+
+    // Verificar se já existe painel de tickets
+    let ticketsPanel = document.getElementById('expandedTicketsPanel');
+    if (ticketsPanel) {
+        ticketsPanel.remove();
+    }
+
+    // Criar novo painel
+    ticketsPanel = document.createElement('div');
+    ticketsPanel.id = 'expandedTicketsPanel';
+    ticketsPanel.style.cssText = `
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 420px;
+        height: 100%;
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border-left: 1px solid rgba(255,255,255,0.1);
+        display: flex;
+        flex-direction: column;
+        animation: slideInRight 0.3s ease;
+        z-index: 10;
+    `;
+
+    // Adicionar animação se não existir
+    if (!document.getElementById('ticketsPanelStyles')) {
+        const style = document.createElement('style');
+        style.id = 'ticketsPanelStyles';
+        style.textContent = `
+            @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            .ticket-row:hover { background: rgba(102,126,234,0.15) !important; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    const priorityColors = { 1: '#10b981', 2: '#3b82f6', 3: '#f59e0b', 4: '#ef4444' };
+    const priorityNames = { 1: 'Baixa', 2: 'Média', 3: 'Alta', 4: 'Urgente' };
+    const freshdeskDomain = 'novaabordarh';
+
+    ticketsPanel.innerHTML = `
+        <div style="padding: 1rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="margin: 0; color: white; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+                    <span style="width: 12px; height: 12px; border-radius: 3px; background: ${color};"></span>
+                    Tickets: ${status}
+                </h3>
+                <p style="margin: 4px 0 0; color: #94a3b8; font-size: 0.8rem;">${tickets.length} ticket${tickets.length !== 1 ? 's' : ''}</p>
+            </div>
+            <button onclick="document.getElementById('expandedTicketsPanel').remove()" style="
+                background: rgba(255,255,255,0.1); border: none; color: #94a3b8;
+                width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 1rem;
+            ">✕</button>
+        </div>
+        <div style="flex: 1; overflow-y: auto; padding: 0.5rem;">
+            ${tickets.length === 0 ? `
+                <div style="text-align: center; padding: 2rem; color: #64748b;">
+                    Nenhum ticket encontrado
+                </div>
+            ` : tickets.slice(0, 100).map(t => `
+                <div class="ticket-row" onclick="window.open('https://${freshdeskDomain}.freshdesk.com/a/tickets/${t.id}', '_blank')" style="
+                    padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(255,255,255,0.03);
+                    border-radius: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,0.05);
+                    transition: all 0.2s;
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="color: #667eea; font-size: 0.75rem; margin-bottom: 2px;">#${t.id}</div>
+                            <div style="color: #e2e8f0; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ${(t.subject || 'Sem assunto').substring(0, 50)}${(t.subject || '').length > 50 ? '...' : ''}
+                            </div>
+                        </div>
+                        <span style="
+                            background: ${priorityColors[t.priority] || '#64748b'}22;
+                            color: ${priorityColors[t.priority] || '#64748b'};
+                            padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 600;
+                            white-space: nowrap;
+                        ">${priorityNames[t.priority] || 'N/A'}</span>
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-top: 6px; font-size: 0.7rem; color: #64748b;">
+                        <span>👤 ${t.responder_name || t.agent_name || 'N/A'}</span>
+                        <span>📅 ${t.created_at ? new Date(t.created_at).toLocaleDateString('pt-BR') : 'N/A'}</span>
+                    </div>
+                </div>
+            `).join('')}
+            ${tickets.length > 100 ? `
+                <div style="text-align: center; padding: 1rem; color: #64748b; font-size: 0.8rem;">
+                    Mostrando 100 de ${tickets.length} tickets
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    modalContent.style.position = 'relative';
+    modalContent.appendChild(ticketsPanel);
+};
+
 window.expandChart = function (chartId, title) {
     // Buscar o canvas original
     const originalCanvas = document.getElementById(chartId);
@@ -942,7 +1062,7 @@ function renderExpandedStatus(ctx, width, height, metrics, colors, bi) {
         legendY += 55;
     });
 
-    // Configurar tooltip
+    // Configurar tooltip com callback de clique para mostrar tickets
     const canvas = document.getElementById('expandedChart');
     window.setupExpandedTooltip(canvas, regions, (d) => `
         <div style="display:flex; align-items:center; gap:8px;">
@@ -953,7 +1073,13 @@ function renderExpandedStatus(ctx, width, height, metrics, colors, bi) {
             <span style="font-size:1.3rem; font-weight:bold; color:${d.color};">${d.count.toLocaleString()}</span> tickets<br>
             <span style="color:#94a3b8;">${d.percent}% do total (${d.total.toLocaleString()})</span>
         </div>
-    `);
+        <div style="margin-top:8px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.1); color:#667eea; font-size:0.85rem;">
+            🖱️ Clique para ver tickets
+        </div>
+    `, (d) => {
+        // Callback de clique: mostrar lista de tickets desse status
+        window.showTicketsListByStatus(d.status, d.color, bi);
+    });
 }
 
 // Priority expandido em alta resolução (DONUT - mantém formato original)
@@ -3780,6 +3906,18 @@ class BIAnalytics {
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                     Acompanhamento
                 </button>
+                <button class="bi-tab ${this.currentView === 'consolidado' ? 'active' : ''}"
+                        onclick="window.biAnalytics.switchView('consolidado')"
+                        style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; border: none; border-bottom: 2px solid ${this.currentView === 'consolidado' ? '#10b981' : 'transparent'}; background: transparent; color: ${this.currentView === 'consolidado' ? '#e4e4e7' : '#71717a'}; cursor: pointer; font-size: 0.85rem; transition: all 0.15s; margin-bottom: -1px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    Consolidado
+                </button>
+                <button class="bi-tab ${this.currentView === 'matriz' ? 'active' : ''}"
+                        onclick="window.biAnalytics.switchView('matriz')"
+                        style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; border: none; border-bottom: 2px solid ${this.currentView === 'matriz' ? '#0ea5e9' : 'transparent'}; background: transparent; color: ${this.currentView === 'matriz' ? '#e4e4e7' : '#71717a'}; cursor: pointer; font-size: 0.85rem; transition: all 0.15s; margin-bottom: -1px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Matriz
+                </button>
             </div>
             
             ${this.currentView === 'produtividade' ? `
@@ -3806,6 +3944,22 @@ class BIAnalytics {
                     <div style="text-align: center; padding: 3rem; color: ${this.colors.textMuted};">
                         <div style="margin-bottom: 1rem;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></div>
                         <p style="font-size: 0.9rem;">Carregando dados de acompanhamento...</p>
+                    </div>
+                </div>
+            ` : this.currentView === 'consolidado' ? `
+                <!-- Consolidado Content - Cruzamento Tratativa + Tags -->
+                <div id="biConsolidadoContent" style="padding: 1rem;">
+                    <div style="text-align: center; padding: 3rem; color: ${this.colors.textMuted};">
+                        <div style="margin-bottom: 1rem;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></div>
+                        <p style="font-size: 0.9rem;">Carregando dados consolidados...</p>
+                    </div>
+                </div>
+            ` : this.currentView === 'matriz' ? `
+                <!-- Matriz de Produtividade -->
+                <div id="biProductivityMatrixContent" style="padding: 0;">
+                    <div style="text-align: center; padding: 3rem; color: ${this.colors.textMuted};">
+                        <div style="margin-bottom: 1rem;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></div>
+                        <p style="font-size: 0.9rem;">Carregando matriz de produtividade...</p>
                     </div>
                 </div>
             ` : `
@@ -4035,6 +4189,62 @@ class BIAnalytics {
                             </div>
                         `;
                     }
+                }
+            }, 100);
+        }
+
+        // Se é Consolidado, carregar dados do módulo
+        if (this.currentView === 'consolidado') {
+            setTimeout(() => {
+                const container = document.getElementById('biConsolidadoContent');
+                if (container && window.BIConsolidadoModule) {
+                    try {
+                        window.BIConsolidadoModule.render('biConsolidadoContent');
+                    } catch (error) {
+                        container.innerHTML = `
+                            <div style="text-align: center; padding: 3rem; color: #ef4444;">
+                                <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                                <p>Erro ao carregar dados consolidados</p>
+                                <p style="font-size: 0.85rem; color: #a1a1aa;">${error.message}</p>
+                            </div>
+                        `;
+                    }
+                } else if (container) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 3rem; color: #f59e0b;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                            <p>Módulo BIConsolidadoModule não encontrado</p>
+                            <p style="font-size: 0.85rem; color: #a1a1aa;">Verifique se o script bi-consolidado-module.js está carregado</p>
+                        </div>
+                    `;
+                }
+            }, 100);
+        }
+
+        // Se é Matriz, carregar dados do módulo
+        if (this.currentView === 'matriz') {
+            setTimeout(() => {
+                const container = document.getElementById('biProductivityMatrixContent');
+                if (container && window.BIProductivityMatrix) {
+                    try {
+                        window.BIProductivityMatrix.render('biProductivityMatrixContent');
+                    } catch (error) {
+                        container.innerHTML = `
+                            <div style="text-align: center; padding: 3rem; color: #ef4444;">
+                                <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                                <p>Erro ao carregar matriz de produtividade</p>
+                                <p style="font-size: 0.85rem; color: #a1a1aa;">${error.message}</p>
+                            </div>
+                        `;
+                    }
+                } else if (container) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 3rem; color: #f59e0b;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                            <p>Módulo BIProductivityMatrix não encontrado</p>
+                            <p style="font-size: 0.85rem; color: #a1a1aa;">Verifique se o script bi-productivity-matrix.js está carregado</p>
+                        </div>
+                    `;
                 }
             }, 100);
         }
