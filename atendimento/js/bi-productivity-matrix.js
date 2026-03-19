@@ -909,13 +909,15 @@ window.BIProductivityMatrix = {
                 people[pessoa][createdMonth].tickets++;
                 people[pessoa].acumulado.tickets++;
                 
-                // Verificar se pessoa está no acompanhamento
+                // Verificar se pessoa está no acompanhamento OU na tratativa (ambos contam como "acompanhado")
                 const estaNoAcomp = pessoasAcomp.includes(pessoa);
-                if (estaNoAcomp) {
+                const estaNaTrat = pessoasTrat.includes(pessoa);
+                
+                if (estaNoAcomp || estaNaTrat) {
                     people[pessoa][createdMonth].acompanhados++;
                     people[pessoa].acumulado.acompanhados++;
                     
-                    // Verificar se resolvido (baseado em acompanhamento)
+                    // Verificar se resolvido
                     const isResolved = ticket.status === 4 || ticket.status === 5;
                     if (isResolved) {
                         people[pessoa][createdMonth].resolvidos++;
