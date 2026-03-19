@@ -2155,8 +2155,10 @@ if (typeof BIAnalytics !== 'undefined') {
             <div style="display:flex;flex-direction:column;gap:4px;">
                 <strong>${d.name}</strong>
                 <div>${d.count.toLocaleString()} tickets em aberto (${d.percent}%)</div>
+                <div style="font-size:0.7rem;color:#a1a1aa;margin-top:2px;">Clique para ver tickets</div>
             </div>
-        `, (hit) => { if (this._lastMetrics) this.renderWorkloadChart(this._lastMetrics, hit ? hit.data.index : null); });
+        `, (hit) => { if (this._lastMetrics) this.renderWorkloadChart(this._lastMetrics, hit ? hit.data.index : null); },
+           (hit) => { if (hit && hit.data && hit.data.name) this.showWorkloadTickets(hit.data.name); });
         },
 
         renderComparativoMensalChart(metrics, hoverIndex = null) {

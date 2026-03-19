@@ -103,6 +103,10 @@ class PresentationModeV2 {
             // Tempo Registrado
             { id: 'chartTempoRegistrado', title: 'Tempo de Trabalho (Total)', icon: '⏰', type: 'chart', category: 'tempo' },
             { id: 'chartTempoAgente', title: 'Tempo de Trabalho por Agente', icon: '👤', type: 'chart', category: 'tempo' },
+            
+            // Matrizes BI
+            { id: 'matrizProdutividade', title: 'Matriz de Produtividade', icon: '📊', type: 'matrix', category: 'matriz' },
+            { id: 'matrizSLA', title: 'Matriz de SLA por Grupo', icon: '⏱️', type: 'matrix', category: 'matriz' },
         ];
 
         // Usar array ordenado em vez de Set para manter a ordem dos slides
@@ -301,6 +305,7 @@ class PresentationModeV2 {
             ${this.renderSlideCategoryPremium('pipeline', 'Pipeline', '#06b6d4')}
             ${this.renderSlideCategoryPremium('acompanhamento', 'Acompanhamento', '#f472b6')}
             ${this.renderSlideCategoryPremium('tempo', 'Tempo', '#14b8a6')}
+            ${this.renderSlideCategoryPremium('matriz', 'Matrizes BI', '#8b5cf6')}
             </div>
             
             <hr class="pres-divider">
@@ -538,6 +543,9 @@ class PresentationModeV2 {
     renderSlideContentPremium(slide) {
         if (slide.type === 'kpi') {
             return this.renderKPIPreviewPremium();
+        }
+        if (slide.type === 'matrix') {
+            return `<div id="preview-${slide.id}" class="pres-matrix-preview" style="font-size:0.6rem;overflow:auto;max-height:180px;"></div>`;
         }
         return `<canvas id="preview-${slide.id}" width="320" height="180" class="pres-chart-canvas"></canvas>`;
     }
@@ -1029,11 +1037,21 @@ class PresentationModeV2 {
 
     // ========== RENDER PREVIEW ==========
     renderPreview(slideId) {
-        const canvas = document.getElementById(`preview-${slideId}`);
-        if (!canvas) return;
+        const element = document.getElementById(`preview-${slideId}`);
+        if (!element) return;
         
         // SEMPRE atualizar cores antes de renderizar (garante tema correto)
         this.colors = this.getThemeColors();
+        
+        // Verificar se é um slide de matriz (usa div, não canvas)
+        const slide = this.availableSlides.find(s => s.id === slideId);
+        if (slide && slide.type === 'matrix') {
+            this.renderMatrixPreview(element, slideId);
+            return;
+        }
+        
+        // Para outros slides, usar canvas
+        const canvas = element;
         
         // DPI awareness para telas retina
         const dpr = window.devicePixelRatio || 1;
@@ -1062,6 +1080,50 @@ class PresentationModeV2 {
             return;
         }
         this.drawChart(ctx, w, h, slideId, data);
+    }
+    
+    renderMatrixPreview(container, slideId) {
+        if (!window.BIProductivityMatrix) {
+            container.innerHTML = '<div style="padding:10px;color:#888;text-align:center;">Carregando matriz...</div>';
+            return;
+        }
+        
+        // Usar dados filtrados (respeitando período e time selecionados)
+        let tickets = this.filteredData || [];
+        if (!tickets.length) {
+            container.innerHTML = '<div style="padding:10px;color:#888;text-align:center;">Sem dados</div>';
+            return;
+        }
+        
+        // Filtrar por time se um time específico estiver selecionado
+        if (this.selectedTeam && this.selectedTeam !== 'Todos os Times') {
+            tickets = tickets.filter(t => {
+                const grupo = t.cf_grupo_tratativa || t.group_name || '';
+                return grupo === this.selectedTeam;
+            });
+        }
+        
+        // Usar o ano do período selecionado (pegar do startDate)
+        const year = this.startDate ? new Date(this.startDate).getFullYear() : new Date().getFullYear();
+        
+        try {
+            if (slideId === 'matrizProdutividade') {
+                window.BIProductivityMatrix.matrixType = 'produtividade';
+                const data = window.BIProductivityMatrix.calculateMatrix(tickets, year);
+                container.innerHTML = window.BIProductivityMatrix.renderTable(data);
+            } else if (slideId === 'matrizSLA') {
+                const slaData = window.BIProductivityMatrix.calculateSLAMatrix(tickets, year);
+                container.innerHTML = window.BIProductivityMatrix.renderSLATable(slaData);
+            }
+            
+            // Ajustar estilo do preview
+            container.style.transform = 'scale(0.5)';
+            container.style.transformOrigin = 'top left';
+            container.style.width = '200%';
+        } catch (e) {
+            container.innerHTML = '<div style="padding:10px;color:#f88;text-align:center;">Erro ao carregar</div>';
+            console.error('Erro ao renderizar matriz preview:', e);
+        }
     }
 
     drawChart(ctx, w, h, slideId, data, isFullscreen = false) {
@@ -3776,6 +3838,54 @@ class PresentationModeV2 {
         if (content) {
             // Manter canvas de anotações
             const annotCanvas = document.getElementById('annotationCanvas');
+
+            // Verificar se é um slide de matriz
+            if (slide.type === 'matrix') {
+                content.innerHTML = `
+                    <canvas id="annotationCanvas" style="position:absolute;inset:0;z-index:10;pointer-events:${this.isDrawingMode ? 'auto' : 'none'};width:100%;height:100%;cursor:${this.isDrawingMode ? 'crosshair' : 'default'}"></canvas>
+                    <div style="width:100%;max-width:1400px;text-align:center;animation:slideIn 0.4s cubic-bezier(0.4,0,0.2,1)">
+                        <style>
+                            @keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+                        </style>
+                        <h2 style="font-size:2.5rem;margin-bottom:1.5rem;color:white">${slide.icon} ${slide.title}</h2>
+                        <div id="fsMatrixContainer" style="background:${this.colors.surface};border-radius:16px;padding:1.5rem;min-height:400px;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:70vh;"></div>
+                        <div style="margin-top:1rem;color:${this.colors.textMuted};font-size:0.9rem;">
+                            <span>${this.filteredData.length.toLocaleString()} tickets</span>
+                        </div>
+                    </div>`;
+
+                // Re-setup anotações
+                this.setupAnnotationCanvas();
+                this.drawAnnotations();
+
+                // Renderizar matriz
+                setTimeout(() => {
+                    const matrixContainer = document.getElementById('fsMatrixContainer');
+                    if (matrixContainer && window.BIProductivityMatrix) {
+                        // Usar o ano do período selecionado
+                        const year = this.startDate ? new Date(this.startDate).getFullYear() : new Date().getFullYear();
+                        
+                        // Usar dados filtrados e aplicar filtro de time se necessário
+                        let tickets = this.filteredData || [];
+                        if (this.selectedTeam && this.selectedTeam !== 'Todos os Times') {
+                            tickets = tickets.filter(t => {
+                                const grupo = t.cf_grupo_tratativa || t.group_name || '';
+                                return grupo === this.selectedTeam;
+                            });
+                        }
+                        
+                        if (slide.id === 'matrizProdutividade') {
+                            window.BIProductivityMatrix.matrixType = 'produtividade';
+                            const data = window.BIProductivityMatrix.calculateMatrix(tickets, year);
+                            matrixContainer.innerHTML = window.BIProductivityMatrix.renderTable(data);
+                        } else if (slide.id === 'matrizSLA') {
+                            const slaData = window.BIProductivityMatrix.calculateSLAMatrix(tickets, year);
+                            matrixContainer.innerHTML = window.BIProductivityMatrix.renderSLATable(slaData);
+                        }
+                    }
+                }, 100);
+                return;
+            }
 
             content.innerHTML = `
                 <canvas id="annotationCanvas" style="position:absolute;inset:0;z-index:10;pointer-events:${this.isDrawingMode ? 'auto' : 'none'};width:100%;height:100%;cursor:${this.isDrawingMode ? 'crosshair' : 'default'}"></canvas>

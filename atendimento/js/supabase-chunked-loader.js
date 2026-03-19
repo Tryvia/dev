@@ -127,7 +127,8 @@ class SupabaseChunkedLoader {
             'custom_fields','tags',
             'stats_resolved_at','stats_closed_at','stats_first_responded_at',
             'stats_reopened_at','stats_pending_since','stats_status_updated_at',
-            'stats_agent_responded_at','stats_requester_responded_at'
+            'stats_agent_responded_at','stats_requester_responded_at',
+            'is_escalated','fr_escalated'
         ].join(',');
         
         const query = client
@@ -151,7 +152,7 @@ class SupabaseChunkedLoader {
     async loadTicketsOptimized(client, options = {}) {
         const {
             tableName = 'tickets',
-            fields = 'id,subject,status,priority,created_at,updated_at,responder_name,group_name,cf_tratativa,cf_grupo_tratativa,custom_fields,source,description_text,stats_resolved_at,stats_closed_at,stats_first_responded_at',
+            fields = 'id,subject,status,priority,created_at,updated_at,responder_name,group_name,cf_tratativa,cf_grupo_tratativa,custom_fields,source,description_text,stats_resolved_at,stats_closed_at,stats_first_responded_at,is_escalated,fr_escalated',
             ...restOptions
         } = options;
 

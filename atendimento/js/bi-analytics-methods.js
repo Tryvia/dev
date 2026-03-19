@@ -2185,6 +2185,9 @@ if (typeof BIAnalytics !== 'undefined') {
                     value: totalGeral.toLocaleString('pt-BR'),
                     label: 'Total de Tickets',
                     subtitle: 'Todos os tickets no sistema',
+                    tooltip: 'Contagem TOTAL de todos os tickets existentes no sistema, independente de status, data ou filtro. Equivale ao número mostrado no Freshdesk.',
+                    formula: 'Contagem simples de todos os tickets carregados no sistema',
+                    dataSource: 'Todos os tickets da API do Freshdesk (allTicketsCache)',
                     gradient: ['#06b6d4', '#0891b2'],
                     trend: null,
                     drilldown: null,
@@ -2195,7 +2198,9 @@ if (typeof BIAnalytics !== 'undefined') {
                     value: pendentesGeral.toLocaleString('pt-BR'),
                     label: 'Tickets Pendentes',
                     subtitle: 'Status ≠ 4/5 (não resolvidos)',
-                    tooltip: 'Igual ao "Tickets Pendentes" do Freshdesk',
+                    tooltip: 'Tickets que ainda NÃO foram finalizados. Inclui todos os status exceto Resolvido (4) e Fechado (5). Igual ao "Tickets Pendentes" do Freshdesk.',
+                    formula: 'Total de Tickets - Tickets com status 4 ou 5',
+                    dataSource: 'Campo: status (todos exceto 4=Resolvido e 5=Fechado)',
                     gradient: ['#f59e0b', '#d97706'],
                     trend: null,
                     drilldown: "biAnalytics.showDrillDown('backlog', null, 'Tickets Pendentes')",
@@ -2206,6 +2211,9 @@ if (typeof BIAnalytics !== 'undefined') {
                     value: resolvidosGeral.toLocaleString('pt-BR'),
                     label: 'Tickets Resolvidos',
                     subtitle: 'Status 4 ou 5',
+                    tooltip: 'Tickets finalizados com sucesso. Inclui status Resolvido (4) e Fechado (5). Representa o trabalho concluído pela equipe.',
+                    formula: 'Contagem de tickets onde status = 4 (Resolvido) OU status = 5 (Fechado)',
+                    dataSource: 'Campo: status (valores 4 e 5)',
                     gradient: ['#10b981', '#059669'],
                     trend: null,
                     drilldown: "biAnalytics.showDrillDown('resolved', null, 'Tickets Resolvidos')",
@@ -2216,6 +2224,9 @@ if (typeof BIAnalytics !== 'undefined') {
                     value: taxaResolucaoGeral + '%',
                     label: 'Taxa Resolução',
                     subtitle: `${resolvidosGeral}/${totalGeral} tickets`,
+                    tooltip: 'Percentual de tickets que foram resolvidos em relação ao total. Mede a eficiência geral da equipe. Meta ideal: acima de 80%.',
+                    formula: 'Tickets Resolvidos ÷ Total de Tickets × 100',
+                    dataSource: 'Campos: status (4 e 5 para resolvidos) / total de tickets',
                     gradient: (() => {
                         const rate = parseFloat(taxaResolucaoGeral);
                         if (rate >= 80) return ['#10b981', '#059669'];
@@ -2231,6 +2242,9 @@ if (typeof BIAnalytics !== 'undefined') {
                     icon: svgIcons.total,
                     value: metrics.totalTickets.toLocaleString('pt-BR'),
                     label: 'Total no Período',
+                    tooltip: 'Tickets que tiveram ATIVIDADE no período selecionado (7, 30 ou 90 dias). Inclui tickets criados, atualizados ou resolvidos nesse intervalo.',
+                    formula: 'Tickets onde: created_at OU updated_at OU stats_resolved_at está dentro do período',
+                    dataSource: 'Campos: created_at, updated_at, stats_resolved_at (qualquer um no período)',
                     gradient: this.gradients[0],
                     trend: trends.totalChange,
                     drilldown: null
@@ -2239,6 +2253,9 @@ if (typeof BIAnalytics !== 'undefined') {
                     icon: svgIcons.resolved,
                     value: metrics.resolvedTickets.toLocaleString('pt-BR'),
                     label: 'Resolvidos no Período',
+                    tooltip: 'Tickets que foram FINALIZADOS dentro do período selecionado. Usa a data de resolução (stats_resolved_at), não a data de criação.',
+                    formula: 'Contagem onde stats_resolved_at >= início do período E status = 4 ou 5',
+                    dataSource: 'Campos: stats_resolved_at (data efetiva de resolução), status',
                     gradient: this.gradients[1],
                     trend: trends.resolvedChange,
                     drilldown: "biAnalytics.showDrillDown('resolved', null, 'Tickets Resolvidos')"
@@ -2247,6 +2264,9 @@ if (typeof BIAnalytics !== 'undefined') {
                     icon: svgIcons.progress,
                     value: metrics.inProgressTickets.toLocaleString('pt-BR'),
                     label: 'Em Andamento',
+                    tooltip: 'Tickets sendo ATIVAMENTE trabalhados. Exclui: Abertos (2), Pendentes (3), Resolvidos (4) e Fechados (5). Inclui: Em Análise, Em Tratativa, Aguardando Deploy, etc.',
+                    formula: 'Tickets onde status NÃO está em [2, 3, 4, 5]',
+                    dataSource: 'Campo: status (valores 6-21: Homologação, Aguardando, Em Tratativa, Em Fila DEV, etc.)',
                     gradient: this.gradients[4],
                     trend: trends.inProgressChange,
                     drilldown: "biAnalytics.showDrillDown('in_progress', null, 'Tickets Em Andamento')"
@@ -2255,6 +2275,9 @@ if (typeof BIAnalytics !== 'undefined') {
                     icon: svgIcons.sla,
                     value: metrics.slaPercent + '%',
                     label: 'SLA 1ª Resposta',
+                    tooltip: 'Percentual de tickets que receberam primeira resposta em até 4 horas. Meta padrão: 90%. Considera apenas tickets com resposta registrada.',
+                    formula: '(Tickets respondidos em ≤4h ÷ Total com resposta) × 100',
+                    dataSource: 'Campos: created_at, stats_first_responded_at (diferença ≤ 4 horas)',
                     gradient: metrics.slaPercent >= 90 ? ['#10b981', '#059669'] : metrics.slaPercent >= 70 ? ['#f59e0b', '#d97706'] : ['#ef4444', '#dc2626'],
                     trend: trends.slaChange,
                     drilldown: null
@@ -2267,6 +2290,9 @@ if (typeof BIAnalytics !== 'undefined') {
                     icon: svgIcons.alert,
                     value: metrics.slaOutside.toLocaleString('pt-BR'),
                     label: 'Violações SLA',
+                    tooltip: 'Tickets que NÃO receberam primeira resposta dentro do prazo de 4 horas. Representam oportunidades de melhoria no tempo de resposta.',
+                    formula: 'Contagem de tickets onde (stats_first_responded_at - created_at) > 4 horas',
+                    dataSource: 'Campos: created_at, stats_first_responded_at (diferença > 4 horas)',
                     gradient: ['#ef4444', '#b91c1c'],
                     trend: null,
                     invertTrend: true,
@@ -2279,6 +2305,9 @@ if (typeof BIAnalytics !== 'undefined') {
                     icon: svgIcons.calendar,
                     value: metrics.avgBacklogAgeDays + 'd',
                     label: 'Idade Média Backlog',
+                    tooltip: 'Tempo médio que os tickets pendentes estão aguardando resolução. Indica há quanto tempo o backlog está parado. Meta: menos de 7 dias.',
+                    formula: 'Média = Σ(Hoje - Data Criação) ÷ Quantidade de tickets pendentes',
+                    dataSource: 'Campo: created_at dos tickets com status diferente de 4 e 5',
                     gradient: metrics.avgBacklogAgeDays <= 7 ? ['#10b981', '#059669'] : metrics.avgBacklogAgeDays <= 14 ? ['#f59e0b', '#d97706'] : ['#ef4444', '#dc2626'],
                     trend: null,
                     drilldown: null
@@ -2290,6 +2319,9 @@ if (typeof BIAnalytics !== 'undefined') {
                     icon: svgIcons.clock,
                     value: metrics.backlogOver7Percent + '%',
                     label: 'Backlog > 7 dias',
+                    tooltip: 'Percentual de tickets pendentes que estão aguardando há mais de 7 dias. Indica tickets "envelhecendo" que precisam de atenção urgente.',
+                    formula: '(Tickets pendentes com idade > 7 dias ÷ Total pendentes) × 100',
+                    dataSource: 'Campo: created_at dos tickets pendentes onde (Hoje - created_at) > 7 dias',
                     gradient: metrics.backlogOver7Percent <= 20 ? ['#10b981', '#059669'] : metrics.backlogOver7Percent <= 40 ? ['#f59e0b', '#d97706'] : ['#ef4444', '#dc2626'],
                     trend: null,
                     drilldown: "biAnalytics.showDrillDown('backlog_old', null, 'Backlog > 7 dias')"
@@ -2911,6 +2943,57 @@ if (typeof BIAnalytics !== 'undefined') {
         showTicketsBySystem(system) {
             const tickets = (this.createdInPeriod || []).filter(t => (t.cf_sistemas || '').toLowerCase().includes(system.toLowerCase()));
             this._showTicketsModal(tickets, 'Sistema: ' + system, system);
+        },
+
+        // Mostrar tickets de SLA por pessoa/entidade (1ª Resposta e Resolução)
+        showSLAResponseTickets(entityLabel) {
+            const entityField = this.currentView === 'pessoa' ? 'cf_tratativa' : 'cf_grupo_tratativa';
+            const tickets = (this.filteredData || []).filter(t => {
+                const entities = t[entityField] ? t[entityField].split(/[,;\/]/).map(e => e.trim()) : [];
+                return entities.includes(entityLabel);
+            });
+            
+            if (!tickets.length) {
+                alert('Nenhum ticket encontrado para: ' + entityLabel);
+                return;
+            }
+            
+            this._showTicketsModal(tickets, `SLA - ${entityLabel}`, entityLabel);
+        },
+
+        // Mostrar tickets de SLA Resolução por pessoa/entidade
+        showSLAResolutionTickets(entityLabel) {
+            const entityField = this.currentView === 'pessoa' ? 'cf_tratativa' : 'cf_grupo_tratativa';
+            const tickets = (this.filteredData || []).filter(t => {
+                const entities = t[entityField] ? t[entityField].split(/[,;\/]/).map(e => e.trim()) : [];
+                return entities.includes(entityLabel);
+            });
+            
+            if (!tickets.length) {
+                alert('Nenhum ticket encontrado para: ' + entityLabel);
+                return;
+            }
+            
+            this._showTicketsModal(tickets, `SLA Resolução - ${entityLabel}`, entityLabel);
+        },
+
+        // Mostrar tickets de Carga de Trabalho por pessoa
+        showWorkloadTickets(entityLabel) {
+            const entityField = this.currentView === 'pessoa' ? 'cf_tratativa' : 'cf_grupo_tratativa';
+            // Filtrar tickets em aberto (status 2, 3, 6, 7, 8, 17)
+            const openStatuses = [2, 3, 6, 7, 8, 17];
+            const tickets = (this.filteredData || []).filter(t => {
+                if (!openStatuses.includes(Number(t.status))) return false;
+                const entities = t[entityField] ? t[entityField].split(/[,;\/]/).map(e => e.trim()) : [];
+                return entities.includes(entityLabel);
+            });
+            
+            if (!tickets.length) {
+                alert('Nenhum ticket em aberto encontrado para: ' + entityLabel);
+                return;
+            }
+            
+            this._showTicketsModal(tickets, `Carga de Trabalho - ${entityLabel}`, entityLabel);
         },
 
         // Mostrar tickets SEM TRATATIVA (apenas quando todos os times selecionados)

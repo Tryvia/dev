@@ -7027,7 +7027,9 @@
             // Stats
             'stats_resolved_at', 'stats_closed_at', 'stats_first_responded_at',
             'stats_reopened_at', 'stats_pending_since', 'stats_status_updated_at',
-            'stats_agent_responded_at', 'stats_requester_responded_at'
+            'stats_agent_responded_at', 'stats_requester_responded_at',
+            // SLA fields
+            'is_escalated', 'fr_escalated'
           ].join(',');
 
           // Função auxiliar para fetch com retry
