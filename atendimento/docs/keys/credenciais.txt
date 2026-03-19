@@ -1,0 +1,29 @@
+================================================
+  CREDENCIAIS DO PROJETO - BI ATENDIMENTO
+================================================
+
+------ SUPABASE ------
+SUPABASE_URL=https://ifzypptlhpzuydjeympr.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmenlwcHRsaHB6dXlkamV5bXByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwNzQ3MjYsImV4cCI6MjA4NDY1MDcyNn0.fCmElFOhX_9NLQoIWHPjpnjwnBKMuomztt0GP8Vv0W8
+SUPABASE_SERVICE_ROLE=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmenlwcHRsaHB6dXlkamV5bXByIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTA3NDcyNiwiZXhwIjoyMDg0NjUwNzI2fQ.O-nuoTl6RLo6shIETWifLpsuj852IUmupGk4kBq_BKY
+
+------ FRESHDESK ------
+FRESHDESK_DOMAIN=suportetryvia
+FRESHDESK_API_KEY=s9GQtphoZqeRNz7Enl
+
+================================================
+  NOTAS IMPORTANTES
+================================================
+
+1. A SUPABASE_SERVICE_KEY tem acesso TOTAL ao banco
+   - Nunca exponha em código frontend
+   - Use apenas em scripts backend/servidor
+
+2. O FRESHDESK_API_KEY está vinculado ao usuário
+   - Pode ser regenerado em: Admin > Agents > Seu Perfil
+
+3. Estas credenciais são SECRETAS
+   - Não commitar em repositórios públicos
+   - Adicionar ao .gitignore
+
+================================================
