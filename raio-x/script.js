@@ -221,21 +221,29 @@ async function handleClientChange(e) {
 }
 
 async function fetchRaioX() {
-  const { data, error } = await supabase
-    .from('raio_x')
-    .select('*')
-    .eq('implantacao_id', parseInt(selectedClient))
-    .maybeSingle();
+  try {
+    const { data, error } = await supabase
+      .from('raio_x')
+      .select('*')
+      .eq('implantacao_id', parseInt(selectedClient))
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  if (error) {
-    console.error('Error fetching raio_x:', error);
-    raioXData = null;
-  } else {
-    raioXData = data;
-    // Processar módulos para garantir que são objetos
-    if (raioXData && raioXData.modulos_contratados) {
-      raioXData.modulos_contratados = processarModulos(raioXData.modulos_contratados);
+    if (error) {
+      console.error('Error fetching raio_x:', error);
+      raioXData = null;
+    } else {
+      console.log('Fetched raioX data:', data); // Debug log
+      raioXData = data;
+      // Processar módulos para garantir que são objetos
+      if (raioXData && raioXData.modulos_contratados) {
+        raioXData.modulos_contratados = processarModulos(raioXData.modulos_contratados);
+      }
     }
+  } catch (err) {
+    console.error('Exception fetching raio_x:', err);
+    raioXData = null;
   }
   
   btnCadastrarText.textContent = raioXData ? 'Editar Raio X' : 'Cadastrar Raio X';
@@ -385,6 +393,27 @@ function renderProgress(imp) {
 }
 
 function renderCards() {
+  // Check if raioX hasn't been created yet
+  if (!raioXData) {
+    console.warn('raioXData is null or undefined, displaying empty state'); // Debug
+    cardsGridEl.innerHTML = `
+      <div class="info-card empty-state-card" style="grid-column: 1 / -1; text-align: center; padding: 3rem 2rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 1rem; color: var(--muted-foreground);"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        <h3 style="margin-bottom: 0.5rem; color: var(--foreground);">Raio X não iniciado</h3>
+        <p style="color: var(--muted-foreground); margin-bottom: 1.5rem;">Esta implantação ainda não possui um Raio X criado. Clique no botão acima para cadastrar as informações.</p>
+        <button type="button" onclick="document.getElementById('btn-cadastrar').click()" class="btn-primary" style="margin: 0 auto; display: inline-flex;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Cadastrar Raio X Agora
+        </button>
+      </div>
+    `;
+    return;
+  }
+  
+  console.log('Renderizando cards com dados:', raioXData); // Debug
+  
   const objetivos = raioXData?.objetivos_cliente || [];
   const riscos = raioXData?.riscos_alertas || [];
   const modulos = raioXData?.modulos_contratados || [];
@@ -654,8 +683,11 @@ async function handleFormSubmit(e) {
       .single();
     error = result.error;
     
+    console.log('Insert result:', result); // Debug
+    
     if (!error) {
       raioXData = result.data;
+      console.log('raioXData after insert:', raioXData); // Debug
       alert('Raio X cadastrado com sucesso!');
     }
   }
