@@ -493,6 +493,10 @@ function openModal() {
   // Setup tabs
   setupModalTabs();
   
+  // Reset all tabs to inactive
+  document.querySelectorAll('.modal-tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.modal-tab-content').forEach(content => content.classList.remove('active'));
+  
   // Ensure first tab is active
   const firstTabBtn = document.querySelector('.modal-tab-btn[data-tab="objetivos"]');
   const firstTabContent = document.querySelector('.modal-tab-content[data-tab="objetivos"]');
