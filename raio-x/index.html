@@ -144,52 +144,68 @@
           </svg>
         </button>
       </div>
+
       <form id="raio-x-form" class="modal-body">
-        <!-- Objetivos do Cliente -->
-        <div class="form-group">
-          <label>Objetivos do Cliente</label>
-          <div class="checkbox-grid" id="objetivos-checkboxes"></div>
+        <!-- TAB 1: Objetivos e Riscos -->
+        <div class="modal-tab-content active" data-tab="objetivos">
+          <div class="tab-section">
+            <div class="section-header">
+              <h3>Objetivos do Cliente</h3>
+            </div>
+            <div class="checkbox-grid" id="objetivos-checkboxes"></div>
+          </div>
+
+          <div class="tab-section">
+            <div class="section-header">
+              <h3>Riscos e Alertas</h3>
+            </div>
+            <div class="checkbox-grid" id="riscos-checkboxes"></div>
+          </div>
         </div>
 
-        <!-- Riscos e Alertas -->
-        <div class="form-group">
-          <label>Riscos e Alertas</label>
-          <div class="checkbox-grid" id="riscos-checkboxes"></div>
+        <!-- TAB 2: Módulos e Integrações -->
+        <div class="modal-tab-content" data-tab="modulos">
+          <div class="tab-section">
+            <div class="section-header">
+              <h3>Módulos Contratados</h3>
+            </div>
+            <div class="checkbox-grid" id="modulos-checkboxes"></div>
+          </div>
+
+          <div class="tab-section">
+            <div class="section-header">
+              <h3>Integrações</h3>
+            </div>
+            <div class="checkbox-grid" id="integracoes-checkboxes"></div>
+          </div>
         </div>
 
-        <!-- Módulos Contratados -->
-        <div class="form-group">
-          <label>Módulos Contratados</label>
-          <div class="checkbox-grid" id="modulos-checkboxes"></div>
+        <!-- TAB 3: Responsáveis -->
+        <div class="modal-tab-content" data-tab="responsaveis">
+          <div class="tab-section">
+            <div class="section-header">
+              <h3>Responsáveis do Projeto</h3>
+            </div>
+            <div id="responsaveis-container" class="responsaveis-list"></div>
+            <button type="button" id="add-responsavel" class="btn-secondary add-responsavel-btn">
+              Adicionar Responsável
+            </button>
+          </div>
         </div>
 
-        <!-- Integrações -->
-        <div class="form-group">
-          <label>Integrações</label>
-          <div class="checkbox-grid" id="integracoes-checkboxes"></div>
-        </div>
-
-        <!-- Responsáveis -->
-        <div class="form-group">
-          <label>Responsáveis</label>
-          <div id="responsaveis-container"></div>
-          <button type="button" id="add-responsavel" class="btn-secondary">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            Adicionar Responsável
-          </button>
-        </div>
-
-        <!-- Observações Comerciais -->
-        <div class="form-group">
-          <label>Observações Comerciais</label>
-          <textarea id="observacoes" rows="4" placeholder="Digite as observações comerciais..."></textarea>
+        <!-- TAB 4: Observações -->
+        <div class="modal-tab-content" data-tab="observacoes">
+          <div class="tab-section">
+            <div class="section-header">
+              <h3>Observações Comerciais</h3>
+            </div>
+            <textarea id="observacoes" rows="6" placeholder="Digite observações, pontos de atenção, historial comercial, etc..."></textarea>
+          </div>
         </div>
 
         <div class="modal-footer">
           <button type="button" id="modal-cancel" class="btn-secondary">Cancelar</button>
-          <button type="submit" class="btn-primary">Salvar</button>
+          <button type="submit" class="btn-primary">Salvar Raio X</button>
         </div>
       </form>
     </div>

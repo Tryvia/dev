@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freshdesk Tickets Viewer - Supabase</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Principal -->
+        <header class="header-main">
+            <div class="header-main-top">
+                <div class="header-main-left">
+                    <div class="header-icon"></div>
+                    <div class="header-main-title-section">
+                        <h1 class="header-main-title">Acompanhamento Produto</h1>
+                        <p class="header-main-subtitle">Tickets com campo "Acompanhamento Produto" preenchido</p>
+                    </div>
+                </div>
+                <div class="header-main-right">
+                    <div class="header-main-status">
+                        <span class="status-dot"></span>
+                        <span id="lastUpdate" class="last-update">Atualizado às 00:00:00</span>
+                    </div>
+                    <button id="backBtn" class="btn btn-back" title="Voltar ao Dashboard">
+                        ← Dashboard
+                    </button>
+                    <button id="refreshBtn" class="btn btn-refresh" title="Atualizar dados">
+                         Atualizar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contadores em Linha -->
+        <section class="counters-section">
+            <div class="counters-row">
+                <div class="counter-item total">
+                    <span class="counter-label">Total de tickets:</span>
+                    <span class="counter-value" id="totalTickets">0</span>
+                </div>
+
+                <div class="counter-item telemetria">
+                    <span class="counter-dot" style="background-color: #9c27b0;"></span>
+                    <span class="counter-label">DEV SING Telemetria:</span>
+                    <span class="counter-value" id="countTelemetria">0</span>
+                </div>
+
+                <div class="counter-item optz">
+                    <span class="counter-dot" style="background-color: #00d447;"></span>
+                    <span class="counter-label">DEV OPTZ:</span>
+                    <span class="counter-value" id="countOptz">0</span>
+                </div>
+
+                <div class="counter-item product">
+                    <span class="counter-dot" style="background-color: #2874a7;"></span>
+                    <span class="counter-label">Time de Produto:</span>
+                    <span class="counter-value" id="countProduct">0</span>
+                </div>
+
+                <div class="counter-item support">
+                    <span class="counter-dot" style="background-color: #14cbf8;"></span>
+                    <span class="counter-label">Atendimento:</span>
+                    <span class="counter-value" id="countSupport">0</span>
+                </div>
+
+                <div class="counter-item comercial">
+                    <span class="counter-dot" style="background-color: #199e93;"></span>
+                    <span class="counter-label">Time Comercial:</span>
+                    <span class="counter-value" id="countComercial">0</span>
+                </div>
+
+                <div class="counter-item cs">
+                    <span class="counter-dot" style="background-color: #f97316;"></span>
+                    <span class="counter-label">Time CS:</span>
+                    <span class="counter-value" id="countCS">0</span>
+                </div>
+
+                <div class="counter-item others">
+                    <span class="counter-dot" style="background-color: #78716c;"></span>
+                    <span class="counter-label">Outros:</span>
+                    <span class="counter-value" id="countOthers">0</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dois Gráficos Lado a Lado -->
+        <section class="charts-section">
+            <div class="chart-card">
+                <h2 class="chart-title">Tickets por Time</h2>
+                <canvas id="barChart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h2 class="chart-title">Distribuição por Time</h2>
+                <canvas id="pieChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Filtros -->
+        <section class="filters-section">
+            <div class="filters-label">
+                <span class="filter-icon"></span>
+                <span class="filter-text">Filtros:</span>
+            </div>
+
+            <div class="filters-container">
+                <select id="teamFilter" class="filter-select">
+                    <option value="">Todos os times</option>
+                    <option value="DEV SING Telemetria">DEV SING Telemetria</option>
+                    <option value="DEV OPTZ">DEV OPTZ</option>
+                    <option value="Time de Produto">Time de Produto</option>
+                    <option value="Atendimento">Atendimento</option>
+                    <option value="Time Comercial">Time Comercial</option>
+                    <option value="Time CS">Time CS</option>
+                    <option value="Outros">Outros</option>
+                </select>
+
+                <select id="statusFilter" class="filter-select">
+                    <option value="">Todos os status</option>
+                    <option value="1">Aberto</option>
+                    <option value="2">Em Andamento</option>
+                    <option value="3">Aguardando Cliente</option>
+                    <option value="4">Resolvido</option>
+                </select>
+
+                <span class="filter-info" id="filterInfo">Exibindo 0 de 0</span>
+            </div>
+        </section>
+
+        <!-- Tabela de Tickets -->
+        <section class="table-section">
+            <table class="tickets-table" id="ticketsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Assunto</th>
+                        <th>Time Responsável</th>
+                        <th>Responder ID</th>
+                        <th>Acompanhamento Produto</th>
+                        <th>Status</th>
+                        <th>Prioridade</th>
+                    </tr>
+                </thead>
+                <tbody id="ticketsTableBody">
+                    <tr class="loading-row">
+                        <td colspan="7" class="loading-message">⏳ Carregando tickets...</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Paginação -->
+            <div class="pagination-container">
+                <button id="prevPageBtn" class="btn btn-pagination">← Anterior</button>
+                <span id="pageInfo" class="page-info">Página 1</span>
+                <button id="nextPageBtn" class="btn btn-pagination">Próxima →</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

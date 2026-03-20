@@ -835,18 +835,19 @@ function escapeHtml(str) {
 }
 
         (function() {
-            // Verificar se o usuário veio da página Portal.html
-            const referrerPermitido = '/Portal.html';  
+            // Verificar se o usuário veio de páginas permitidas
+            const refererersPermitidos = ['Portal.html', 'acompanhamento/index.html'];
             const paginaLogin = `../login/index.html`;   
             
             // Obter o referrer atual
             const referrerAtual = document.referrer;
             
-            // Verificar se o referrer está vazio (acesso direto) ou não é o permitido
-            if (!referrerAtual || !referrerAtual.includes(referrerPermitido)) {
-                // Verificar se não estamos já na página de login para evitar loop infinito
-                if (window.location.href !== paginaLogin) {
-                    // Redirecionar para a página de login
+            // Verificar se o referrer é válido
+            const referrerValido = refererersPermitidos.some(ref => referrerAtual.includes(ref));
+            
+            // Redirecionar para login apenas se não houver referrer válido
+            if (!referrerAtual || !referrerValido) {
+                if (!window.location.href.includes('login')) {
                     window.location.replace(paginaLogin);
                 }
             }

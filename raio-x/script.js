@@ -11,7 +11,7 @@ if (!window.raioXApp) {
   const supabase = window.supabaseClient;
 
 // Options for checkboxes
-const MODULOS_OPTIONS = ['SING', 'Telemetria', 'E-trip', 'Planilha Frota', 'BI-Telemetria', 'OPTZ-Frota', 'OPTZ-Motorista'];
+const MODULOS_OPTIONS = ['SING', 'Telemetria', 'E-trip', 'Planilha Frota', 'BI-Telemetria', 'OPTZ-Frota', 'OPTZ-Motorista' , 'E-check' , 'Monitoramento', 'VideoTelemetria' , 'API SINGSERVICE' , 'App Motorista' , 'E-clock'];
 const INTEGRACOES_OPTIONS = ['RJ', 'Sigla', 'Cittati', 'Praxio', 'Globus', 'YUV', 'Smartbus', 'Contartec', 'Detro', 'Impetus', 'Motora', 'ANTT', 'Outros'];
 const OBJETIVOS_OPTIONS = ['Reduzir Custos', 'Controle de Processos', 'Gestão Operacional', 'Segurança'];
 const RISCOS_OPTIONS = ['Resistente à mudança', 'Pouca Disponibilidade', 'Dados Desorganizados', 'Time não definido', 'Infraestrutura inadequada', 'Falta de apoio da gestão'];
@@ -22,6 +22,7 @@ let implantacoes = [];
 let raioXData = null;
 let selectedClient = '';
 let responsaveis = [];
+let modulosComQuantidade = {}; // Store module quantities as {moduleName: quantity}
 
 // DOM Elements
 const loadingEl = document.getElementById('loading');
@@ -60,7 +61,7 @@ async function init() {
 function initCheckboxes() {
   renderCheckboxGroup('objetivos-checkboxes', OBJETIVOS_OPTIONS, 'objetivo');
   renderCheckboxGroup('riscos-checkboxes', RISCOS_OPTIONS, 'risco');
-  renderCheckboxGroup('modulos-checkboxes', MODULOS_OPTIONS, 'modulo');
+  renderModulosCheckboxGroup('modulos-checkboxes', MODULOS_OPTIONS, 'modulo');
   renderCheckboxGroup('integracoes-checkboxes', INTEGRACOES_OPTIONS, 'integracao');
 }
 
@@ -72,6 +73,39 @@ function renderCheckboxGroup(containerId, options, prefix) {
       <label for="${prefix}-${i}">${option}</label>
     </div>
   `).join('');
+}
+
+function renderModulosCheckboxGroup(containerId, options, prefix) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = options.map((option, i) => `
+    <div class="checkbox-item modulo-item">
+      <input type="checkbox" id="${prefix}-${i}" name="${prefix}" value="${option}" onchange="toggleModuloQuantidade('${option}')">
+      <label for="${prefix}-${i}">${option}</label>
+      <div class="modulo-quantidade-wrapper" id="qtd-wrapper-${option}" style="display: none;">
+        <input type="number" id="qtd-${option}" class="modulo-quantidade" placeholder="Qtd" min="1" value="1" onchange="updateModuloQuantidade('${option}', this.value)">
+        <span class="modulo-quantidade-label">licenças</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleModuloQuantidade(moduloName) {
+  const checkbox = document.querySelector(`input[name="modulo"][value="${moduloName}"]`);
+  const wrapper = document.getElementById(`qtd-wrapper-${moduloName}`);
+  
+  if (checkbox.checked) {
+    wrapper.style.display = 'flex';
+    if (!modulosComQuantidade[moduloName]) {
+      modulosComQuantidade[moduloName] = 1;
+    }
+  } else {
+    wrapper.style.display = 'none';
+    delete modulosComQuantidade[moduloName];
+  }
+}
+
+function updateModuloQuantidade(moduloName, quantidade) {
+  modulosComQuantidade[moduloName] = parseInt(quantidade) || 1;
 }
 
 function setupEventListeners() {
@@ -89,6 +123,39 @@ function setupEventListeners() {
   modal.querySelector('.modal-backdrop').addEventListener('click', closeModal);
   raioXForm.addEventListener('submit', handleFormSubmit);
   addResponsavelBtn.addEventListener('click', addResponsavel);
+}
+
+function setupModalTabs() {
+  const tabButtons = document.querySelectorAll('.modal-tab-btn');
+  const tabContents = document.querySelectorAll('.modal-tab-content');
+  
+  // Remove existing listeners
+  tabButtons.forEach(button => {
+    const newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
+  });
+  
+  // Re-query after cloning
+  const newTabButtons = document.querySelectorAll('.modal-tab-btn');
+  const newTabContents = document.querySelectorAll('.modal-tab-content');
+  
+  newTabButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      const tabName = this.getAttribute('data-tab');
+      
+      // Remove active class from all buttons and contents
+      newTabButtons.forEach(btn => btn.classList.remove('active'));
+      newTabContents.forEach(content => content.classList.remove('active'));
+      
+      // Add active class to clicked button and corresponding content
+      this.classList.add('active');
+      const activeContent = document.querySelector(`.modal-tab-content[data-tab="${tabName}"]`);
+      if (activeContent) {
+        activeContent.classList.add('active');
+      }
+    });
+  });
 }
 
 async function fetchImplantacoes() {
@@ -165,9 +232,35 @@ async function fetchRaioX() {
     raioXData = null;
   } else {
     raioXData = data;
+    // Processar módulos para garantir que são objetos
+    if (raioXData && raioXData.modulos_contratados) {
+      raioXData.modulos_contratados = processarModulos(raioXData.modulos_contratados);
+    }
   }
   
   btnCadastrarText.textContent = raioXData ? 'Editar Raio X' : 'Cadastrar Raio X';
+}
+
+function processarModulos(modulos) {
+  if (!Array.isArray(modulos)) return [];
+  
+  return modulos.map(m => {
+    // Se for string, tenta fazer parse como JSON
+    if (typeof m === 'string') {
+      try {
+        return JSON.parse(m);
+      } catch (e) {
+        // Se falhar no parse, cria um objeto simples
+        return { nome: m, quantidade: 1 };
+      }
+    }
+    // Se for objeto, retorna como está
+    if (typeof m === 'object' && m !== null) {
+      return m;
+    }
+    // Fallback
+    return { nome: String(m), quantidade: 1 };
+  });
 }
 
 function showLoading(show) {
@@ -308,7 +401,11 @@ function renderCards() {
     : '<p class="empty-card-text">Nenhum risco cadastrado</p>';
   
   const modulosHtml = modulos.length > 0
-    ? `<div class="tags-container">${modulos.map(m => `<span class="tag">${m}</span>`).join('')}</div>`
+    ? `<ul>${modulos.map(m => {
+        const quantidade = typeof m === 'object' ? m.quantidade : 1;
+        const nome = typeof m === 'object' ? m.nome : m;
+        return `<li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>${nome} <strong>(${quantidade})</strong></li>`;
+      }).join('')}</ul>`
     : '<p class="empty-card-text">Nenhum módulo cadastrado</p>';
   
   const integracoesHtml = integracoes.length > 0
@@ -393,6 +490,15 @@ function openModal() {
   // Reset form
   raioXForm.reset();
   
+  // Setup tabs
+  setupModalTabs();
+  
+  // Ensure first tab is active
+  const firstTabBtn = document.querySelector('.modal-tab-btn[data-tab="objetivos"]');
+  const firstTabContent = document.querySelector('.modal-tab-content[data-tab="objetivos"]');
+  if (firstTabBtn) firstTabBtn.classList.add('active');
+  if (firstTabContent) firstTabContent.classList.add('active');
+  
   // Populate form if editing
   if (raioXData) {
     // Check objetivos
@@ -407,10 +513,38 @@ function openModal() {
       if (checkbox) checkbox.checked = true;
     });
     
-    // Check modulos
+    // Check modulos and set quantities
+    modulosComQuantidade = {};
     (raioXData.modulos_contratados || []).forEach(modulo => {
-      const checkbox = document.querySelector(`input[name="modulo"][value="${modulo}"]`);
-      if (checkbox) checkbox.checked = true;
+      let moduloName, quantidade;
+      if (typeof modulo === 'object') {
+        moduloName = modulo.nome;
+        quantidade = modulo.quantidade || 1;
+      } else {
+        moduloName = modulo;
+        quantidade = 1;
+      }
+      
+      // Find checkbox by matching text content or value attribute more carefully
+      const checkboxes = document.querySelectorAll('input[name="modulo"]');
+      let checkbox = null;
+      for (let cb of checkboxes) {
+        if (cb.value === moduloName) {
+          checkbox = cb;
+          break;
+        }
+      }
+      
+      if (checkbox) {
+        checkbox.checked = true;
+        modulosComQuantidade[moduloName] = quantidade;
+        const wrapper = document.getElementById(`qtd-wrapper-${moduloName}`);
+        if (wrapper) {
+          wrapper.style.display = 'flex';
+          const input = document.getElementById(`qtd-${moduloName}`);
+          if (input) input.value = quantidade;
+        }
+      }
     });
     
     // Check integracoes
@@ -475,7 +609,11 @@ async function handleFormSubmit(e) {
   
   const objetivos = Array.from(document.querySelectorAll('input[name="objetivo"]:checked')).map(el => el.value);
   const riscos = Array.from(document.querySelectorAll('input[name="risco"]:checked')).map(el => el.value);
-  const modulos = Array.from(document.querySelectorAll('input[name="modulo"]:checked')).map(el => el.value);
+  const modulosChecked = Array.from(document.querySelectorAll('input[name="modulo"]:checked')).map(el => el.value);
+  const modulos = modulosChecked.map(m => ({
+    nome: m,
+    quantidade: modulosComQuantidade[m] || 1
+  }));
   const integracoes = Array.from(document.querySelectorAll('input[name="integracao"]:checked')).map(el => el.value);
   const observacoes = document.getElementById('observacoes').value;
   

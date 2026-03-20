@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Backlog Semanal</title>
+  <meta name="description" content="Dashboard de gestão de backlog semanal de tickets integrado ao Freshdesk">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container header-inner">
+      <div>
+        <h1>Painel de Backlog Semanal</h1>
+        <p class="header-subtitle" id="headerSubtitle">Carregando...</p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div id="loadingIndicator" class="loading-indicator" style="display:none;">
+          <div class="spinner"></div>
+          Carregando...
+        </div>
+        <button id="themeToggle" class="btn btn-ghost theme-toggle" title="Alternar Tema">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main-content">
+    <!-- Add Tickets -->
+    <section class="add-ticket-section">
+      <input type="text" id="ticketIdsInput" class="input input-lg" placeholder="Digite IDs dos tickets (ex: 4523, 4612, 4700)..." />
+      <button class="btn btn-primary" id="addTicketsBtn" onclick="handleAddTickets()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Adicionar ao Backlog
+      </button>
+    </section>
+
+    <!-- Filters -->
+    <section class="filters-section">
+      <button class="btn btn-outline view-toggle active" data-view="list" onclick="switchView('list')"> Lista</button>
+      <button class="btn btn-outline view-toggle" data-view="kanban" onclick="switchView('kanban')"> Kanban</button>
+      <button class="btn btn-outline view-toggle" data-view="analytics" onclick="switchView('analytics')"> Análise</button>
+      <div style="flex: 1; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <select id="filterAgent" class="select" onchange="renderAll()">
+          <option value="all">Todos Responsáveis</option>
+        </select>
+        <select id="filterPriority" class="select" onchange="renderAll()">
+          <option value="all">Todas Prioridades</option>
+          <option value="1">Baixa</option>
+          <option value="2">Média</option>
+          <option value="3">Alta</option>
+          <option value="4">Urgente</option>
+        </select>
+        <select id="filterStatus" class="select" onchange="renderAll()">
+          <option value="all">Todos Status</option>
+          <option value="2">Aberto</option>
+          <option value="3">Pendente</option>
+          <option value="4">Resolvido</option>
+          <option value="5">Fechado</option>
+          <option value="6">Aguardando Cliente</option>
+          <option value="7">Em Progresso</option>
+        </select>
+        <div class="search-wrapper">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" class="input search-input" placeholder="Buscar por ID ou assunto..." oninput="renderAll()" />
+        </div>
+        <button class="btn btn-primary" onclick="handleRefresh()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Atualizar
+        </button>
+        <button class="btn btn-outline" onclick="exportCSV()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar CSV
+        </button>
+      </div>
+    </section>
+
+    <!-- Stats Cards -->
+    <section class="stats-grid" id="statsCards">
+      <div class="stat-card"><div class="stat-header"><span class="stat-label">Total da Semana</span><span class="stat-icon stat-icon-primary"></span></div><div class="stat-value" id="statTotal">0</div></div>
+      <div class="stat-card"><div class="stat-header"><span class="stat-label">Em Aberto</span><span class="stat-icon stat-icon-info"></span></div><div class="stat-value" id="statOpen">0</div></div>
+      <div class="stat-card"><div class="stat-header"><span class="stat-label">Em Andamento</span><span class="stat-icon stat-icon-warning"></span></div><div class="stat-value" id="statProgress">0</div></div>
+      <div class="stat-card"><div class="stat-header"><span class="stat-label">Concluídos</span><span class="stat-icon stat-icon-success"></span></div><div class="stat-value" id="statResolved">0</div></div>
+      <div class="stat-card"><div class="stat-header"><span class="stat-label">Alta Prioridade</span><span class="stat-icon stat-icon-danger"></span></div><div class="stat-value" id="statHigh">0</div></div>
+    </section>
+
+    <!-- Chart -->
+    <section class="chart-section" id="chartSection">
+      <h2 class="section-title">Distribuição por Status</h2>
+      <div class="chart-container">
+        <canvas id="statusChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Advanced Charts -->
+    <section id="analyticsSection" style="display:none;">
+      <div class="charts-grid">
+        <div class="chart-section">
+          <h2 class="section-title">Performance por Agente</h2>
+          <div class="chart-container">
+            <canvas id="agentChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-section">
+          <h2 class="section-title">Tickets por Prioridade</h2>
+          <div class="chart-container">
+            <canvas id="priorityChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-section">
+          <h2 class="section-title">Distribuição por Dia</h2>
+          <div class="chart-container">
+            <canvas id="dailyChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-section">
+          <h2 class="section-title">Taxa de Resolução</h2>
+          <div class="chart-container">
+            <canvas id="resolutionChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Kanban View -->
+    <section id="kanbanSection" style="display:none;">
+      <div class="kanban-board">
+        <div class="kanban-column">
+          <h3 class="kanban-title">📥 Não Iniciado</h3>
+          <div class="kanban-cards" id="kanban-not-started"></div>
+        </div>
+        <div class="kanban-column">
+          <h3 class="kanban-title">⏳ Pendente</h3>
+          <div class="kanban-cards" id="kanban-pending"></div>
+        </div>
+        <div class="kanban-column">
+          <h3 class="kanban-title">▶️ Em Progresso</h3>
+          <div class="kanban-cards" id="kanban-progress"></div>
+        </div>
+        <div class="kanban-column">
+          <h3 class="kanban-title">✅ Resolvido</h3>
+          <div class="kanban-cards" id="kanban-resolved"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Table -->
+    <section class="table-section" id="listSection">
+      <table class="ticket-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Ticket</th>
+            <th>Cliente</th>
+            <th>Responsável</th>
+            <th>Prioridade</th>
+            <th>Status</th>
+            <th>Criado em</th>
+            <th class="text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="ticketTableBody">
+          <tr><td colspan="8" class="empty-state">Nenhum ticket no backlog. Adicione tickets pelo ID acima.</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- Action Modal -->
+  <div class="modal-overlay" id="actionModal" style="display:none;" onclick="closeActionModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="actionModalTitle">Registrar</h3>
+        <button class="modal-close" onclick="closeActionModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Ticket Original</label>
+          <p class="form-text" id="actionTicketInfo"></p>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="actionReason">Motivo</label>
+          <select id="actionReason" class="select"></select>
+        </div>
+        <div class="form-group" id="replacementGroup" style="display:none;">
+          <label class="form-label" for="actionReplacement">ID do Ticket Substituto</label>
+          <input type="text" id="actionReplacement" class="input" placeholder="Ex: 4612" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="actionComment">Comentário</label>
+          <textarea id="actionComment" class="textarea" placeholder="Descreva detalhes adicionais..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="actionResponsible">Responsável</label>
+          <select id="actionResponsible" class="select"></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeActionModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveAction()">Salvar Registro</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Modal -->
+  <div class="modal-overlay" id="historyModal" style="display:none;" onclick="closeHistoryModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="historyModalTitle">Histórico</h3>
+        <button class="modal-close" onclick="closeHistoryModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="historyContent"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="freshdesk-api.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
