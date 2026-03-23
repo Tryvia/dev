@@ -501,8 +501,8 @@ if (typeof BIAnalytics !== 'undefined') {
             <div style="margin-bottom: 1.5rem;">
                 ${alerts.map(alert => `
                     <div style="
-                        background: ${alert.color}15;
-                        border-left: 4px solid ${alert.color};
+                        background: ${alert.color};
+                        border-left: 4px solid ${alert.color === '#ef4444' ? '#b91c1c' : '#d97706'};
                         padding: 1rem 1.5rem;
                         border-radius: 0 8px 8px 0;
                         margin-bottom: 0.75rem;
@@ -512,8 +512,8 @@ if (typeof BIAnalytics !== 'undefined') {
                     ">
                         <span style="font-size: 1.5rem;">${alert.icon}</span>
                         <div>
-                            <div style="font-weight: 600; color: ${alert.color};">${alert.title}</div>
-                            <div style="font-size: 0.9rem; color: #94a3b8;">${alert.message}</div>
+                            <div style="font-weight: 600; color: #ffffff;">${alert.title}</div>
+                            <div style="font-size: 0.9rem; color: rgba(255,255,255,0.9);">${alert.message}</div>
                         </div>
                     </div>
                 `).join('')}
@@ -2493,7 +2493,11 @@ if (typeof BIAnalytics !== 'undefined') {
                     <div style="color: #71717a; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">${card.label}</div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                         ${card.tooltip ? `
-                            <button onclick="event.stopPropagation(); biAnalytics.showKPIInfo('${card.label.replace(/'/g, "\\'")}', '${(card.tooltip || '').replace(/'/g, "\\'")}', '${(card.formula || '').replace(/'/g, "\\'")}', '${(card.dataSource || '').replace(/'/g, "\\'")}')" 
+                            <button onclick="event.stopPropagation(); biAnalytics.showKPIInfo(this.dataset.label, this.dataset.tooltip, this.dataset.formula, this.dataset.source)" 
+                                data-label="${(card.label || '').replace(/"/g, '&quot;')}"
+                                data-tooltip="${(card.tooltip || '').replace(/"/g, '&quot;')}"
+                                data-formula="${(card.formula || '').replace(/"/g, '&quot;')}"
+                                data-source="${(card.dataSource || '').replace(/"/g, '&quot;')}"
                                 style="background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 18px; height: 18px; color: #94a3b8; cursor: pointer; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
                                 onmouseover="this.style.background='rgba(59,130,246,0.3)';this.style.color='#60a5fa'"
                                 onmouseout="this.style.background='rgba(255,255,255,0.1)';this.style.color='#94a3b8'"
@@ -2735,8 +2739,9 @@ if (typeof BIAnalytics !== 'undefined') {
                     ctx.shadowOffsetY = 1;
                 }
 
-                // Fundo da barra (track)
-                ctx.fillStyle = 'rgba(255,255,255,0.03)';
+                // Fundo da barra (track) - adapta ao tema
+                const isCyanTheme = document.documentElement.getAttribute('data-theme') === 'tryvia-cyan';
+                ctx.fillStyle = isCyanTheme ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.03)';
                 ctx.beginPath();
                 ctx.roundRect(padding.left, y, chartWidth, barHeight, borderRadius);
                 ctx.fill();
@@ -2785,15 +2790,15 @@ if (typeof BIAnalytics !== 'undefined') {
                     data: { label: entity, value: data.total, color: colorSet.main, index, globalIndex }
                 });
 
-                // Nome e posição - estilo premium
-                ctx.fillStyle = isHover ? '#ffffff' : 'rgba(255,255,255,0.85)';
+                // Nome e posição - estilo premium (adapta ao tema)
+                ctx.fillStyle = isHover ? this.colors.text : this.colors.text;
                 ctx.font = isHover ? '600 12px system-ui' : '500 12px system-ui';
                 ctx.textAlign = 'right';
                 const displayName = entity.length > 14 ? entity.substring(0, 14) + '..' : entity;
                 ctx.fillText(`${globalIndex + 1}. ${displayName}`, padding.left - 10, y + barHeight / 2 + 4);
 
-                // Valor com badge effect
-                ctx.fillStyle = isHover ? '#ffffff' : 'rgba(255,255,255,0.9)';
+                // Valor com badge effect (adapta ao tema)
+                ctx.fillStyle = isHover ? this.colors.text : this.colors.text;
                 ctx.font = 'bold 11px system-ui';
                 ctx.textAlign = 'left';
                 ctx.fillText(data.total.toString(), padding.left + barWidth + 8, y + barHeight / 2 + 4);

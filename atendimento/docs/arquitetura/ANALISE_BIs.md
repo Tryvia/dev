@@ -85,6 +85,17 @@
 | 33 | **Tickets por Tag** | Barras Horizontais | Quem acompanhou (por tags) | `BIAcompanhamentoModule` |
 | 34 | **Taxa Sucesso Acompanhamento** | Barras | % resolvidos que acompanhou | `BIAcompanhamentoModule` |
 
+### Sub-aba: CONSOLIDADO (Tratativa + Acompanhamento)
+
+| # | Nome do BI | Tipo Atual | Dados | Localização |
+|---|-----------|------------|-------|-------------|
+| 35 | **Total Atribuído** | Card/KPI | Soma Tratativa + Acompanhamento | `BIConsolidadoModule` |
+| 36 | **Análise de Cruzamento** | Cards | Apenas Tratativa / Apenas Acomp / Ambos | `BIConsolidadoModule` |
+| 37 | **Ranking Consolidado** | Tabela | Total, Abertos, Resolvidos, Taxa, Fonte | `BIConsolidadoModule` |
+| 38 | **Top Performer** | Card | Pessoa com mais tickets | `BIConsolidadoModule` |
+
+> **Nota:** A aba Consolidado combina `cf_tratativa` e `cf_acompanhamento_atendimento` sem duplicação.
+
 ---
 
 ## 2. ANÁLISE: TIPO DE GRÁFICO vs. IDEAL

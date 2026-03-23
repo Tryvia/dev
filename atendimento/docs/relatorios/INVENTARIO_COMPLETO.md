@@ -366,6 +366,27 @@ RECOMENDAÇÃO:
 - Reduzir tamanho em ~50%
 ```
 
+### bi-consolidado-module.js (~35 KB, ~850 linhas)
+```
+LOCALIZAÇÃO: js/bi-consolidado-module.js
+RESPONSABILIDADE: BI Consolidado (Tratativa + Acompanhamento)
+DEPENDÊNCIAS: allTicketsCache
+EXPÕE: window.BIConsolidadoModule
+
+FUNCIONALIDADES:
+- Combina cf_tratativa + cf_acompanhamento_atendimento
+- Evita duplicação de tickets por pessoa
+- Ranking com clique para ver tickets
+- Análise de cruzamento de dados (fontes)
+
+CAMPOS UTILIZADOS:
+- cf_tratativa: Pessoa que tratou
+- cf_acompanhamento_atendimento: Pessoa que acompanhou
+- custom_fields.cf_teste: Sistema/Produto (SING, OPTZ, etc.)
+
+STATUS: ✅ NOVO MÓDULO (Março/2026)
+```
+
 ### bi-csat-time-module.js (91 KB, ~1745 linhas)
 ```
 LOCALIZAÇÃO: js/bi-csat-time-module.js

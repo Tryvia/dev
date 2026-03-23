@@ -1953,8 +1953,9 @@ if (typeof BIAnalytics !== 'undefined') {
 
             const cx = width / 2, cy = height / 2, r = Math.min(width, height) / 2 - 35;
             const color = avg >= 4 ? '#10b981' : avg >= 3 ? '#f59e0b' : '#ef4444';
+            const isCyanTheme = document.documentElement.getAttribute('data-theme') === 'tryvia-cyan';
             ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fill();
+            ctx.fillStyle = isCyanTheme ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)'; ctx.fill();
             ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + (avg / 5) * Math.PI * 2);
             ctx.strokeStyle = color; ctx.lineWidth = 18; ctx.lineCap = 'round'; ctx.stroke();
             ctx.fillStyle = this.colors.text; ctx.font = 'bold 28px system-ui'; ctx.textAlign = 'center';

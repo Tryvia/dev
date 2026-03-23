@@ -23,41 +23,49 @@ window.BIProductivityMatrix = {
         
         return {
             // Backgrounds
-            headerBg: isCyan ? '#0369a1' : '#0d4a6b',
-            headerBgAlt: isCyan ? '#0c4a6e' : '#0a3d5c',
-            rowEven: isCyan ? '#f8fafc' : '#0f172a',
-            rowOdd: isCyan ? '#f1f5f9' : '#1e293b',
+            headerBg: isCyan ? '#0891b2' : '#0d4a6b',
+            headerBgAlt: isCyan ? '#0e7490' : '#0a3d5c',
+            rowEven: isCyan ? '#ffffff' : '#0f172a',
+            rowOdd: isCyan ? '#f0f9ff' : '#1e293b',
             subHeaderBg: isCyan ? '#e0f2fe' : '#1e3a5f',
             
             // Texts
             headerText: '#ffffff',
-            rowText: isCyan ? '#1e293b' : '#e2e8f0',
-            mutedText: isCyan ? '#64748b' : '#94a3b8',
+            rowText: isCyan ? '#0f172a' : '#e2e8f0',
+            mutedText: isCyan ? '#475569' : '#94a3b8',
             
             // Borders
-            headerBorder: isCyan ? '#0284c7' : '#1e5f8a',
-            cellBorder: isCyan ? '#cbd5e1' : '#334155',
+            headerBorder: isCyan ? '#06b6d4' : '#1e5f8a',
+            cellBorder: isCyan ? '#e2e8f0' : '#334155',
             
-            // Matrix cells
-            cellBg: isCyan ? '#dbeafe' : '#1e3a5f',
-            cellText: isCyan ? '#1d4ed8' : '#60a5fa',
-            cellEmpty: isCyan ? '#f1f5f9' : '#1e293b',
+            // Matrix cells - diagonal (azul) - ADAPTA AO TEMA
+            cellBg: isCyan ? '#cffafe' : '#1e3a5f',
+            cellText: isCyan ? '#0e7490' : '#ffffff',
+            cellEmpty: isCyan ? '#f8fafc' : '#1e293b',
             cellEmptyText: isCyan ? '#94a3b8' : '#475569',
             
-            // Summary columns
+            // Herdados (vermelho) - ADAPTA AO TEMA
+            herdadosBg: isCyan ? '#fee2e2' : '#991b1b',
+            herdadosText: isCyan ? '#991b1b' : '#ffffff',
+            herdadosLabel: isCyan ? '#dc2626' : '#fca5a5',
+            
+            // Resolvidos (verde) - ADAPTA AO TEMA
             resolvedBg: isCyan ? '#dcfce7' : '#065f46',
-            resolvedText: isCyan ? '#15803d' : '#10b981',
-            herdadosBg: isCyan ? '#fee2e2' : '#7f1d1d',
-            herdadosText: isCyan ? '#dc2626' : '#fca5a5',
+            resolvedText: isCyan ? '#065f46' : '#ffffff',
+            resolvedLabel: isCyan ? '#059669' : '#10b981',
+            
+            // Acumulado (verde escuro) - ADAPTA AO TEMA
             acumuladoBg: isCyan ? '#d1fae5' : '#064e3b',
-            acumuladoText: isCyan ? '#059669' : '#6ee7b7',
+            acumuladoText: isCyan ? '#047857' : '#ffffff',
+            
+            // Criado (roxo) - ADAPTA AO TEMA
             criadoBg: isCyan ? '#ede9fe' : '#5b21b6',
-            criadoText: isCyan ? '#7c3aed' : '#c4b5fd',
+            criadoText: isCyan ? '#6d28d9' : '#ffffff',
             
             // Totals
-            totalResolvedBg: isCyan ? '#0369a1' : '#0d4a6b',
+            totalResolvedBg: isCyan ? '#0891b2' : '#0d4a6b',
             pendenteBg: isCyan ? '#fef2f2' : '#7f1d1d',
-            pendenteBorder: isCyan ? '#fecaca' : '#991b1b',
+            pendenteBorder: isCyan ? '#fca5a5' : '#991b1b',
             pendenteText: isCyan ? '#dc2626' : '#fca5a5',
             
             // % colors
@@ -335,21 +343,26 @@ window.BIProductivityMatrix = {
             });
             const slaRate = totalTickets > 0 ? (totalWithin / totalTickets * 100) : 0;
             
+            const isCyanSla = document.documentElement.getAttribute('data-theme') === 'tryvia-cyan';
+            const cardBgS = isCyanSla ? '#ffffff' : '#1e293b';
+            const cardBorderS = isCyanSla ? '#e2e8f0' : '#334155';
+            const cardLabelS = isCyanSla ? '#64748b' : '#94a3b8';
+            const cardValueS = isCyanSla ? '#0f172a' : '#f4f4f5';
             summaryContent = `
-                <div style="background:#1e293b;padding:1rem;border-radius:8px;border:1px solid #334155;">
-                    <div style="color:#94a3b8;font-size:0.8rem;">Total Tickets ${this.currentYear}</div>
-                    <div style="color:#f4f4f5;font-size:1.5rem;font-weight:bold;">${totalTickets.toLocaleString()}</div>
+                <div style="background:${cardBgS};padding:1rem;border-radius:8px;border:1px solid ${cardBorderS};">
+                    <div style="color:${cardLabelS};font-size:0.8rem;">Total Tickets ${this.currentYear}</div>
+                    <div style="color:${cardValueS};font-size:1.5rem;font-weight:bold;">${totalTickets.toLocaleString()}</div>
                 </div>
-                <div style="background:#1e293b;padding:1rem;border-radius:8px;border:1px solid #334155;">
-                    <div style="color:#94a3b8;font-size:0.8rem;">Within SLA</div>
+                <div style="background:${cardBgS};padding:1rem;border-radius:8px;border:1px solid ${cardBorderS};">
+                    <div style="color:${cardLabelS};font-size:0.8rem;">Within SLA</div>
                     <div style="color:#10b981;font-size:1.5rem;font-weight:bold;">${totalWithin.toLocaleString()}</div>
                 </div>
-                <div style="background:#1e293b;padding:1rem;border-radius:8px;border:1px solid #334155;">
-                    <div style="color:#94a3b8;font-size:0.8rem;">SLA Violated</div>
+                <div style="background:${cardBgS};padding:1rem;border-radius:8px;border:1px solid ${cardBorderS};">
+                    <div style="color:${cardLabelS};font-size:0.8rem;">SLA Violated</div>
                     <div style="color:#ef4444;font-size:1.5rem;font-weight:bold;">${totalViolated.toLocaleString()}</div>
                 </div>
-                <div style="background:#1e293b;padding:1rem;border-radius:8px;border:1px solid #334155;">
-                    <div style="color:#94a3b8;font-size:0.8rem;">%SLA Geral</div>
+                <div style="background:${cardBgS};padding:1rem;border-radius:8px;border:1px solid ${cardBorderS};">
+                    <div style="color:${cardLabelS};font-size:0.8rem;">%SLA Geral</div>
                     <div style="color:#8b5cf6;font-size:1.5rem;font-weight:bold;">${slaRate.toFixed(2)}%</div>
                 </div>
             `;
@@ -377,21 +390,26 @@ window.BIProductivityMatrix = {
             const avgResolucao = totalAcomp > 0 ? (totalResolvidos / totalAcomp * 100) : 0;
             const avgSla = totalSlaTotal > 0 ? (totalSlaWithin / totalSlaTotal * 100) : 0;
             
+            const isCyanResumo = document.documentElement.getAttribute('data-theme') === 'tryvia-cyan';
+            const cardBgR = isCyanResumo ? '#ffffff' : '#1e293b';
+            const cardBorderR = isCyanResumo ? '#e2e8f0' : '#334155';
+            const cardLabelR = isCyanResumo ? '#64748b' : '#94a3b8';
+            const cardValueR = isCyanResumo ? '#0f172a' : '#f4f4f5';
             summaryContent = `
-                <div style="background:#1e293b;padding:1rem;border-radius:8px;border:1px solid #334155;">
-                    <div style="color:#94a3b8;font-size:0.8rem;">Pessoas Atendimento</div>
-                    <div style="color:#f4f4f5;font-size:1.5rem;font-weight:bold;">${totalPessoas}</div>
+                <div style="background:${cardBgR};padding:1rem;border-radius:8px;border:1px solid ${cardBorderR};">
+                    <div style="color:${cardLabelR};font-size:0.8rem;">Pessoas Atendimento</div>
+                    <div style="color:${cardValueR};font-size:1.5rem;font-weight:bold;">${totalPessoas}</div>
                 </div>
-                <div style="background:#1e293b;padding:1rem;border-radius:8px;border:1px solid #334155;">
-                    <div style="color:#94a3b8;font-size:0.8rem;">Total Tickets ${this.currentYear}</div>
+                <div style="background:${cardBgR};padding:1rem;border-radius:8px;border:1px solid ${cardBorderR};">
+                    <div style="color:${cardLabelR};font-size:0.8rem;">Total Tickets ${this.currentYear}</div>
                     <div style="color:#0ea5e9;font-size:1.5rem;font-weight:bold;">${resumoData.totalTicketsYear.toLocaleString()}</div>
                 </div>
-                <div style="background:#1e293b;padding:1rem;border-radius:8px;border:1px solid #334155;">
-                    <div style="color:#94a3b8;font-size:0.8rem;">%Resolução Geral</div>
+                <div style="background:${cardBgR};padding:1rem;border-radius:8px;border:1px solid ${cardBorderR};">
+                    <div style="color:${cardLabelR};font-size:0.8rem;">%Resolução Geral</div>
                     <div style="color:#10b981;font-size:1.5rem;font-weight:bold;">${avgResolucao.toFixed(1)}%</div>
                 </div>
-                <div style="background:#1e293b;padding:1rem;border-radius:8px;border:1px solid #334155;">
-                    <div style="color:#94a3b8;font-size:0.8rem;">%SLA Geral</div>
+                <div style="background:${cardBgR};padding:1rem;border-radius:8px;border:1px solid ${cardBorderR};">
+                    <div style="color:${cardLabelR};font-size:0.8rem;">%SLA Geral</div>
                     <div style="color:#8b5cf6;font-size:1.5rem;font-weight:bold;">${avgSla.toFixed(1)}%</div>
                 </div>
             `;
@@ -407,17 +425,22 @@ window.BIProductivityMatrix = {
             // Matriz de Produtividade (padrão)
             tableContent = this.renderTable(data);
             
+            const isCyan = document.documentElement.getAttribute('data-theme') === 'tryvia-cyan';
+            const cardBg = isCyan ? '#ffffff' : '#1e293b';
+            const cardBorder = isCyan ? '#e2e8f0' : '#334155';
+            const cardLabel = isCyan ? '#64748b' : '#94a3b8';
+            const cardValue = isCyan ? '#0f172a' : '#f4f4f5';
             summaryContent = `
-                <div style="background:#1e293b;padding:1rem;border-radius:8px;border:1px solid #334155;">
-                    <div style="color:#94a3b8;font-size:0.8rem;">Total Criado ${this.currentYear}</div>
-                    <div style="color:#f4f4f5;font-size:1.5rem;font-weight:bold;">${totalCreatedYear.toLocaleString()}</div>
+                <div style="background:${cardBg};padding:1rem;border-radius:8px;border:1px solid ${cardBorder};">
+                    <div style="color:${cardLabel};font-size:0.8rem;">Total Criado ${this.currentYear}</div>
+                    <div style="color:${cardValue};font-size:1.5rem;font-weight:bold;">${totalCreatedYear.toLocaleString()}</div>
                 </div>
-                <div style="background:#1e293b;padding:1rem;border-radius:8px;border:1px solid #334155;">
-                    <div style="color:#94a3b8;font-size:0.8rem;">Total Resolvido</div>
+                <div style="background:${cardBg};padding:1rem;border-radius:8px;border:1px solid ${cardBorder};">
+                    <div style="color:${cardLabel};font-size:0.8rem;">Total Resolvido</div>
                     <div style="color:#10b981;font-size:1.5rem;font-weight:bold;">${totalResolvedYear.toLocaleString()}</div>
                 </div>
-                <div style="background:#1e293b;padding:1rem;border-radius:8px;border:1px solid #334155;">
-                    <div style="color:#94a3b8;font-size:0.8rem;">Taxa Geral</div>
+                <div style="background:${cardBg};padding:1rem;border-radius:8px;border:1px solid ${cardBorder};">
+                    <div style="color:${cardLabel};font-size:0.8rem;">Taxa Geral</div>
                     <div style="color:#8b5cf6;font-size:1.5rem;font-weight:bold;">${totalCreatedYear > 0 ? ((totalResolvedYear / totalCreatedYear) * 100).toFixed(1) : 0}%</div>
                 </div>
             `;
@@ -530,20 +553,20 @@ window.BIProductivityMatrix = {
             } else if (pctRate >= 90) {
                 pctColor = '#000000'; pctBg = '#eab308'; // Amarelo
             } else {
-                // ≤89%: Dark = fundo branco/texto preto, Cyan = fundo preto/texto branco
-                pctColor = isCyan ? '#ffffff' : '#000000';
-                pctBg = isCyan ? '#000000' : '#ffffff';
+                // ≤89%: fundo cinza neutro com texto escuro
+                pctColor = '#374151';
+                pctBg = '#46b310';
             }
             
             html += `<tr style="background:${idx % 2 === 0 ? c.rowEven : c.rowOdd};">`;
             html += `<td style="padding:8px;color:${c.rowText};border:1px solid ${c.cellBorder};font-weight:500;">${shortMonths[month]}. de ${year}</td>`;
             
-            // Células da matriz
+            // Células da matriz - USA VARIÁVEIS DO TEMA
             allCreationMonths.forEach(createMonth => {
                 const value = rowData.byCreationMonth[createMonth] || 0;
                 const isDiagonal = createMonth === treatMonth;
-                const isHerdado = createMonth < treatMonth; // Criado ANTES do mês de tratativa
-                const isAfterTreat = createMonth > treatMonth; // Futuro (impossível)
+                const isHerdado = createMonth < treatMonth;
+                const isAfterTreat = createMonth > treatMonth;
                 
                 let cellStyle = `padding:6px;text-align:center;border:1px solid ${c.cellBorder};`;
                 if (isDiagonal && value > 0) {
@@ -553,19 +576,17 @@ window.BIProductivityMatrix = {
                     // Herdado = criado antes, resolvido depois (VERMELHO)
                     cellStyle += `background:${c.herdadosBg};color:${c.herdadosText};font-weight:600;`;
                 } else if (isAfterTreat) {
-                    // Futuro = impossível (cinza)
                     cellStyle += `background:${c.cellEmpty};color:${c.cellEmptyText};`;
                 } else {
-                    // Sem valor
                     cellStyle += `color:${c.mutedText};`;
                 }
                 
                 html += `<td style="${cellStyle}">${value > 0 ? value : ''}</td>`;
             });
             
-            // Colunas de resumo - Ticket (diagonal), Herdados Resolvidos, Total Tratativas (soma), Criado, %Resolvido
+            // Colunas de resumo - USA VARIÁVEIS DO TEMA
             const ticketDiagonal = resolvedInSameMonth[treatMonth] || 0;
-            const totalTratativas = ticketDiagonal + herdadosResolvidos; // Tratados dentro + Herdados = Total do mês
+            const totalTratativas = ticketDiagonal + herdadosResolvidos;
             html += `<td style="padding:6px;text-align:center;border:1px solid ${c.cellBorder};background:${c.resolvedBg};color:${c.resolvedText};font-weight:600;">${ticketDiagonal}</td>`;
             html += `<td style="padding:6px;text-align:center;border:1px solid ${c.cellBorder};background:${c.herdadosBg};color:${c.herdadosText};font-weight:600;">${herdadosResolvidos}</td>`;
             html += `<td style="padding:6px;text-align:center;border:1px solid ${c.cellBorder};background:${c.acumuladoBg};color:${c.acumuladoText};">${totalTratativas}</td>`;
@@ -584,13 +605,13 @@ window.BIProductivityMatrix = {
         });
         totalTratativasGeral = totalResolvidoDentro + totalHerdadosResolvidos;
         
-        // Linha de totais resolvidos
+        // Linha de totais resolvidos - USA VARIÁVEIS DO TEMA
         html += `<tr style="background:${c.totalResolvedBg};font-weight:600;">`;
         html += `<td style="padding:8px;color:${c.headerText};border:1px solid ${c.headerBorder};">✓ TOTAL RESOLVIDO</td>`;
         allCreationMonths.forEach(cm => {
-            html += `<td style="padding:6px;text-align:center;border:1px solid ${c.headerBorder};color:${c.resolvedText};">${totalResolvedByCreation[cm] || 0}</td>`;
+            html += `<td style="padding:6px;text-align:center;border:1px solid ${c.headerBorder};color:${c.headerText};">${totalResolvedByCreation[cm] || 0}</td>`;
         });
-        // Totais individuais: Resolvido Dentro, Herdados Resolvidos, Total Tratativas
+        // Totais individuais - USA VARIÁVEIS DO TEMA
         html += `<td style="padding:6px;text-align:center;border:1px solid ${c.headerBorder};background:${c.resolvedBg};color:${c.resolvedText};">${totalResolvidoDentro}</td>`;
         html += `<td style="padding:6px;text-align:center;border:1px solid ${c.headerBorder};background:${c.herdadosBg};color:${c.herdadosText};">${totalHerdadosResolvidos}</td>`;
         html += `<td style="padding:6px;text-align:center;border:1px solid ${c.headerBorder};background:${c.acumuladoBg};color:${c.acumuladoText};">${totalTratativasGeral}</td>`;
@@ -760,20 +781,20 @@ window.BIProductivityMatrix = {
             
             // Linha SLA Violated
             html += `<tr style="background:${rowBg};">`;
-            html += `<td style="padding:4px 6px;color:${c.herdadosText};border:1px solid ${c.cellBorder};font-size:0.7rem;padding-left:16px;">SLA Violated</td>`;
+            html += `<td style="padding:4px 6px;color:${c.herdadosLabel};border:1px solid ${c.cellBorder};font-size:0.7rem;padding-left:16px;">SLA Violated</td>`;
             monthsInYear.forEach(m => {
                 const val = groupData[m]?.violated || 0;
-                html += `<td style="padding:4px;text-align:center;border:1px solid ${c.cellBorder};color:${val > 0 ? c.herdadosText : c.mutedText};font-size:0.7rem;">${val || ''}</td>`;
+                html += `<td style="padding:4px;text-align:center;border:1px solid ${c.cellBorder};color:${val > 0 ? c.herdadosLabel : c.mutedText};font-size:0.7rem;">${val || ''}</td>`;
             });
             html += `<td style="padding:4px;text-align:center;border:1px solid ${c.cellBorder};background:${c.herdadosBg};color:${c.herdadosText};font-size:0.7rem;">${groupData.acumulado.violated}</td>`;
             html += '</tr>';
             
             // Linha Within SLA
             html += `<tr style="background:${rowBg};">`;
-            html += `<td style="padding:4px 6px;color:${c.resolvedText};border:1px solid ${c.cellBorder};font-size:0.7rem;padding-left:16px;">Within SLA</td>`;
+            html += `<td style="padding:4px 6px;color:${c.resolvedLabel};border:1px solid ${c.cellBorder};font-size:0.7rem;padding-left:16px;">Within SLA</td>`;
             monthsInYear.forEach(m => {
                 const val = groupData[m]?.within || 0;
-                html += `<td style="padding:4px;text-align:center;border:1px solid ${c.cellBorder};color:${val > 0 ? c.resolvedText : c.mutedText};font-size:0.7rem;">${val || ''}</td>`;
+                html += `<td style="padding:4px;text-align:center;border:1px solid ${c.cellBorder};color:${val > 0 ? c.resolvedLabel : c.mutedText};font-size:0.7rem;">${val || ''}</td>`;
             });
             html += `<td style="padding:4px;text-align:center;border:1px solid ${c.cellBorder};background:${c.resolvedBg};color:${c.resolvedText};font-size:0.7rem;">${groupData.acumulado.within}</td>`;
             html += '</tr>';
@@ -800,9 +821,9 @@ window.BIProductivityMatrix = {
                 } else if (pct >= 90) {
                     pctBg = '#eab308'; pctColor = '#000000'; // Amarelo
                 } else {
-                    // ≤89%: Dark = fundo branco/texto preto, Cyan = fundo preto/texto branco
-                    pctBg = isCyan ? '#000000' : '#ffffff';
-                    pctColor = isCyan ? '#ffffff' : '#000000';
+                    // ≤89%: fundo cinza neutro com texto escuro
+                    pctBg = '#e5e7eb';
+                    pctColor = '#374151';
                 }
                 html += `<td style="padding:4px;text-align:center;border:1px solid ${c.cellBorder};background:${pctBg};color:${pctColor};font-size:0.7rem;font-weight:600;">${total > 0 ? pct.toFixed(2) + '%' : ''}</td>`;
             });
@@ -822,9 +843,9 @@ window.BIProductivityMatrix = {
             } else if (acPct >= 90) {
                 acBg = '#eab308'; acColor = '#000000'; // Amarelo
             } else {
-                // ≤89%: Dark = fundo branco/texto preto, Cyan = fundo preto/texto branco
-                acBg = isCyan ? '#000000' : '#ffffff';
-                acColor = isCyan ? '#ffffff' : '#000000';
+                // ≤89%: fundo cinza neutro com texto escuro
+                acBg = '#e5e7eb';
+                acColor = '#374151';
             }
             html += `<td style="padding:4px;text-align:center;border:1px solid ${c.cellBorder};background:${acBg};color:${acColor};font-size:0.7rem;font-weight:600;">${acTotal > 0 ? acPct.toFixed(2) + '%' : ''}</td>`;
             html += '</tr>';

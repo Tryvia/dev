@@ -9,6 +9,12 @@
 
 // TEAM_MEMBERS_CONFIG agora está em js/config/team-members.js
 
+// ========== HELPER: Cor de texto adaptável ao tema ==========
+function getChartTextColor() {
+    const isCyan = document.documentElement.getAttribute('data-theme') === 'tryvia-cyan';
+    return isCyan ? '#1e293b' : '#ffffff';
+}
+
 // ========== ESTADO DE EXPANSÃO DE GRÁFICOS (encapsulado) ==========
 // Estado movido para dentro do biAnalytics quando disponível
 // Fallback para objeto global caso biAnalytics não esteja inicializado
@@ -702,14 +708,14 @@ function renderHorizontalBars(ctx, items, options) {
         ctx.restore();
 
         // Label
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillStyle = getChartTextColor();
         ctx.font = '500 14px system-ui';
         ctx.textAlign = 'right';
         const label = item.label.length > 20 ? item.label.slice(0, 18) + '..' : item.label;
         ctx.fillText(showRank ? `${i + 1}. ${label}` : label, padding.left - 12, y + barHeight / 2 + 5);
 
         // Valor
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = getChartTextColor();
         ctx.font = 'bold 14px system-ui';
         ctx.textAlign = 'left';
         const valueText = item.suffix ? `${item.value}${item.suffix}` : item.value.toLocaleString();
@@ -838,13 +844,13 @@ function renderExpandedRanking(ctx, width, height, metrics, colors, gradients, p
         ctx.fill();
         ctx.restore();
 
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillStyle = getChartTextColor();
         ctx.font = '600 15px system-ui';
         ctx.textAlign = 'right';
         const displayName = entity.length > 22 ? entity.substring(0, 20) + '..' : entity;
         ctx.fillText(`${globalIndex + 1}. ${displayName}`, padding.left - 15, y + barHeight / 2 + 5);
 
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = getChartTextColor();
         ctx.font = 'bold 15px system-ui';
         ctx.textAlign = 'left';
         const displayVal = mode === 'resolution' ? `${value.toFixed(1)}%` : value.toLocaleString();
@@ -942,7 +948,7 @@ function renderExpandedSLAByEntity(ctx, width, height, metrics, colors, page) {
         ctx.fillText(`${globalIndex + 1}. ${displayName}`, padding.left - 15, y + barHeight / 2 + 6);
 
         // Percentual
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = getChartTextColor();
         ctx.font = 'bold 16px system-ui';
         ctx.textAlign = 'left';
         ctx.fillText(`${sla.toFixed(0)}%`, padding.left + barWidth + 15, y + barHeight / 2 + 6);
@@ -1390,7 +1396,7 @@ function renderExpandedSystems(ctx, width, height, metrics, colors, bi) {
 
         ctx.fillStyle = colors.text; ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'right';
         ctx.fillText(label, padding.left - 15, y + barHeight / 2 + 6);
-        ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
+        ctx.fillStyle = getChartTextColor(); ctx.textAlign = 'left';
         ctx.fillText(value.toLocaleString(), padding.left + w + 15, y + barHeight / 2 + 6);
 
         regions.push({
@@ -1568,7 +1574,7 @@ function renderExpandedSLAByEntityFixed(ctx, width, height, metrics, colors, bi)
         const disp = item.label.length > 20 ? item.label.slice(0, 18) + '..' : item.label;
         ctx.fillText(`${i + 1}. ${disp}`, padding.left - 12, y + barHeight / 2 + 5);
 
-        ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
+        ctx.fillStyle = getChartTextColor(); ctx.textAlign = 'left';
         ctx.fillText(`${item.percent}%`, padding.left + w + 12, y + barHeight / 2 + 5);
 
         const entityData = byEntity.get(item.label);
@@ -1667,7 +1673,7 @@ function renderExpandedSLAResolutionByEntity(ctx, width, height, metrics, colors
         const disp = item.label.length > 20 ? item.label.slice(0, 18) + '..' : item.label;
         ctx.fillText(`${i + 1}. ${disp}`, padding.left - 12, y + barHeight / 2 + 5);
 
-        ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
+        ctx.fillStyle = getChartTextColor(); ctx.textAlign = 'left';
         ctx.fillText(`${item.percent}%`, padding.left + w + 12, y + barHeight / 2 + 5);
 
         const entityData = byEntity.get(item.label);
@@ -1761,11 +1767,11 @@ function renderExpandedSLACountByEntity(ctx, width, height, metrics, colors, bi)
         // Números dentro das barras
         ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
         if (withinWidth > 25) {
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = getChartTextColor();
             ctx.fillText(item.within.toString(), padding.left + withinWidth / 2, y + barHeight / 2 + 4);
         }
         if (outsideWidth > 25) {
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = getChartTextColor();
             ctx.fillText(item.outside.toString(), padding.left + withinWidth + outsideWidth / 2, y + barHeight / 2 + 4);
         }
 
@@ -1830,7 +1836,7 @@ function renderExpandedStatusStacked(ctx, width, height, metrics, colors, bi) {
         const disp = item.label.length > 22 ? item.label.slice(0, 20) + '..' : item.label;
         ctx.fillText(disp, padding.left - 12, y + barHeight / 2 + 5);
 
-        ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
+        ctx.fillStyle = getChartTextColor(); ctx.textAlign = 'left';
         ctx.fillText(`${item.count} (${pct}%)`, padding.left + w + 12, y + barHeight / 2 + 5);
     });
 }
@@ -1874,7 +1880,7 @@ function renderExpandedAgingHistogram(ctx, width, height, metrics, colors, bi) {
         ctx.shadowBlur = 0;
 
         // Valor
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
+        ctx.fillStyle = getChartTextColor(); ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
         ctx.fillText(item.count.toString(), x + barWidth / 2, y - 12);
 
         // Label
@@ -1972,7 +1978,7 @@ function renderExpandedFinalized(ctx, width, height, metrics, colors, bi) {
     ctx.shadowBlur = 0;
 
     // Labels dentro das barras
-    ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = getChartTextColor();
     if (resolvidoWidth > 100) {
         ctx.fillText(`Resolvido: ${resolvido.toLocaleString()}`, padding.left + resolvidoWidth / 2, centerY + 6);
     }
@@ -2019,7 +2025,7 @@ function renderExpandedProductivityRanking(ctx, width, height, metrics, colors, 
         const name = m.name.length > 22 ? m.name.substring(0, 20) + '..' : m.name;
         ctx.fillText(`${i + 1}. ${name}`, padding.left - 12, y + barHeight / 2 + 5);
 
-        ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
+        ctx.fillStyle = getChartTextColor(); ctx.textAlign = 'left';
         ctx.fillText(`${m.productivityIndex}`, padding.left + barWidth + 12, y + barHeight / 2 + 5);
     });
 }
@@ -2053,7 +2059,7 @@ function renderExpandedTicketsPerDay(ctx, width, height, metrics, colors, bi) {
         ctx.beginPath(); ctx.roundRect(x, y, barWidth, barH, 6); ctx.fill();
         ctx.shadowBlur = 0;
 
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
+        ctx.fillStyle = getChartTextColor(); ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
         ctx.fillText(m.ticketsPerDay, x + barWidth / 2, y - 10);
 
         ctx.save();
@@ -2107,7 +2113,7 @@ function renderExpandedByDayOfWeek(ctx, width, height, metrics, colors, bi) {
         ctx.beginPath(); ctx.roundRect(x, y, barWidth, barH, 8); ctx.fill();
         ctx.shadowBlur = 0;
 
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
+        ctx.fillStyle = getChartTextColor(); ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
         ctx.fillText(val.toString(), x + barWidth / 2, y - 12);
 
         ctx.fillStyle = colors.text; ctx.font = 'bold 14px system-ui';
@@ -2169,7 +2175,7 @@ function renderExpandedByHour(ctx, width, height, metrics, colors, bi) {
 
         // Mostrar valor no topo das barras maiores
         if (val > 0 && val >= maxVal * 0.3) {
-            ctx.fillStyle = '#fff'; ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center';
+            ctx.fillStyle = getChartTextColor(); ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center';
             ctx.fillText(val.toString(), x + barWidth / 2, y - 5);
         }
 
@@ -2346,7 +2352,7 @@ function renderExpandedFirstResponse(ctx, width, height, bi) {
         ctx.shadowBlur = 0;
         ctx.fillStyle = bi.colors.text; ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'right';
         ctx.fillText(item.label, pad.left - 15, y + barH / 2 + 6);
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'left';
+        ctx.fillStyle = getChartTextColor(); ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'left';
         ctx.fillText(item.count.toString(), pad.left + bw + 15, y + barH / 2 + 6);
     });
 }
@@ -2456,7 +2462,7 @@ function renderExpandedWorkload(ctx, width, height, bi) {
         ctx.shadowBlur = 0;
         ctx.fillStyle = bi.colors.text; ctx.font = '14px system-ui'; ctx.textAlign = 'right';
         ctx.fillText(name.length > 25 ? name.slice(0, 23) + '..' : name, pad.left - 15, y + barH / 2 + 5);
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'left';
+        ctx.fillStyle = getChartTextColor(); ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'left';
         ctx.fillText(count.toString(), pad.left + bw + 15, y + barH / 2 + 5);
     });
 }
@@ -2635,7 +2641,7 @@ function renderExpandedTendencia(ctx, width, height, bi) {
     weeks.forEach((wk, i) => {
         const x = pad.left + i * stepX, y = pad.top + chartH - (wk.count / maxVal) * chartH;
         ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fillStyle = '#667eea'; ctx.fill();
-        ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fillStyle = getChartTextColor(); ctx.fill();
 
         ctx.fillStyle = '#ef4444'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
         ctx.fillText(wk.count.toLocaleString(), x, y - 22);
@@ -2794,13 +2800,13 @@ function renderExpandedRankingBars(ctx, width, height, items, suffix, bi, title)
         ctx.restore();
 
         // Nome
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillStyle = getChartTextColor();
         ctx.font = '500 14px system-ui';
         ctx.textAlign = 'right';
         ctx.fillText(`${i + 1}. ${item.name.length > 22 ? item.name.slice(0, 20) + '..' : item.name}`, pad.left - 15, y + barH / 2 + 5);
 
         // Valor
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = getChartTextColor();
         ctx.font = 'bold 15px system-ui';
         ctx.textAlign = 'left';
         ctx.fillText(`${item.rate.toFixed(1)}${suffix}`, pad.left + bw + 15, y + barH / 2 + 5);
@@ -2860,7 +2866,7 @@ function renderExpandedParados(ctx, width, height, bi) {
         ctx.shadowBlur = 0;
         ctx.fillStyle = bi.colors.text; ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'right';
         ctx.fillText(item.label, pad.left - 15, y + barH / 2 + 6);
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'left';
+        ctx.fillStyle = getChartTextColor(); ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'left';
         ctx.fillText(item.count.toString(), pad.left + bw + 15, y + barH / 2 + 6);
     });
 }
@@ -2898,7 +2904,7 @@ function renderExpandedAguardando(ctx, width, height, bi) {
         ctx.shadowBlur = 0;
         ctx.fillStyle = bi.colors.text; ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'right';
         ctx.fillText(item.label, pad.left - 15, y + barH / 2 + 6);
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'left';
+        ctx.fillStyle = getChartTextColor(); ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'left';
         ctx.fillText(item.count.toString(), pad.left + bw + 15, y + barH / 2 + 6);
     });
 }

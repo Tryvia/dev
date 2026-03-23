@@ -2430,8 +2430,8 @@ window.BIAcompanhamentoModule = {
             
             ctx.restore();
             
-            // Valor
-            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            // Valor - cor adapta ao tema
+            ctx.fillStyle = this.colors.text;
             ctx.font = 'bold 10px system-ui';
             ctx.textAlign = 'center';
             ctx.fillText(m.total.toString(), x + barWidth / 2, y - 6);
@@ -2440,7 +2440,7 @@ window.BIAcompanhamentoModule = {
             ctx.save();
             ctx.translate(x + barWidth / 2, height - padding.bottom + 10);
             ctx.rotate(-45 * Math.PI / 180);
-            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillStyle = this.colors.textMuted;
             ctx.font = '500 9px system-ui';
             ctx.textAlign = 'right';
             const name = m.person.length > 10 ? m.person.substring(0, 10) + '..' : m.person;
@@ -2518,8 +2518,8 @@ window.BIAcompanhamentoModule = {
             
             ctx.restore();
             
-            // Valor
-            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            // Valor - cor adapta ao tema
+            ctx.fillStyle = this.colors.text;
             ctx.font = 'bold 10px system-ui';
             ctx.textAlign = 'center';
             ctx.fillText(`${m.percentResolved}%`, x + barWidth / 2, y - 6);
@@ -2528,7 +2528,7 @@ window.BIAcompanhamentoModule = {
             ctx.save();
             ctx.translate(x + barWidth / 2, height - padding.bottom + 10);
             ctx.rotate(-45 * Math.PI / 180);
-            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillStyle = this.colors.textMuted;
             ctx.font = '500 9px system-ui';
             ctx.textAlign = 'right';
             const name = m.person.length > 10 ? m.person.substring(0, 10) + '..' : m.person;

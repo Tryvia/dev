@@ -500,14 +500,18 @@ Chatbot.testSuite.benchmark()    // Performance
 
 | Campo | Descrição |
 |-------|-----------|
+| **cf_teste** | **Sistema/Produto** (SING, OPTZ, Telemetria, Light, E-Trip, YUV, Suporte) |
 | cf_empresa | Nome da empresa |
 | cf_grupo_empresa | Grupo empresarial |
 | cf_analista | Analista responsável |
 | cf_tratativa | Pessoa em tratativa |
 | cf_grupo_tratativa | Time de tratativa |
 | cf_tipo_primrio | Tipo primário do ticket |
+| cf_grupo_tryvia | Grupo Tryvia (News, Quadri, etc.) |
 | cf_complexidade | Nível de complexidade |
 | cf_situao | Situação atual |
+
+> **⚠️ Importante:** Os campos `cf_sistema` e `cf_produto` existem mas estão geralmente vazios. Use `cf_teste` para obter o Sistema/Produto real.
 
 ---
 

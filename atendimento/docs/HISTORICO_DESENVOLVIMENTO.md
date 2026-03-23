@@ -174,8 +174,9 @@ function mapTicketToDbRow(t) {
 | `cf_tipo_de_campo` | Tipo de Campo |
 | `cf_sla_resoluo` | SLA Resolução |
 | `cf_sla_primeira_resposta` | SLA 1ª Resposta |
-| `cf_produto` | Produto |
-| `cf_sistema` | Sistema |
+| `cf_produto` | Produto (geralmente vazio) |
+| `cf_sistema` | Sistema (geralmente vazio) |
+| `custom_fields.cf_teste` | **Sistema/Produto real** (SING, OPTZ, Telemetria, Light, etc.) |
 
 ---
 

@@ -1,7 +1,7 @@
 # 📚 Documentação do Sistema
 
 > **BI Analytics - Sistema de Análise de Tickets**
-> Tryvia - Dezembro 2025 (v3.0)
+> Tryvia - Março 2026 (v3.1)
 
 ---
 
@@ -136,6 +136,7 @@ npm start
 | Dashboard | 🏠 | Visão geral com KPIs principais |
 | Tickets | 🎫 | Lista e filtros de tickets |
 | BI Analytics | 📊 | Análises por pessoa/time/produtividade |
+| **Consolidado** | 🔄 | **TOTAL Tratativa + Acompanhamento (sem duplicação)** |
 | CSAT/Tempo | ⭐ | Satisfação do cliente e tempos de atendimento |
 | Acompanhamento | 📈 | Acompanhamento de produtividade |
 | Apresentação | 🎥 | Modo slides para reuniões |
@@ -244,6 +245,13 @@ O sistema é responsivo e funciona em:
 ---
 
 ## 📝 Changelog
+
+### Março 2026 (v3.1)
+- ✅ **BI Consolidado** - Nova aba que soma Tratativa + Acompanhamento sem duplicação
+- ✅ **Modal de tickets** - Clique no ranking para ver lista de tickets da pessoa
+- ✅ **Correção de nomes** - Normalização de Andréia/Andreia e outras variantes
+- ✅ **Campo Sistema/Produto** documentado - Usar `custom_fields.cf_teste` (SING, OPTZ, etc.)
+- ✅ **Documentação atualizada** - 9 arquivos de documentação revisados e corrigidos
 
 ### Dezembro 2025 (v3.0)
 - ✅ **Chatbot IA Tryviano** com Agent Loop autônomo

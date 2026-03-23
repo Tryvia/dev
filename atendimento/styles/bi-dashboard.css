@@ -124,26 +124,27 @@
   --gradient-danger: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
 }
 
-/* Sidebar permanece escura no tema Tryvia Cyan */
+/* Sidebar CLARA no tema Tryvia Cyan */
 [data-theme="tryvia-cyan"] .sidebar,
 [data-theme="tryvia-cyan"] #sidebar {
-  background: hsl(215, 35%, 18%) !important;
-  color: #ffffff !important;
+  background: #ffffff !important;
+  border-right: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
 }
 
 [data-theme="tryvia-cyan"] .sidebar-item,
 [data-theme="tryvia-cyan"] .sidebar-section-title {
-  color: rgba(255, 255, 255, 0.8) !important;
+  color: #334155 !important;
 }
 
 [data-theme="tryvia-cyan"] .sidebar-item:hover {
-  background: hsl(215, 35%, 25%) !important;
-  color: #ffffff !important;
+  background: #f0f9ff !important;
+  color: #0891b2 !important;
 }
 
 [data-theme="tryvia-cyan"] .sidebar-item.active {
-  background: #00e4ff !important;
-  color: hsl(215, 35%, 18%) !important;
+  background: linear-gradient(135deg, #0891b2, #06b6d4) !important;
+  color: #ffffff !important;
 }
 
 /* Cards com borda colorida estilo portal - CONSOLIDADO ACIMA */
@@ -174,13 +175,11 @@
   color: #1e293b !important;
 }
 
-/* Textos em geral */
+/* Textos em geral - SEM td/th para não sobrescrever cores inline das matrizes */
 [data-theme="tryvia-cyan"] p,
 [data-theme="tryvia-cyan"] span,
-[data-theme="tryvia-cyan"] label,
-[data-theme="tryvia-cyan"] td,
-[data-theme="tryvia-cyan"] th {
-  color: #475569 !important;
+[data-theme="tryvia-cyan"] label {
+  color: #475569;
 }
 
 /* KPI Cards - Fundo branco (CONSOLIDADO) */

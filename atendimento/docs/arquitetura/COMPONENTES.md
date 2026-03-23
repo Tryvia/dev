@@ -1,7 +1,7 @@
 # 📚 Documentação de Componentes
 
 > Sistema de BI e Análise de Tickets - Tryvia
-> Última atualização: Dezembro 2024
+> Última atualização: Março 2026
 
 ---
 
@@ -10,22 +10,57 @@
 ```
 📦 Projeto Atendimento V-2
 ├── 📄 BI_por_Time(2).html      # Arquivo principal
-├── 📂 js/                       # Módulos JavaScript
-│   ├── bi-analytics.js          # Classe principal BI Analytics
-│   ├── bi-analytics-methods.js  # Métodos de cálculo
-│   ├── bi-analytics-charts.js   # Renderização de gráficos
-│   ├── bi-analytics-metrics.js  # Métricas avançadas
-│   ├── bi-analytics-init.js     # Inicialização
-│   ├── bi-acompanhamento-module.js # Módulo de acompanhamento
-│   ├── navigation-functions.js  # Funções de navegação
-│   ├── reports-module.js        # Gerador de relatórios
-│   ├── insights-module.js       # Insights com IA
-│   ├── glossary-module.js       # Glossário de termos
-│   ├── presentation-mode-v2.js  # Modo apresentação
-│   ├── date-range-picker.js     # Seletor de datas
-│   ├── supabase-loader.js       # Cliente Supabase
-│   ├── status-config.js         # Configuração de status
-│   └── csat-module.js           # Módulo CSAT
+├── 📂 js/                       # Módulos JavaScript (43 arquivos)
+│   ├── 📊 BI Analytics
+│   │   ├── bi-analytics.js          # Classe principal BI Analytics
+│   │   ├── bi-analytics-methods.js  # Métodos de cálculo
+│   │   ├── bi-analytics-charts.js   # Renderização de gráficos
+│   │   ├── bi-analytics-metrics.js  # Métricas avançadas
+│   │   ├── bi-analytics-init.js     # Inicialização
+│   │   ├── bi-helpers.js            # Helpers do BI
+│   │   ├── bi-acompanhamento-module.js # Módulo Acompanhamento
+│   │   ├── bi-consolidado-module.js # Módulo Consolidado (Tratativa+Acomp)
+│   │   ├── bi-csat-time-module.js   # Módulo CSAT e Tempo
+│   │   └── bi-extra-data-module.js  # Dados extras
+│   ├── 📈 Relatórios
+│   │   ├── reports-module-v3.js     # Gerador de relatórios (PDF)
+│   │   ├── reports-enhanced-metrics.js # Métricas avançadas
+│   │   ├── reports-enhanced-sections.js # Seções do relatório
+│   │   └── reports-insights-engine.js # Motor de insights
+│   ├── 🤖 Chatbot/IA
+│   │   ├── chatbot.js               # Chatbot principal
+│   │   ├── chatbot-intelligence.js  # IA do chatbot
+│   │   ├── chatbot-premium.js       # Funcionalidades premium
+│   │   ├── chatbot-utils.js         # Utilitários
+│   │   ├── ai-transformers.js       # Transformadores de IA
+│   │   └── tryviano-knowledge-base.js # Base de conhecimento
+│   ├── 🎯 Funcionalidades
+│   │   ├── navigation-functions.js  # Funções de navegação
+│   │   ├── insights-module.js       # Insights com IA
+│   │   ├── glossary-module.js       # Glossário de termos
+│   │   ├── glossary-data.js         # Dados do glossário
+│   │   ├── presentation-mode-v2.js  # Modo apresentação
+│   │   ├── interactive-charts.js    # Gráficos interativos
+│   │   ├── global-search.js         # Busca global (Ctrl+K)
+│   │   ├── gamification.js          # Gamificação
+│   │   ├── gamification-badges.js   # Badges/conquistas
+│   │   ├── realtime-dashboard.js    # Dashboard em tempo real
+│   │   └── annotations-module.js    # Anotações
+│   ├── ⚙️ Configuração
+│   │   ├── config/team-members.js   # Membros do time
+│   │   ├── status-config.js         # Configuração de status
+│   │   ├── theme-colors-config.js   # Cores do tema
+│   │   ├── env-config.js            # Variáveis de ambiente
+│   │   └── premium-icons.js         # Ícones premium
+│   ├── 🔧 Utilitários
+│   │   ├── date-range-picker.js     # Seletor de datas
+│   │   ├── csat-module.js           # Módulo CSAT
+│   │   ├── core-data.js             # Dados core
+│   │   ├── logger.js                # Sistema de logs
+│   │   └── accessibility-module.js  # Acessibilidade
+│   └── 🗄️ Supabase
+│       ├── supabase-loader.js       # Cliente Supabase
+│       └── supabase-chunked-loader.js # Carregamento em chunks
 ├── 📂 styles/                   # Estilos CSS modulares
 │   ├── bi-dashboard.css         # Variáveis e reset
 │   ├── sidebar.css              # Sidebar lateral
@@ -122,31 +157,34 @@ dateRangePicker.open(document.getElementById('dateInput'), (range) => {
 
 ---
 
-### 4. Reports Module (Relatórios)
+### 4. Reports Module V3 (Relatórios)
 
-**Arquivo:** `js/reports-module.js`
+**Arquivo:** `js/reports-module-v3.js`
 
 ```javascript
 // Instância global
-window.reportsModule
+window.reportsModuleV3
 
 // Tipos de relatório disponíveis
-reportsModule.reportTypes = [
+reportsModuleV3.reportTypes = [
     { id: 'executive', name: 'Resumo Executivo', icon: '📊' },
-    { id: 'trends', name: 'Tendências e Volume', icon: '📈' },
-    { id: 'performance', name: 'Performance por Agente', icon: '👤' },
-    { id: 'teams', name: 'Comparativo de Times', icon: '👥' },
+    { id: 'performance', name: 'Performance por Pessoa', icon: '👤' },
     { id: 'sla', name: 'Análise de SLA', icon: '⏱️' },
+    { id: 'trends', name: 'Tendências e Volume', icon: '📈' },
     { id: 'backlog', name: 'Backlog e Aging', icon: '📋' },
-    { id: 'heatmap', name: 'Heatmap de Atividade', icon: '🗓️' },
-    { id: 'csat', name: 'Satisfação (CSAT)', icon: '😊' }
+    { id: 'resolution_time', name: 'Tempo de Resolução', icon: '⏳' }
 ]
 
 // Métodos
-reportsModule.initialize()           // Inicializa o módulo
-reportsModule.generateReport(type)   // Gera relatório
-reportsModule.exportReport(format)   // Exporta (pdf, excel)
+reportsModuleV3.render()             // Renderiza interface
+reportsModuleV3.generatePDF()        // Gera PDF do relatório
+reportsModuleV3.selectReport(type)   // Seleciona tipo de relatório
 ```
+
+**Arquivos auxiliares:**
+- `reports-enhanced-metrics.js` - Métricas avançadas para relatórios
+- `reports-enhanced-sections.js` - Seções customizadas
+- `reports-insights-engine.js` - Motor de insights automáticos
 
 ---
 
@@ -589,4 +627,104 @@ score = (resolved × 10) + (slaPercent/100 × resolved × 5) + (urgentResolved �
 
 ---
 
-*Documentação gerada automaticamente - Dezembro 2024*
+---
+
+## 🔄 BI Consolidado Module (NOVO)
+
+**Arquivo:** `js/bi-consolidado-module.js`
+
+```javascript
+// Instância global
+window.BIConsolidadoModule
+
+// Métodos
+BIConsolidadoModule.render(containerId)      // Renderiza aba
+BIConsolidadoModule.setPeriod(period)        // Define período
+BIConsolidadoModule.showTicketsModal(index)  // Mostra tickets da pessoa
+BIConsolidadoModule.calculateConsolidatedStats(tickets) // Calcula estatísticas
+```
+
+**Funcionalidades:**
+- Combina dados de `cf_tratativa` + `cf_acompanhamento_atendimento`
+- Evita duplicação de tickets por pessoa
+- Ranking clicável para ver tickets
+- Análise de cruzamento de dados (fontes)
+
+---
+
+## 🤖 Chatbot / Tryviano
+
+**Arquivos:**
+- `chatbot.js` - Interface principal do chatbot
+- `chatbot-intelligence.js` - Lógica de IA e respostas
+- `chatbot-premium.js` - Funcionalidades premium
+- `chatbot-utils.js` - Utilitários
+- `tryviano-knowledge-base.js` - Base de conhecimento
+
+```javascript
+// Instância global
+window.Chatbot
+
+// Métodos
+Chatbot.open()           // Abre chatbot
+Chatbot.close()          // Fecha chatbot
+Chatbot.sendMessage(msg) // Envia mensagem
+```
+
+---
+
+## ⚙️ Configurações do Sistema
+
+### Team Members
+**Arquivo:** `js/config/team-members.js`
+
+```javascript
+// Configuração global
+window.TEAM_MEMBERS_CONFIG = {
+    'Atendimento': ['Adriana Florencio', 'Jéssica Dias', ...],
+    'DEV': ['Isaac Alvim', 'Lucas Rodrigues', ...],
+    // ...
+}
+```
+
+### Theme Colors
+**Arquivo:** `js/theme-colors-config.js`
+
+```javascript
+// Temas disponíveis
+window.THEME_COLORS = {
+    dark: { primary: '#8b5cf6', ... },
+    'tryvia-cyan': { primary: '#00e4ff', ... }
+}
+```
+
+### Environment Config
+**Arquivo:** `js/env-config.js`
+
+```javascript
+// Configurações de ambiente
+window.ENV_CONFIG = {
+    SUPABASE_URL: '...',
+    SUPABASE_ANON_KEY: '...',
+    // ...
+}
+```
+
+---
+
+## 📊 Campos de Dados Importantes
+
+| Campo | Localização | Descrição |
+|-------|-------------|-----------|
+| `cf_tratativa` | Ticket | Pessoa responsável pela tratativa |
+| `cf_grupo_tratativa` | Ticket | Time responsável |
+| `cf_acompanhamento_atendimento` | Ticket | Pessoa de acompanhamento |
+| `custom_fields.cf_teste` | JSON | **Sistema/Produto** (SING, OPTZ, Telemetria) |
+| `type` | Ticket | Tipo do ticket |
+| `status` | Ticket | Status numérico (2=Aberto, 4=Resolvido, etc.) |
+
+> **⚠️ Nota:** Os campos `cf_sistema` e `cf_produto` existem mas estão geralmente vazios. Use `custom_fields.cf_teste` para o Sistema/Produto.
+
+---
+
+*Documentação atualizada - Março 2026*

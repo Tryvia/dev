@@ -71,7 +71,11 @@
   custom_fields: {
     cf_tratativa: "Nome do Analista",
     cf_grupo_tratativa: "Time X",
-    cf_sistema: "Sistema Y"
+    cf_teste: "OPTZ",              // Sistema/Produto real (SING, OPTZ, Telemetria, Light, etc.)
+    cf_empresa: "Nome da Empresa",
+    cf_analista: "Analista",
+    cf_tipo_primrio: "Atendimento",
+    cf_grupo_tryvia: "News"
   },
   stats: {
     first_responded_at: "2024-01-15T11:00:00Z",

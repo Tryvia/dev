@@ -10,7 +10,7 @@ O BI Analytics é o coração analítico do sistema. Ele transforma dados brutos
 
 Pense nele como um painel de controle de um carro: você não precisa saber como o motor funciona internamente, mas precisa entender o que cada indicador significa para dirigir bem.
 
-O módulo possui **6 sub-abas**, cada uma com um propósito específico:
+O módulo possui **7 sub-abas**, cada uma com um propósito específico:
 
 | Sub-aba | Foco Principal | Para quem é útil |
 |---------|---------------|------------------|
@@ -20,6 +20,19 @@ O módulo possui **6 sub-abas**, cada uma com um propósito específico:
 | ⭐ CSAT | Satisfação do cliente | Qualidade |
 | ⏱️ Tempo | Horas trabalhadas | Gestores |
 | 🏷️ Acompanhamento | Quem acompanhou cada caso | Supervisores |
+| 🔄 Consolidado | **TOTAL** Tratativa + Acompanhamento | Gestores, Diretoria |
+
+### Campos de Dados Utilizados
+
+| Campo | Localização | Descrição |
+|-------|-------------|-----------|
+| `cf_tratativa` | Ticket | Pessoa responsável pela tratativa |
+| `cf_grupo_tratativa` | Ticket | Time responsável |
+| `cf_acompanhamento_atendimento` | Ticket | Pessoa de acompanhamento |
+| `custom_fields.cf_teste` | JSON | **Sistema/Produto** (SING, OPTZ, Telemetria, etc.) |
+| `type` | Ticket | Tipo do ticket (Ajuste OPTZ, Melhoria SING, etc.) |
+
+> **⚠️ Nota:** Os campos `cf_sistema` e `cf_produto` existem mas estão geralmente vazios. Use `custom_fields.cf_teste` para o Sistema/Produto.
 
 ---
 
@@ -387,4 +400,37 @@ R: Analise os tickets específicos. Pode ser complexidade genuína ou tickets "e
 
 ---
 
-*Documento criado para facilitar a interpretação do módulo BI Analytics. Última atualização: Janeiro/2026*
+## 🔄 Sub-aba: CONSOLIDADO
+
+### O que faz?
+Combina dados de **Tratativa** (quem resolveu) e **Acompanhamento** (quem acompanhou) em uma única visão **TOTAL**. Mostra a produtividade real somando ambas as fontes.
+
+### Quando usar?
+- Visão completa da carga de trabalho
+- Comparar produtividade total da equipe
+- Identificar quem trabalha em mais tickets (independente da fonte)
+
+### Como interpretar?
+
+#### 🎫 Total Atribuído
+Soma de todos os tickets onde a pessoa aparece em **Tratativa** OU **Acompanhamento** (sem duplicação).
+
+#### 📊 Análise de Cruzamento de Dados
+Mostra de onde vêm os tickets:
+- **Apenas Tratativa:** Tickets só com `cf_tratativa` preenchido
+- **Apenas Acompanhamento:** Tickets só com `cf_acompanhamento_atendimento` ou tags
+- **Ambas as Fontes:** Tickets com ambos os campos preenchidos
+
+#### 🏆 Ranking Consolidado
+Tabela ordenada por total de tickets, mostrando:
+- **Total:** Quantidade total de tickets
+- **Abertos:** Em andamento + Pendentes
+- **Resolvidos:** Finalizados com sucesso
+- **Taxa:** Percentual de resolução
+- **Fonte:** T:X A:Y (origem dos tickets - Tratativa vs Acompanhamento)
+
+> **💡 Dica:** Clique em qualquer linha do ranking para ver a lista completa de tickets da pessoa!
+
+---
+
+*Documento criado para facilitar a interpretação do módulo BI Analytics. Última atualização: Março/2026*

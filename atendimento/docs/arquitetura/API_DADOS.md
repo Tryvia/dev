@@ -1,7 +1,7 @@
 # 🔌 API e Estrutura de Dados
 
 > Documentação da integração com Supabase e Freshdesk
-> Última atualização: Dezembro 2024
+> Última atualização: Março 2026
 
 ---
 
@@ -48,24 +48,58 @@
 |-------|------|-----------|
 | `cf_tratativa` | string | Pessoa(s) responsável(eis) |
 | `cf_grupo_tratativa` | string | Time(s) responsável(eis) |
-| `cf_teste` | string | Sistema/Produto |
-| `cf_sistema` | string | Sistema alternativo |
+| `cf_acompanhamento_atendimento` | string | Pessoa de acompanhamento |
 | `custom_fields` | object | Campos customizados JSON |
+
+### Campos dentro de custom_fields (JSON)
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `cf_teste` | string | **Sistema/Produto** (SING, OPTZ, Telemetria, Light, E-Trip, YUV, Suporte, etc.) |
+| `cf_empresa` | string | Nome da empresa do ticket |
+| `cf_analista` | string | Analista responsável |
+| `cf_tipo_primrio` | string | Tipo primário (Bug, Atendimento, etc.) |
+| `cf_grupo_tryvia` | string | Grupo Tryvia (News, Quadri, etc.) |
+| `cf_grupo_empresa` | string | Grupo empresarial |
+| `cf_situao` | string | Situação do ticket |
+
+> **Nota:** Os campos `cf_sistema` e `cf_produto` existem mas geralmente estão vazios. Use `custom_fields.cf_teste` para obter o Sistema/Produto.
 
 ---
 
 ## 📈 Códigos de Status
 
-| Código | Nome | Categoria |
-|--------|------|-----------|
-| 2 | Aberto | Em andamento |
-| 3 | Pendente | Aguardando |
-| 4 | Resolvido | Fechado |
-| 5 | Fechado | Fechado |
-| 6 | Aguardando Cliente | Aguardando |
-| 7 | Aguardando Terceiro | Aguardando |
-| 16 | Aguardando subir em PROD | Aguardando |
-| 17 | Pendência Interna | Pendente |
+| Código | Nome | Cor | Categoria |
+|--------|------|-----|-----------|
+| 2 | Aberto | 🔵 `#3b82f6` | open |
+| 3 | Pendente | ⏳ `#f59e0b` | pending |
+| 4 | Resolvido | ✅ `#10b981` | resolved |
+| 5 | Fechado | ✔️ `#6b7280` | resolved |
+| 6 | Em Homologação | 🧪 `#8b5cf6` | validation |
+| 7 | Aguardando Cliente | ⏸️ `#f59e0b` | waiting |
+| 8 | Em Tratativa | 🔄 `#06b6d4` | in_progress |
+| 10 | Em Análise | 🔍 `#06b6d4` | in_progress |
+| 11 | Interno | 🏠 `#64748b` | in_progress |
+| 12 | Aguardando Publicar HML | 📦 `#3b82f6` | waiting_deploy |
+| 13 | Aguardando Publicar PROD | 🚀 `#8b5cf6` | waiting_deploy |
+| 14 | MVP | ⭐ `#ec4899` | special |
+| 15 | Validação-Atendimento | ✍️ `#f97316` | validation |
+| 16 | Aguardando Parceiros | 🤝 `#a855f7` | waiting |
+| 17 | Pausado | ⏸️ `#64748b` | pending |
+| 18 | Validação-CS | ✍️ `#f97316` | validation |
+| 19 | Levantamento de Esforço | 📊 `#6366f1` | in_progress |
+| 20 | Em Fila DEV | 👨‍💻 `#ef4444` | in_progress |
+| 21 | Em Produção | 🟢 `#10b981` | deployed |
+
+### Categorias Simplificadas
+
+| Categoria | Status IDs |
+|-----------|------------|
+| **Resolvido** | 4, 5 |
+| **Aberto** | 2, 10 |
+| **Pendente** | 3, 17 |
+| **Aguardando** | 7, 16 |
+| **Em Progresso** | 8, 10, 11, 19, 20 |
 
 ### Verificar Status Fechado
 
@@ -75,6 +109,11 @@ window.FRESHDESK_STATUS.isClosed(status)
 
 // Verificação manual
 [4, 5].includes(Number(status))
+
+// Obter label/cor/descrição
+FRESHDESK_STATUS.getLabel(status)
+FRESHDESK_STATUS.getColor(status)
+FRESHDESK_STATUS.getDesc(status)
 ```
 
 ---
@@ -391,4 +430,4 @@ const validTickets = tickets.filter(validateTicket);
 
 ---
 
-*Documentação de API - Dezembro 2024*
+*Documentação de API - Março 2026*
