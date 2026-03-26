@@ -107,12 +107,50 @@ function updateYearOptions() {
 }
 
 // ===== RENDER =====
+function normalizeContactDate(contact) {
+    const dt = (contact?.contact_date || contact?.data || "").toString().trim();
+    if (!dt) return "";
+
+    // ISO with time prefix
+    if (dt.includes("T")) {
+        return dt.split("T")[0];
+    }
+
+    // yyyy-mm-dd format (possível com hora ou espaço)
+    if (/^\d{4}-\d{2}-\d{2}/.test(dt)) {
+        return dt.split(" ")[0];
+    }
+
+    // dd/mm/yyyy format
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dt)) {
+        const [d, m, y] = dt.split("/");
+        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+    }
+
+    // Fallback para parse de Date
+    const parsed = new Date(dt);
+    if (isNaN(parsed)) return "";
+    return parsed.toISOString().split("T")[0];
+}
+
 function renderStats(list) {
-    const today = new Date().toISOString().split("T")[0];
-    const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().split("T")[0];
+    const todayDate = new Date();
+    const today = todayDate.toISOString().split("T")[0];
+
+    // Semana calendário (segunda-feira a domingo)
+    const dow = todayDate.getDay(); // 0=Dom,1=Seg,...
+    const mondayOffset = dow === 0 ? -6 : 1 - dow;
+    const weekStartDate = new Date(todayDate);
+    weekStartDate.setDate(todayDate.getDate() + mondayOffset);
+    const weekStart = weekStartDate.toISOString().split("T")[0];
+
     const total = list.length;
-    const hoje = list.filter(c => c.data === today).length;
-    const semana = list.filter(c => c.data >= weekAgo).length;
+
+    const hoje = list.filter(c => normalizeContactDate(c) === today).length;
+    const semana = list.filter(c => {
+        const dateVal = normalizeContactDate(c);
+        return dateVal && dateVal >= weekStart && dateVal <= today;
+    }).length;
     const avg = total > 0 ? (list.reduce((s, c) => s + c.feeling, 0) / total).toFixed(1) : "0";
     
     document.getElementById("stats").innerHTML = `
@@ -211,18 +249,37 @@ function getFiltered() {
     let r = [...contacts];
     const cf = document.getElementById("f-cliente").value.toLowerCase();
     const tf = document.getElementById("f-tipo").value;
-    const df = document.getElementById("f-data").value;
+    const dfi = document.getElementById("f-data-inicio").value;
+    const dff = document.getElementById("f-data-fim").value;
     const ff = document.getElementById("f-feeling").value;
     const af = document.getElementById("f-ano").value;
     const ord = document.getElementById("f-ordem").value;
 
     if (cf) r = r.filter(c => c.cliente.toLowerCase().includes(cf));
     if (tf) r = r.filter(c => c.tipo.toLowerCase() === tf.toLowerCase());
-    if (df) r = r.filter(c => c.data === df);
+
+    if (dfi || dff) {
+        r = r.filter(c => {
+            const val = normalizeContactDate(c);
+            if (!val) return false;
+            if (dfi && val < dfi) return false;
+            if (dff && val > dff) return false;
+            return true;
+        });
+    }
+
     if (ff) r = r.filter(c => c.feeling === Number(ff));
-    if (af) r = r.filter(c => new Date(c.data).getFullYear() === Number(af));
-    
-    r.sort((a, b) => ord === "desc" ? b.data.localeCompare(a.data) : a.data.localeCompare(b.data));
+    if (af) r = r.filter(c => {
+        const val = normalizeContactDate(c);
+        return val ? new Date(val).getFullYear() === Number(af) : false;
+    });
+
+    r.sort((a, b) => {
+        const da = normalizeContactDate(a);
+        const db = normalizeContactDate(b);
+        if (!da || !db) return 0;
+        return ord === "desc" ? db.localeCompare(da) : da.localeCompare(db);
+    });
     return r;
 }
 
