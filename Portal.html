@@ -91,7 +91,7 @@
                     Avaliações</button>
             </li>
             <li class="nav-item">
-                <button onclick="showTab('cs')" data-permissao="cs"><i class="fas fa-headset"></i> CS</button>
+              <button onclick="window.location.href='cscontatos/index.html'"  data-permissao="cs"><i class="fas fa-headset"></i> CS</button>
             </li>
             <li class="nav-item">
                 <button onclick="window.location.href='calendario/index.html'"
@@ -2725,6 +2725,17 @@
                 <label for="csObservation">Observações:</label>
                 <textarea id="csObservation" rows="4" placeholder="Digite as observações sobre o contato com o cliente..." required></textarea>
             </div>
+            <div class="form-group">
+                <label for="csFeelingNote">Nota de Feeling do Contato: <span style="color: #d32f2f;">*</span></label>
+                <select id="csFeelingNote" required style="font-size: 0.95em;">
+                    <option value="">Selecione uma nota...</option>
+                    <option value="1">😞 Muito Insatisfeito (1)</option>
+                    <option value="2">😐 Insatisfeito (2)</option>
+                    <option value="3">😊 Neutro (3)</option>
+                    <option value="4">😄 Satisfeito (4)</option>
+                    <option value="5">😍 Muito Satisfeito (5)</option>
+                </select>
+            </div>
             <div class="form-group" style="grid-column: 1 / -1; text-align: center; display:flex; justify-content:center; gap:10px; align-items:center;">
                 <button id="csSaveButton" onclick="salvarContatoCS()" style="background: #0066ccbf; color: white; border: none; padding: 12px 26px; border-radius: 8px; font-size: 1.05em; cursor: pointer; transition: background 0.3s ease;">
                     <i class="fas fa-save" style="margin-right: 8px;"></i>
@@ -2754,6 +2765,17 @@
             <div class="form-group">
                 <label for="filterCSDate">Filtrar por Data:</label>
                 <input type="date" id="filterCSDate" onchange="filtrarContatosCS()">
+            </div>
+            <div class="form-group">
+                <label for="filterCSFeeling">Filtrar por Feeling:</label>
+                <select id="filterCSFeeling" onchange="filtrarContatosCS()">
+                    <option value="">Todos</option>
+                    <option value="1">😞 Muito Insatisfeito (1)</option>
+                    <option value="2">😐 Insatisfeito (2)</option>
+                    <option value="3">😊 Neutro (3)</option>
+                    <option value="4">😄 Satisfeito (4)</option>
+                    <option value="5">😍 Muito Satisfeito (5)</option>
+                </select>
             </div>
             <div class="form-group">
                 <label for="csSortOrder">Ordenação por Data:</label>

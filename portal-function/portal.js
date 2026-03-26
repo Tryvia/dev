@@ -138,10 +138,59 @@ function closeNewReleaseModal() {
         const list = document.getElementById('reunioesModalList');
         if (!modal || !title || !list) return;
 
+        // Obter filtros
+        const dataInicioInput = document.getElementById('filtroReuniaoDataInicio');
+        const dataFimInput = document.getElementById('filtroReuniaoDataFim');
+        const filtroClienteInput = document.getElementById('filtroReuniaoCliente');
+        const filtroParticipanteInput = document.getElementById('filtroReuniaoParticipante');
+        
+        const dataInicio = dataInicioInput ? dataInicioInput.value : '';
+        const dataFim = dataFimInput ? dataFimInput.value : '';
+        const filtroCliente = filtroClienteInput ? filtroClienteInput.value.toLowerCase() : '';
+        const filtroParticipante = filtroParticipanteInput ? filtroParticipanteInput.value.toLowerCase() : '';
+
         const data = window.reunioesCache || [];
         const items = data.filter(r => {
             const k = r.client_id ? `id:${r.client_id}` : `name:${(r.cliente||'').toLowerCase()}`;
-            return k === key;
+            
+            // Filtro por cliente (primeira filtragem pelo modal)
+            if (k !== key) return false;
+            
+            // Filtro por cliente selecionado no combo (se definido)
+            if (filtroCliente && r.cliente) {
+                if (!(r.cliente || '').toLowerCase().includes(filtroCliente)) return false;
+            }
+            
+            // Filtro por participante (se definido) - MESMA LÓGICA DE carregarReunioes()
+            if (filtroParticipante && r.participantes) {
+                const nomes = (r.participantes || "").split(/,|;| e |\n/gi).map(n => n.trim());
+                const matchParticipante = nomes.some(n => n.toLowerCase() === filtroParticipante.toLowerCase());
+                if (!matchParticipante) return false;
+            }
+            
+            // Filtro por data início (se definido)
+            if (dataInicio && r.data) {
+                let dataReuniao = r.data;
+                // Converter data em formato DD/MM/YYYY para YYYY-MM-DD se necessário
+                if (/\d{2}\/\d{2}\/\d{4}/.test(r.data)) {
+                    const [d, m, y] = r.data.split("/");
+                    dataReuniao = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+                }
+                if (dataReuniao < dataInicio) return false;
+            }
+            
+            // Filtro por data fim (se definido)
+            if (dataFim && r.data) {
+                let dataReuniao = r.data;
+                // Converter data em formato DD/MM/YYYY para YYYY-MM-DD se necessário
+                if (/\d{2}\/\d{2}\/\d{4}/.test(r.data)) {
+                    const [d, m, y] = r.data.split("/");
+                    dataReuniao = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+                }
+                if (dataReuniao > dataFim) return false;
+            }
+            
+            return true;
         });
         if (!items || items.length === 0) {
             title.textContent = 'Reuniões';
@@ -1204,15 +1253,30 @@ async function salvarContatoCS() {
     const tipo = document.getElementById('csContactType').value;
     const data = document.getElementById('csContactDate').value;
     const obs = document.getElementById('csObservation').value.trim();
+    const feeling = document.getElementById('csFeelingNote').value;
     const editingId = (document.getElementById('csEditingId') || {}).value;
 
-    if (!nome || !tipo || !data || !obs) {
+    // DEBUG
+    console.log('Debug salvarContatoCS:', {
+        nome,
+        tipo,
+        data,
+        obs,
+        feeling,
+        feeling_tipo: typeof feeling,
+        feeling_int: parseInt(feeling),
+        editingId
+    });
+
+    if (!nome || !tipo || !data || !obs || !feeling) {
         showAlert('Atenção', 'Preencha todos os campos para salvar o contato!');
         return;
     }
 
     try {
         const auditData = getAuditActorData();
+        const feelingInt = parseInt(feeling);
+        
         let result, error;
         if (editingId) {
             // Atualizar
@@ -1223,6 +1287,7 @@ async function salvarContatoCS() {
                     contact_type: tipo,
                     contact_date: data,
                     observation: obs,
+                    feeling_note: feelingInt,
                     audit_actor_id: auditData.audit_actor_id,
                     audit_actor_name: auditData.audit_actor_name
                 })
@@ -1243,6 +1308,7 @@ async function salvarContatoCS() {
                         contact_type: tipo,
                         contact_date: data,
                         observation: obs,
+                        feeling_note: feelingInt,
                         audit_actor_id: auditData.audit_actor_id,
                         audit_actor_name: auditData.audit_actor_name
                     }
@@ -1257,10 +1323,14 @@ async function salvarContatoCS() {
 
             showAlert('Sucesso', 'Contato salvo com sucesso!');
         }
+        
+        console.log('Resultado do insert/update:', result);
+        
         document.getElementById('csClientName').value = '';
         document.getElementById('csContactType').value = '';
         document.getElementById('csContactDate').value = '';
         document.getElementById('csObservation').value = '';
+        document.getElementById('csFeelingNote').value = '';
         document.getElementById('csEditingId').value = '';
         document.getElementById('csCancelEditButton').style.display = 'none';
         // Se quiser atualizar a lista de contatos, chame aqui a função de renderização
@@ -1309,13 +1379,15 @@ function renderCSContactsPage(page = 1, pageSize = 6) {
     const filterName = (document.getElementById('filterCSClient') || {}).value || '';
     const filterType = (document.getElementById('filterCSContactType') || {}).value || '';
     const filterDate = (document.getElementById('filterCSDate') || {}).value || '';
+    const filterFeeling = (document.getElementById('filterCSFeeling') || {}).value || '';
     const sortOrder = (document.getElementById('csSortOrder') || {}).value || 'desc';
 
     let filtered = all.filter(c => {
         const matchesName = !filterName || (c.client_name || '').toLowerCase().includes(filterName.toLowerCase());
         const matchesType = !filterType || (c.contact_type || '') === filterType;
         const matchesDate = !filterDate || (c.contact_date || '').slice(0,10) === filterDate;
-        return matchesName && matchesType && matchesDate;
+        const matchesFeeling = !filterFeeling || String(c.feeling_note || '') === filterFeeling;
+        return matchesName && matchesType && matchesDate && matchesFeeling;
     });
 
     // Ordenação
@@ -1335,24 +1407,48 @@ function renderCSContactsPage(page = 1, pageSize = 6) {
     const start = (page - 1) * pageSize;
     const pageItems = filtered.slice(start, start + pageSize);
 
+    // Mapa de emojis para feeling
+    const feelingEmojis = {
+        1: '😞',
+        2: '😐',
+        3: '😊',
+        4: '😄',
+        5: '😍'
+    };
+
+    const feelingLabels = {
+        1: 'Muito Insatisfeito',
+        2: 'Insatisfeito',
+        3: 'Neutro',
+        4: 'Satisfeito',
+        5: 'Muito Satisfeito'
+    };
+
     if (pageItems.length === 0) {
         container.innerHTML = `<div class="empty-state"><div style="font-size: 4em; margin-bottom: 20px;">📞</div><h3>Nenhum contato encontrado</h3><p>Altere os filtros para ver resultados.</p></div>`;
     } else {
-        container.innerHTML = pageItems.map(contato => `
+        container.innerHTML = pageItems.map(contato => {
+            const feelingNote = contato.feeling_note || 0;
+            const feelingEmoji = feelingEmojis[feelingNote] || '';
+            const feelingLabel = feelingLabels[feelingNote] || 'Sem nota';
+            return `
             <div class="document-card" style="margin-bottom: 15px; position:relative;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
-                    <div>
+                    <div style="flex: 1;">
                         <div class="document-title">${contato.client_name}</div>
                         <div class="document-author">${contato.contact_type} • ${new Date(contato.contact_date).toLocaleDateString('pt-BR')}</div>
+                        <div style="margin-top: 8px; padding: 8px 12px; background: rgba(0,102,204,0.15); border-radius: 6px; display: inline-block; font-size: 0.95em;">
+                            <strong>Feeling:</strong> ${feelingEmoji} ${feelingLabel}
+                        </div>
                     </div>
-                    <div style="display:flex; gap:8px;">
+                    <div style="display:flex; gap:8px; flex-shrink:0;">
                         <button onclick="editContatoCS('${contato.id}')" style="background:#0066ccbf; border:none; padding:8px 10px; border-radius:6px; cursor:pointer;">Editar</button>
                         <button onclick="deleteContatoCS('${contato.id}')" style="background:#d32f2f; color:white; border:none; padding:8px 10px; border-radius:6px; cursor:pointer;">Excluir</button>
                     </div>
                 </div>
                 <div style="margin-top: 10px; color: #000000; white-space: pre-wrap; word-break: break-word;">${contato.observation}</div>
             </div>
-        `).join('');
+        `}).join('');
     }
 
     // Renderiza paginação
@@ -1404,6 +1500,7 @@ function editContatoCS(id) {
     document.getElementById('csContactType').value = contato.contact_type;
     document.getElementById('csContactDate').value = (contato.contact_date || '').slice(0,10);
     document.getElementById('csObservation').value = contato.observation || '';
+    document.getElementById('csFeelingNote').value = contato.feeling_note || '';
     document.getElementById('csEditingId').value = contato.id;
     document.getElementById('csCancelEditButton').style.display = 'inline-block';
     // Scroll to top of form
@@ -1416,6 +1513,7 @@ function cancelEditContato() {
     document.getElementById('csContactType').value = '';
     document.getElementById('csContactDate').value = '';
     document.getElementById('csObservation').value = '';
+    document.getElementById('csFeelingNote').value = '';
     document.getElementById('csCancelEditButton').style.display = 'none';
 }
 
@@ -4215,9 +4313,6 @@ async function carregarReunioes() {
         return;
     }
 
-    // Guardar cache para modal
-    window.reunioesCache = data;
-
     // Construir mapa de clientes com resumo (count, ultima reunião)
     const clientsMap = {}; // key -> {label, clientId, count, last}
     data.forEach(r => {
@@ -4233,6 +4328,10 @@ async function carregarReunioes() {
     const filtroParticipante = document.getElementById("filtroReuniaoParticipante")?.value?.toLowerCase() || "";
     const filtroDataInicio = document.getElementById("filtroReuniaoDataInicio")?.value || "";
     const filtroDataFim = document.getElementById("filtroReuniaoDataFim")?.value || "";
+
+    // Coletar todos os items filtrados para o cache
+    let totalReunioesFiltradas = 0;
+    const cacheItems = [];
 
     // Gerar cards compactos
     container.innerHTML = '';
@@ -4260,6 +4359,10 @@ async function carregarReunioes() {
             return matchCliente && matchParticipante && matchData;
         });
 
+        // Adicionar items filtrados ao cache
+        cacheItems.push(...itensFiltrados);
+        totalReunioesFiltradas += itensFiltrados.length;
+
         if (itensFiltrados.length === 0) return;
 
         // ordenar por data para achar a última
@@ -4282,6 +4385,9 @@ async function carregarReunioes() {
 
         container.appendChild(card);
     });
+
+    // Guardar cache para modal COM OS ITEMS JÁ FILTRADOS
+    window.reunioesCache = cacheItems;
 
         // Garantir que o filtro de participantes seja populado após as reuniões serem carregadas
         try {
@@ -5189,7 +5295,17 @@ async function refreshActivities() {
 document.addEventListener('DOMContentLoaded', function () {
 
     setTimeout(() => {
-        showTab('inicio');
+        // Verificar se há ?tab= na URL (para navegação de CS Contatos)
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        
+        if (tabParam) {
+            console.log('✓ Navegando via ?tab=:', tabParam);
+            showTab(tabParam);
+        } else {
+            // Sem ?tab=, carregar aba padrão (inicio)
+            showTab('inicio');
+        }
     }, 500);
 });
 async function viewClientTickets(clientId, clientName, clientEmail) {

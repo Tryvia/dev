@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="icon" type="image/png" href="../tryvia.png" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal</title>
+  <meta name="description" content="Dashboard de atendimento ao cliente com registros e métricas">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="../logo111.png" alt="Logo" class="logo-img">
+    <span></span>
+  </div>
+  <nav class="nav-list">
+    <li class="nav-item">
+      <button onclick="showTab('cs')" type="button">
+        <i class="fas fa-headset"></i>
+      </button>
+    </li>
+  </nav>
+  <div class="sidebar-bottom">
+    <button onclick="logoutTryvia()" class="logout-btn" type="button">
+      <i class="fas fa-sign-out-alt"></i> Sair
+    </button>
+  </div>
+</aside>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="theme-toggle">
+      <button id="themeToggle" class="theme-toggle-btn" type="button">
+        <i class="fas fa-moon"></i>
+      </button>
+    </div>
+    <h1>Portal - Tryvia</h1>
+    <div class="profile-info">
+      <img alt="Profile Picture" src="../tryvia.png" />
+      <span><span id="nomeUsuario">Usuário</span></span>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div id="stats" class="stats-grid"></div>
+
+  <!-- Novo Contato -->
+  <div class="card">
+    <div class="card-title">Novo Contato</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Cliente</label>
+        <input type="text" id="nc-cliente-input" list="clients-list" placeholder="Nome do cliente...">
+        <datalist id="clients-list">
+          <!-- Preenchido dinamicamente pelo JS -->
+        </datalist>
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <select id="nc-tipo">
+          <option value="">Selecione...</option>
+          <option>Telefone</option>
+          <option>E-mail</option>
+          <option>WhatsApp</option>
+          <option>Presencial</option>
+          <option>Videochamada</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Data</label>
+        <input type="date" id="nc-data" value="">
+      </div>
+      <div class="form-group">
+        <label>Observações</label>
+        <input type="text" id="nc-obs" placeholder="Observações...">
+      </div>
+      <div class="form-group">
+        <label>Feeling</label>
+        <div style="display:flex;gap:8px;align-items:end">
+          <select id="nc-feeling" style="flex:1">
+            <option value="">Selecione...</option>
+            <option value="1">😡 Muito Insatisfeito</option>
+            <option value="2">😟 Insatisfeito</option>
+            <option value="3">😐 Neutro</option>
+            <option value="4">😊 Satisfeito</option>
+            <option value="5">😍 Muito Satisfeito</option>
+          </select>
+          <button class="btn-save" onclick="saveContact()">💾 Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="card">
+      <div class="card-title">Contatos por Tipo</div>
+      <canvas id="chart-tipo" class="chart-canvas"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Distribuição de Feeling</div>
+      <canvas id="chart-feeling" class="chart-canvas"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Contatos por Semana</div>
+      <canvas id="chart-week" class="chart-canvas"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Contatos por Mês</div>
+      <canvas id="chart-month" class="chart-canvas"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Top Clientes</div>
+      <canvas id="chart-top" class="chart-canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card">
+    <div class="card-title">Filtros</div>
+    <div class="filters-grid">
+      <div class="form-group"><label>Cliente</label><input type="text" id="f-cliente" class="filter-input" placeholder="Buscar cliente..."></div>
+      <div class="form-group"><label>Tipo</label>
+        <select id="f-tipo" class="filter-input">
+          <option value="">Todos</option>
+          <option>Telefone</option>
+          <option>E-mail</option>
+          <option>WhatsApp</option>
+          <option>Presencial</option>
+          <option>Videochamada</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Data</label><input type="date" id="f-data" class="filter-input"></div>
+      <div class="form-group"><label>Feeling</label>
+        <select id="f-feeling" class="filter-input"><option value="">Todos</option><option value="1">😡 Muito Insatisfeito</option><option value="2">😟 Insatisfeito</option><option value="3">😐 Neutro</option><option value="4">😊 Satisfeito</option><option value="5">😍 Muito Satisfeito</option></select>
+      </div>
+      <div class="form-group"><label>Ano</label>
+        <select id="f-ano" class="filter-input">
+          <option value="">Todos os anos</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Ordenação</label>
+        <select id="f-ordem" class="filter-input"><option value="desc">Mais recente</option><option value="asc">Mais antigo</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div id="table-section"></div>
+
+  <!-- Modal de Detalhes -->
+  <div id="contact-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">Detalhes do Contato</h2>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-grid">
+          <div class="modal-field">
+            <label>Cliente</label>
+            <p id="modal-cliente"></p>
+          </div>
+          <div class="modal-field">
+            <label>Tipo de Contato</label>
+            <p id="modal-tipo"></p>
+          </div>
+          <div class="modal-field">
+            <label>Data</label>
+            <p id="modal-data"></p>
+          </div>
+          <div class="modal-field">
+            <label>Feeling</label>
+            <p id="modal-feeling"></p>
+          </div>
+          <div class="modal-field full">
+            <label>Observações</label>
+            <p id="modal-obs"></p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal" onclick="closeModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Edição -->
+  <div id="edit-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Editar Contato</h2>
+        <button class="modal-close" onclick="closeEditModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-grid">
+          <div class="modal-field">
+            <label>Cliente</label>
+            <input type="text" id="edit-cliente" placeholder="Nome do cliente...">
+          </div>
+          <div class="modal-field">
+            <label>Tipo de Contato</label>
+            <select id="edit-tipo">
+              <option value="">Selecione...</option>
+              <option>Telefone</option>
+              <option>E-mail</option>
+              <option>WhatsApp</option>
+              <option>Presencial</option>
+              <option>Videochamada</option>
+            </select>
+          </div>
+          <div class="modal-field">
+            <label>Data</label>
+            <input type="date" id="edit-data">
+          </div>
+          <div class="modal-field">
+            <label>Feeling</label>
+            <select id="edit-feeling">
+              <option value="">Selecione...</option>
+              <option value="1">😡 Muito Insatisfeito</option>
+              <option value="2">😟 Insatisfeito</option>
+              <option value="3">😐 Neutro</option>
+              <option value="4">😊 Satisfeito</option>
+              <option value="5">😍 Muito Satisfeito</option>
+            </select>
+          </div>
+          <div class="modal-field full">
+            <label>Observações</label>
+            <textarea id="edit-obs" placeholder="Observações..." style="min-height: 80px; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal" onclick="closeEditModal()">Cancelar</button>
+        <button class="btn-modal" style="background: var(--success)" onclick="saveEditedContact()">💾 Salvar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>document.getElementById("nc-data").value=new Date().toISOString().split("T")[0];</script>
+<script src="portal-cscontatos.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
